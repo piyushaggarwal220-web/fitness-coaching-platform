@@ -9,6 +9,7 @@ import {
 } from '@/lib/payments/razorpay'
 import { shouldBypassPayment } from '@/lib/config'
 import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
+import { previewAdLandingPath } from '@/lib/analytics/ad-landing'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
 import { queueMetaPurchaseForRecordedSale } from '@/lib/analytics/meta-purchase-dispatch'
 import { metaAttributionFromRequest } from '@/lib/analytics/meta-attribution'
@@ -36,6 +37,7 @@ type VerifyPaymentBody = {
   phone?: string
   meta_fbp?: string
   meta_fbc?: string
+  landingPath?: string
   razorpay_order_id?: string
   razorpay_payment_id?: string
   razorpay_signature?: string
@@ -251,6 +253,8 @@ export async function POST(request: Request) {
         amountPaise: chargedAmountPaise,
         currency: 'INR',
         planSlug: plan.slug,
+        eventSourcePath:
+          previewAdLandingPath(orderNotes.landing_path) ?? previewAdLandingPath(body.landingPath) ?? undefined,
         ...metaAttribution,
       }),
       result.claimToken

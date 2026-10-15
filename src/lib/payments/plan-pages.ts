@@ -1,5 +1,9 @@
+import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
 import type { AnyCoachingPlanSlug, CoachingPlan, CoachingPlanSlug } from '@/lib/payments/plans'
 import { COACHING_PLAN_LIST, COACHING_PLANS, getCoachingPlan } from '@/lib/payments/plans'
+
+/** Clock starts after onboarding and required photos, not at payment. Matches the delivery timer. */
+export const FIRST_PLAN_TARGET = `After the onboarding form and required photos are submitted, the first plan arrives within ${INSTANT_PLAN_WINDOW_LABEL}.`
 
 /** Public marketing plan pages. */
 export type LongCoachingPlanSlug = CoachingPlanSlug
@@ -120,7 +124,7 @@ export const PLAN_COMPARE_ROWS: {
   {
     group: 'Opens with debloat',
     label: 'Core coaching',
-    hint: 'Workout, diet, coach chat, 2 check ins, trackers, photos. First plan in 24 to 48 hours.',
+    hint: `Workout, diet, coach chat, check-ins, trackers, photos. First plan within ${INSTANT_PLAN_WINDOW_LABEL} after onboarding.`,
     cells: { ...YES },
   },
   {

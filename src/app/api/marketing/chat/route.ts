@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
 import { COACH_ISSUE_CONTACT } from '@/lib/content'
+import { FIRST_PLAN_TARGET } from '@/lib/payments/plan-pages'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -19,8 +20,8 @@ Max 3 short sentences unless they ask for detail.`
 
 const COACHING_SYSTEM = `You are Lurvox coaching help for www.lurvox.in.
 Product: affordable 1-to-1 online fitness coaching. Plans: Fat loss 3 months ₹599, Fat loss + muscle 6 months ₹999, Athletic body 12 months ₹1,699.
-First plan arrives within 1–2 hours after onboarding, in the app.
-Positioning: personalised online coaching with guarantee of visible results when they follow the plan. Do not say "AI", "human coach", or "chatbot". Say 1-to-1 coaching, personalised plans, check-ins, app support.
+${FIRST_PLAN_TARGET}
+Positioning: personalised online coaching. Do not promise guaranteed fat loss, muscle gain, or visible results. Do not say "AI", "human coach", or "chatbot". Say 1-to-1 coaching, personalised plans, check-ins, app support.
 ${COACH_ISSUE_CONTACT} Never offer a phone call, a WhatsApp call, or a booked time. Do not say a plan includes a weekly call.
 Tone: short, clear, India-friendly English. No medical advice. No fake urgency.
 Max 3 short sentences unless they ask for detail.`

@@ -495,7 +495,7 @@ body:has(.st-root) [data-dev-panel] {
   .st-stats { grid-template-columns: repeat(4, 1fr); }
   .st-problem-grid { grid-template-columns: repeat(3, 1fr); }
   .st-include-grid { grid-template-columns: repeat(6, 1fr); }
-  .st-results { grid-template-columns: 0.92fr 1.08fr; align-items: center; }
+  .st-results { grid-template-columns: 1fr; align-items: start; }
   .st-voice-grid { grid-template-columns: repeat(3, 1fr); }
   .st-founders { grid-template-columns: 1fr 1fr; align-items: start; }
   .st-shared { grid-template-columns: repeat(6, 1fr); }
@@ -768,31 +768,18 @@ body:has(.st-root) [data-dev-panel] {
   font-weight: 700;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
 }
-.st-clip-row button::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  left: 50%;
-  top: 42%;
-  width: 52px;
-  height: 52px;
-  margin: -26px 0 0 -26px;
-  border-radius: 50%;
-  background: rgba(255, 90, 31, 0.92);
+.st-plan-duration { margin-top: 2px; color: var(--quiet); font-size: 14px; font-weight: 600; }
+.st-quiz-result ul { margin: 10px 0 0; padding-left: 18px; color: var(--quiet); }
+.st-quiz-result li + li { margin-top: 4px; }
+.st-order { display: grid; gap: 8px; margin: 12px 0; }
+.st-order div { display: grid; gap: 2px; }
+.st-order dt { color: var(--quiet); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.st-order dd { margin: 0; }
+.st-root :focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
 }
-.st-clip-row button::after {
-  content: "";
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  top: 42%;
-  margin: -8px 0 0 -4px;
-  border-style: solid;
-  border-width: 8px 0 8px 14px;
-  border-color: transparent transparent transparent #fff;
-}
-.st-clip-row button.is-open::before,
-.st-clip-row button.is-open::after { display: none; }
+.st-root:has(.st-sheet) .st-dock { display: none; }
 
 .st-slider { padding: 8px 0 56px; }
 .st-slider-price {

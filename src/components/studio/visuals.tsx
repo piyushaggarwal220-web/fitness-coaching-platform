@@ -200,9 +200,10 @@ export function ClipRow() {
   }, [])
 
   return (
-    <section className="st-clips" ref={ref} aria-label="Video library">
-      <p className="st-kicker">Video library</p>
-      <h2>The movement, then the clip in the app.</h2>
+    <section className="st-clips" id="movements" ref={ref} aria-label="Movements">
+      <p className="st-kicker">Movements</p>
+      <h2>The lifts in the plan.</h2>
+      <p className="st-lede">These are stills. Tap one to enlarge it. A few form clips are free in the app. The full library is a separate purchase there.</p>
       <motion.div className="st-clip-row" style={wide && !reduce ? { x } : undefined}>
         {CLIPS.map((clip, i) => (
           <button

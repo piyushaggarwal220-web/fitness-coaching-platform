@@ -15,6 +15,7 @@ import {
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isPublicDemoEmail } from '@/lib/public-demo'
 import { publicDemoReadOnlyJson } from '@/lib/public-demo-guard'
+import { previewAdLandingPath } from '@/lib/analytics/ad-landing'
 import { razorpayMetaNotes } from '@/lib/analytics/meta-attribution'
 
 type CreateOrderBody = {
@@ -27,6 +28,7 @@ type CreateOrderBody = {
   discountCode?: string
   meta_fbp?: string
   meta_fbc?: string
+  landingPath?: string
   /** Ignored. Checkout no longer sells add-ons. */
   supplementAddon?: boolean
   /** Ignored. Checkout no longer sells add-ons. */
@@ -88,6 +90,7 @@ export async function POST(request: Request) {
   const addonIds: string[] = []
   const totalPaise = checkoutTotalPaise(pricing, [])
   const discountNotes = checkoutDiscountNotes(pricing)
+  const landingPath = previewAdLandingPath(body.landingPath)
 
   if (shouldBypassPayment()) {
     const orderId = `test_order_${Date.now()}`
@@ -116,20 +119,23 @@ export async function POST(request: Request) {
 
   try {
     const receipt = `plan_${plan.slug}_${Date.now()}`
+    const notes: Record<string, string> = {
+      plan_slug: plan.slug,
+      customer_email: body.email!.trim().toLowerCase(),
+      customer_name: body.name!.trim(),
+      customer_phone: body.phone!.trim(),
+      terms_policy_version: acknowledgement.termsVersion,
+      refund_policy_version: acknowledgement.refundPolicyVersion,
+      policy_acknowledged_at: acknowledgement.acknowledgedAt,
+      ...discountNotes,
+      ...razorpayMetaNotes(body),
+    }
+    // Razorpay allows 15 notes. Click ids stay; the landing path is only for Meta's source URL.
+    if (landingPath && Object.keys(notes).length < 15) notes.landing_path = landingPath
     const order = await createRazorpayOrder({
       amountPaise: totalPaise,
       receipt,
-      notes: {
-        plan_slug: plan.slug,
-        customer_email: body.email!.trim().toLowerCase(),
-        customer_name: body.name!.trim(),
-        customer_phone: body.phone!.trim(),
-        terms_policy_version: acknowledgement.termsVersion,
-        refund_policy_version: acknowledgement.refundPolicyVersion,
-        policy_acknowledged_at: acknowledgement.acknowledgedAt,
-        ...discountNotes,
-        ...razorpayMetaNotes(body),
-      },
+      notes,
     })
     await storeOrderPolicyAcknowledgement(admin, order.id, acknowledgement)
 

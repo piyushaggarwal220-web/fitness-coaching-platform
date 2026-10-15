@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import type { CoachingPlanSlug } from '@/lib/payments/plans'
+import { trackFunnelStep } from '@/lib/analytics/funnel'
+import { COACHING_PLANS, type CoachingPlanSlug } from '@/lib/payments/plans'
 import {
   FINDER_QUESTIONS,
   PLANS,
@@ -24,6 +25,8 @@ export function PlanFinder({
 }) {
   const reduce = useReducedMotion()
   const lock = useRef(false)
+  const started = useRef(false)
+  const reported = useRef<string | null>(null)
   const [step, setStep] = useState(0)
   const [picks, setPicks] = useState<FinderPlan[]>([])
   const [where, setWhere] = useState<TrainWhere | null>(null)
@@ -41,9 +44,29 @@ export function PlanFinder({
     setStep(0)
   }
 
+  useEffect(() => {
+    if (!result) {
+      reported.current = null
+      return
+    }
+    if (reported.current === result.slug) return
+    reported.current = result.slug
+    trackFunnelStep('quiz_complete', {
+      plan: result.slug,
+      plan_name: planName(result.slug),
+      value: COACHING_PLANS[result.slug].amountPaise / 100,
+      currency: 'INR',
+      source: 'preview1',
+    })
+  }, [result])
+
   function choose(option: (typeof FINDER_QUESTIONS)[number]['options'][number]) {
     if (lock.current) return
     lock.current = true
+    if (!started.current) {
+      started.current = true
+      trackFunnelStep('quiz_start', { source: 'preview1' })
+    }
     if (option.where) {
       setWhere(option.where)
       setStep(FINDER_QUESTIONS.length)
@@ -62,6 +85,7 @@ export function PlanFinder({
     <section className="st-quiz" id="quiz" aria-labelledby="quiz-title">
       <p className="st-kicker">Which plan</p>
       <h2 id="quiz-title">Eight questions. Then a plan.</h2>
+      <p className="st-lede">This is free, and the answers stay on this page. It recommends a plan from what you pick. The longer onboarding form and photos come after you pay.</p>
       <div className="st-quiz-card">
         <div className="st-quiz-meter" aria-hidden="true">
           {FINDER_QUESTIONS.map((item, index) => (
@@ -116,6 +140,10 @@ export function PlanFinder({
                 <span>{planPrice(result.slug)}</span>
               </p>
               <p>{result.reason}</p>
+              <p>{plan.duration} · {planPrice(result.slug)} paid once.</p>
+              <ul>
+                {plan.points.map((point) => <li key={point}>{point}</li>)}
+              </ul>
               <div className="st-quiz-actions">
                 <button type="button" className="st-btn st-btn-solid" onClick={(event) => onStart(result.slug, event)}>
                   {plan.cta} — {planPrice(result.slug)}

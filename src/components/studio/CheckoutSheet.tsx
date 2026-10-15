@@ -1,7 +1,12 @@
 'use client'
 
 import { FormEvent, useEffect, useRef, useState } from 'react'
-import { planName, planPrice, type StudioPlan } from './content'
+import { trackFunnelStep } from '@/lib/analytics/funnel'
+import { PREVIEW_AD_PATH } from '@/lib/analytics/ad-landing'
+import { metaBrowserIdsForRequest, readMetaBrowserIds } from '@/lib/analytics/meta-attribution'
+import { queueMetaPurchase } from '@/lib/analytics/meta-pixel'
+import { COACHING_PLANS } from '@/lib/payments/plans'
+import { FIRST_PLAN_TARGET, planName, planPrice, type StudioPlan } from './content'
 
 type RazorpayResponse = {
   razorpay_order_id: string
@@ -58,12 +63,22 @@ export function CheckoutSheet({
   const [agreed, setAgreed] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const cardRef = useRef<HTMLFormElement>(null)
 
   const closeRef = useRef(onClose)
   closeRef.current = onClose
 
   useEffect(() => {
     if (!plan) return
+    trackFunnelStep('checkout_view', {
+      plan: plan.slug,
+      plan_name: planName(plan.slug),
+      value: COACHING_PLANS[plan.slug].amountPaise / 100,
+      currency: 'INR',
+      screen: 'studio',
+      source: 'preview1',
+    })
+    cardRef.current?.focus()
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (event: KeyboardEvent) => {
@@ -87,6 +102,13 @@ export function CheckoutSheet({
       return
     }
     setLoading(true)
+    trackFunnelStep('pay_click', {
+      plan: plan!.slug,
+      plan_name: planName(plan!.slug),
+      value: COACHING_PLANS[plan!.slug].amountPaise / 100,
+      currency: 'INR',
+      source: 'preview1',
+    })
     try {
       const orderRes = await fetch('/api/payment/create-order', {
         method: 'POST',
@@ -97,6 +119,8 @@ export function CheckoutSheet({
           name: name.trim(),
           phone: cleanPhone,
           policyAgreementAccepted: true,
+          landingPath: PREVIEW_AD_PATH,
+          ...metaBrowserIdsForRequest(),
         }),
       })
       const orderData = await orderRes.json()
@@ -105,6 +129,7 @@ export function CheckoutSheet({
       }
 
       const finish = async (payload: RazorpayResponse) => {
+        const metaIds = readMetaBrowserIds()
         const verifyRes = await fetch('/api/payment/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -113,12 +138,26 @@ export function CheckoutSheet({
             email: email.trim(),
             name: name.trim(),
             phone: cleanPhone,
+            meta_fbp: metaIds.fbp,
+            meta_fbc: metaIds.fbc,
+            landingPath: PREVIEW_AD_PATH,
             ...payload,
           }),
         })
         const verifyData = await verifyRes.json()
         if (!verifyRes.ok || !verifyData.success) {
           throw new Error(verifyData.error ?? 'Payment could not be confirmed. If money left your account, use the same email on the account setup page.')
+        }
+        const chargedRupees = typeof orderData.amount === 'number' && orderData.amount > 0 ? orderData.amount / 100 : null
+        if (!orderData.testMode && chargedRupees != null && !payload.razorpay_payment_id.startsWith('test_')) {
+          queueMetaPurchase({
+            eventID: `razorpay_${payload.razorpay_payment_id}`,
+            value: chargedRupees,
+            currency: 'INR',
+            content_name: `${planName(plan!.slug)} coaching plan`,
+            content_ids: [plan!.slug],
+            content_type: 'product',
+          })
         }
         window.location.replace(verifyData.redirectTo ?? '/create-account')
       }
@@ -163,11 +202,23 @@ export function CheckoutSheet({
   return (
     <div className="st-sheet" role="presentation">
       <button type="button" className="st-sheet-dim" aria-label="Close checkout" onClick={onClose} />
-      <form className="st-sheet-card" onSubmit={pay}>
+      <form ref={cardRef} className="st-sheet-card" role="dialog" aria-modal="true" aria-labelledby="st-checkout-title" tabIndex={-1} onSubmit={pay}>
         <p className="st-kicker">{plan.duration}</p>
-        <h2>{planName(plan.slug)}</h2>
+        <h2 id="st-checkout-title">{planName(plan.slug)}</h2>
         <p className="st-sheet-price">{planPrice(plan.slug)}</p>
-        <p className="st-quiet">Payment confirms the plan. Then you answer 25 questions and send photos. The coach writes it within 3 hours.</p>
+        <dl className="st-order">
+          <div>
+            <dt>Payment</dt>
+            <dd>{planPrice(plan.slug)} once for {plan.duration}. This is not a monthly subscription.</dd>
+          </div>
+          <div>
+            <dt>After payment</dt>
+            <dd>You complete the onboarding form and send front, side, and back photos. Photos are required unless that form marks them optional. {FIRST_PLAN_TARGET}</dd>
+          </div>
+        </dl>
+        <p className="st-quiet">
+          Photos are used to write the plan and are not published without separate consent. The <a href="/terms">Terms</a> describe how submissions are handled. Sales are final once payment is captured, except where the <a href="/refund-policy">Refund Policy</a> says otherwise.
+        </p>
         <label>
           Full name
           <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required />

@@ -1144,7 +1144,7 @@ function CheckoutForm() {
  ? 'Right after you pay: set your password, then a short questionnaire. Your plan arrives within 1–2 hours. If this page closes, we email those steps.'
  : isTrialCheckout
  ? 'Right after you pay: set your password, then a short setup with photos. Your plan arrives within 1–2 hours. If you leave to finish payment in another app, come back here. If this page closes, we email those steps.'
- : 'The other 14 questions come only after payment.'}
+ : 'The onboarding form and progress photos come only after payment. Front, side, and back photos are required unless that form marks them optional.'}
  </p>
  </div>
  </>

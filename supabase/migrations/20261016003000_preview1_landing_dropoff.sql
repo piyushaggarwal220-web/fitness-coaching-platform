@@ -1,0 +1,31 @@
+-- Let /preview1 ads record the same scroll rows as the homepage, with their own section keys.
+
+ALTER TABLE public.landing_dropoff DROP CONSTRAINT IF EXISTS landing_dropoff_section;
+
+ALTER TABLE public.landing_dropoff ADD CONSTRAINT landing_dropoff_section CHECK (
+  (
+    (section_index = 0 AND section_key = 'hero' AND section_label = 'Hero')
+    OR (section_index = 1 AND section_key = 'why' AND section_label = 'Why you won''t fail')
+    OR (section_index = 2 AND section_key = 'system' AND section_label = 'What you get')
+    OR (section_index = 3 AND section_key = 'coaching' AND section_label = 'Coaches')
+    OR (section_index = 4 AND section_key = 'method' AND section_label = 'How it works')
+    OR (section_index = 5 AND section_key = 'pricing' AND section_label = 'Plans')
+    OR (section_index = 6 AND section_key = 'faq' AND section_label = 'Questions')
+    OR (section_index = 7 AND section_key = 'close' AND section_label = 'Closing offer')
+  )
+  OR (
+    path = '/preview1'
+    AND (
+      (section_index = 0 AND section_key = 'p1_hero' AND section_label = 'Hero')
+      OR (section_index = 1 AND section_key = 'p1_how' AND section_label = 'How it works')
+      OR (section_index = 2 AND section_key = 'p1_tracker' AND section_label = 'Tracker')
+      OR (section_index = 3 AND section_key = 'p1_included' AND section_label = 'Included')
+      OR (section_index = 4 AND section_key = 'p1_moves' AND section_label = 'Movements')
+      OR (section_index = 5 AND section_key = 'p1_quiz' AND section_label = 'Quiz')
+      OR (section_index = 6 AND section_key = 'p1_plans' AND section_label = 'Plans')
+      OR (section_index = 7 AND section_key = 'p1_weeks' AND section_label = 'The weeks')
+      OR (section_index = 8 AND section_key = 'p1_faq' AND section_label = 'Questions')
+      OR (section_index = 9 AND section_key = 'p1_close' AND section_label = 'Closing offer')
+    )
+  )
+);

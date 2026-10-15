@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { coaches } from '@/lib/content'
+import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
 import { PLAN_INCLUSIONS } from '@/lib/payments/plan-pages'
 import { COACHING_PLANS, COACHING_PLAN_LIST, type CoachingPlanSlug } from '@/lib/payments/plans'
 import { CampaignImage, CtaLink, PrimaryCta } from './primitives'
@@ -21,7 +22,7 @@ const HERO_OPTIONS: {
     slug: '3_months',
     label: 'Fat loss',
     title: 'Your fat loss plan.',
-    lead: 'Best for a 90-day fat-loss push. First plan in 1–2 hours.',
+    lead: `Best for a 90-day fat-loss push. First plan within ${INSTANT_PLAN_WINDOW_LABEL} after onboarding.`,
     duration: '90 days',
     image: '/images/lurvox/campaign/hero-fat-loss.webp',
     alt: 'Man walking uphill on a treadmill in a private gym',
@@ -30,7 +31,7 @@ const HERO_OPTIONS: {
     slug: '6_months',
     label: 'Muscle',
     title: 'Fat loss and muscle.',
-    lead: 'Best for losing fat while building muscle. First plan in 1–2 hours.',
+    lead: `Best for losing fat while building muscle. First plan within ${INSTANT_PLAN_WINDOW_LABEL} after onboarding.`,
     duration: '6 months',
     image: '/images/lurvox/campaign/hero-muscle.webp',
     alt: 'Man in a heavy squat in a private studio',
@@ -39,7 +40,7 @@ const HERO_OPTIONS: {
     slug: '12_months',
     label: 'Athletic',
     title: 'An athletic body.',
-    lead: 'Best for building an athletic body — fat loss, muscle gain, and stamina. First plan in 1–2 hours.',
+    lead: `Best for building an athletic body — fat loss, muscle gain, and stamina. First plan within ${INSTANT_PLAN_WINDOW_LABEL} after onboarding.`,
     duration: '12 months',
     image: '/images/lurvox/campaign/hero-athletic.webp',
     alt: 'Muscular man running in shorts along a waterfront at dawn',
@@ -703,7 +704,7 @@ export function FaqSection() {
     ['What is LURVOX?', 'Online fitness coaching. A personal workout, a personal diet, tracking, and a coach in the app.'],
     ['What do I receive?', 'The plan for the goal you choose, check-ins, daily tracking, and coach chat. The 3-month plan updates every 14 days. The 6- and 12-month plans update every week.'],
     ['What is the training based on?', 'Professional principles, backed by science. Not random workouts or diets.'],
-    ['When do I receive my plan?', 'After you finish onboarding. The first plan is prepared in 24 to 48 hours.'],
+    ['When do I receive my plan?', `After you finish onboarding and the required photos, the first plan arrives within ${INSTANT_PLAN_WINDOW_LABEL}.`],
     ['Do I need a gym?', 'No. The plan uses a gym, home, or a mix, based on what you have.'],
     ['Can I message my coach?', 'Yes, in the app, once your coaching access is active.'],
     ['What happens during weekly check-ins?', 'You submit the week, including photos when they are required. Your coach reviews it and the plan can change from that.'],

@@ -20,6 +20,7 @@ import {
 import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
 import { queueMetaPurchaseForRecordedSale } from '@/lib/analytics/meta-purchase-dispatch'
+import { previewAdLandingPath } from '@/lib/analytics/ad-landing'
 import { metaIdsFromOrderNotes } from '@/lib/analytics/meta-attribution'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
@@ -402,6 +403,7 @@ export async function POST(request: Request) {
       amountPaise: payment.amount,
       currency: payment.currency || 'INR',
       planSlug: plan.slug,
+      eventSourcePath: previewAdLandingPath(notes.landing_path) ?? undefined,
       ...metaIdsFromOrderNotes(notes),
     })
 

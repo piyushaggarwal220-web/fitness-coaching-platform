@@ -1,3 +1,5 @@
+import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
+import { FIRST_PLAN_TARGET } from '@/lib/payments/plan-pages'
 import { COACHING_PLANS, type CoachingPlanSlug } from '@/lib/payments/plans'
 import type { IconName } from './icons'
 
@@ -7,7 +9,6 @@ export type StudioPlan = {
   pitch: string
   duration: string
   points: string[]
-  checks?: string[]
   cta: string
   icon: IconName
   photo: string
@@ -25,14 +26,16 @@ function rupees(paise: number) {
 export function monthlyLabel(slug: CoachingPlanSlug) {
   const plan = COACHING_PLANS[slug]
   const perMonth = Math.round(plan.amountPaise / 100 / plan.durationMonths)
-  return `₹${perMonth.toLocaleString('en-IN')} a month`
+  return `₹${perMonth.toLocaleString('en-IN')} a month · paid once`
 }
+
+export { FIRST_PLAN_TARGET }
 
 export const PLANS: StudioPlan[] = [
   {
     slug: '3_months',
-    badge: 'Great start',
-    pitch: 'Lose fat fast with a plan built around your body.',
+    badge: '14-day rewrites',
+    pitch: 'A fat-loss plan built around your body, food, and week.',
     duration: '3 months',
     icon: 'flame',
     photo: '/images/lurvox/studio/hero-2.webp',
@@ -41,8 +44,8 @@ export const PLANS: StudioPlan[] = [
   },
   {
     slug: '6_months',
-    badge: 'Most chosen upgrade',
-    pitch: 'Burn fat and build lean muscle simultaneously.',
+    badge: 'Weekly rewrites',
+    pitch: 'Workout and diet for fat loss and muscle, rewritten every week.',
     duration: '6 months',
     icon: 'muscle',
     photo: '/images/lurvox/studio/hero-3.webp',
@@ -51,16 +54,13 @@ export const PLANS: StudioPlan[] = [
   },
   {
     slug: '12_months',
-    badge: 'Most popular · best value',
-    pitch:
-      'The complete transformation: fat loss, muscle gain, stamina, and testosterone optimization — built for a full year of change.',
+    badge: 'Full year',
+    pitch: 'A full year of workout, diet, stamina work, and weekly rewrites.',
     duration: '12 months',
     icon: 'bolt',
     photo: '/images/lurvox/studio/hero.webp',
     points: ['Everything in the 6-month plan', 'Stamina work, rewritten every week'],
-    checks: ['Fat loss', 'Muscle gain', 'Stamina', 'Testosterone support for men, hourglass figure for women'],
     cta: 'Start my athletic plan',
-    featured: true,
   },
 ]
 
@@ -81,7 +81,7 @@ export const SHARED: { title: string; text: string; icon: IconName }[] = [
   { title: 'Workout', text: 'Gym, home, or both.', icon: 'dumbbell' },
   { title: 'Check-ins', text: 'You report the week. The coach answers.', icon: 'chat' },
   { title: 'Tracker', text: 'Log food and training in the app.', icon: 'graph' },
-  { title: 'Videos', text: 'A library for the movements in your plan.', icon: 'play' },
+  { title: 'Form clips', text: 'In the app when a movement in your plan has one.', icon: 'play' },
   { title: 'Cardio + supplements', text: 'On the 6-month and 12-month plans.', icon: 'bottle' },
 ]
 
@@ -99,14 +99,14 @@ export const STEPS: StoryFrame[] = [
   {
     n: '01',
     title: 'Pay, then answer',
-    text: '25 questions and your photos.',
+    text: 'The onboarding form and your photos.',
     image: '/images/lurvox/studio/step-answer.webp',
     alt: 'An athlete answering on a phone',
   },
   {
     n: '02',
     title: 'A coach writes it',
-    text: 'Workout and diet within 3 hours.',
+    text: `Workout and diet within ${INSTANT_PLAN_WINDOW_LABEL} of that.`,
     image: '/landing/coach-piyush-dark.webp',
     alt: 'Piyush Aggarwal',
     second: { image: '/landing/coach-rakshit-dark.webp', alt: 'Rakshit Mohla' },
@@ -155,11 +155,11 @@ export const INCLUDED: StoryFrame[] = [
   },
 ]
 
-export const STATS: { icon: IconName; to: number; prefix?: string; suffix?: string; label: string; giant?: boolean }[] = [
-  { icon: 'clock', to: 3, suffix: ' hours', label: 'A coach writes the plan', giant: true },
-  { icon: 'card', to: 599, prefix: '₹', label: 'Starting price, 3 months' },
-  { icon: 'chat', to: 25, label: 'Questions after you pay' },
-  { icon: 'calendar', to: 3, label: 'Plans, from 3 months to a year' },
+export const STATS: { value: string; label: string }[] = [
+  { value: INSTANT_PLAN_WINDOW_LABEL, label: 'First plan, after onboarding' },
+  { value: COACHING_PLANS['3_months'].displayPrice, label: 'Starting price, paid once' },
+  { value: '3 plans', label: '3, 6, or 12 months' },
+  { value: 'Home or gym', label: 'Written for the equipment you have' },
 ]
 
 export const CLIPS = [
@@ -343,9 +343,36 @@ export function recommendFromFinder(picks: FinderPlan[], where: TrainWhere): { s
 }
 
 export const FAQS = [
-  { q: 'What if I don’t see results?', a: 'The next week is rewritten from your check-in.' },
-  { q: 'Can I switch plans?', a: 'You choose 3, 6, or 12 months when you pay, and longer plans add cardio and supplements.' },
-  { q: 'Do I need gym access?', a: 'No. The workout is written for home, a gym, or both.' },
-  { q: 'How does the tracker work?', a: 'You log food and training in the app, and the coach uses those logs.' },
-  { q: 'What happens after I pay?', a: 'You answer 25 questions and send photos. The coach writes the plan within 3 hours.' },
+  {
+    q: 'What happens after I pay?',
+    a: 'You create an account and complete the onboarding form: goals, schedule, equipment, food, and health notes. You also send progress photos. Nothing in that form is collected by this 8-question plan finder.',
+  },
+  {
+    q: 'When is the plan written?',
+    a: `${FIRST_PLAN_TARGET} Later check-ins can change the next plan. The Terms are the contract.`,
+  },
+  {
+    q: 'Are progress photos required?',
+    a: 'Onboarding asks for front, side, and back photos. They are required unless that form marks them optional. They are used to write the plan and are not published without separate consent. Refusing required photos can pause coaching. The Terms describe how submissions are handled.',
+  },
+  {
+    q: 'Is this a monthly subscription?',
+    a: 'No. You pay the full plan price once, for 3, 6, or 12 months. The monthly figure on each card is that price divided by the months, not a separate charge.',
+  },
+  {
+    q: 'Can I switch plans?',
+    a: 'You choose 3, 6, or 12 months when you pay. Longer plans add cardio and supplements, and they are rewritten every week instead of every 14 days. An upgrade within 48 hours of starting has no extra fee under the published rule. After that, the extra fee is ₹250. An upgrade can still be refused.',
+  },
+  {
+    q: 'What is the refund policy?',
+    a: 'Sales are final once payment is captured, except where the Refund Policy and Terms say otherwise. Those pages are the refund rules.',
+  },
+  {
+    q: 'What if I have an injury or a medical condition?',
+    a: 'This is fitness coaching, not medical care. Tell the onboarding form about injuries, pain, and medication, and get medical advice before you train.',
+  },
+  {
+    q: 'Do I need gym access?',
+    a: 'No. The workout is written for home, a gym, or both.',
+  },
 ]

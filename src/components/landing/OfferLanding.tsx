@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
 import { COACHING_PLANS, type CoachingPlanSlug } from '@/lib/payments/plans'
+import { FIRST_PLAN_TARGET } from '@/lib/payments/plan-pages'
 import { PrimaryCta } from './primitives'
 
 export type CoachResult = {
@@ -67,7 +69,7 @@ const GOALS: Goal[] = [
     monthly: '₹142 a month',
     update: 'Every week',
     finish: 'Month 12',
-    image: '/images/lurvox/offer/hero-athletic.webp',
+    image: '/images/lurvox/offer/hero-athletic.webp?v=3',
     focus: 'center 22%',
     tier: 'Everything',
     short: 'Athletic',
@@ -118,16 +120,6 @@ const COMPARE: { label: string; gold?: boolean; cells: Record<CoachingPlanSlug, 
   { label: 'Supplement plan', cells: { '3_months': false, '6_months': true, '12_months': true } },
   { label: 'Help if progress stalls', cells: { '3_months': false, '6_months': 'From day 90', '12_months': 'All year' } },
   { label: 'Stamina work', cells: { '3_months': false, '6_months': false, '12_months': true } },
-  {
-    label: 'Testosterone boosting for men',
-    gold: true,
-    cells: { '3_months': false, '6_months': false, '12_months': true },
-  },
-  {
-    label: 'Hourglass figure for women',
-    gold: true,
-    cells: { '3_months': false, '6_months': false, '12_months': true },
-  },
 ]
 
 function CompareMark({ value, gold }: { value: CompareCell; gold?: boolean }) {
@@ -155,32 +147,44 @@ const PLAN_POINTS: Record<CoachingPlanSlug, { text: string; gold?: boolean }[]> 
   ],
   '12_months': [
     { text: 'Everything included in fat loss + muscle gain' },
-    { text: 'Stamina boosted' },
+    { text: 'Stamina work' },
     { text: 'Updated every week' },
-    { text: 'Testosterone boosting for men', gold: true },
-    { text: 'Hourglass figure for women', gold: true },
   ],
 }
 
 const START_STEPS = [
-  { when: 'Pay', title: 'Payment is done.' },
-  { when: 'Then', title: 'Answer the 25 next questions.' },
-  { when: 'Photos', title: 'Give your photos.' },
-  { when: '3 hours', title: 'Coach creates your plan in the next 3 hours.' },
-  { when: 'Your plan', title: 'Get the diet, workout, sleep, cardio, and supplement guidance.' },
-  { when: 'Every day', title: 'Start the daily trackers and the exercise videos.' },
+  { when: 'Payment', title: 'Payment is confirmed.' },
+  { when: 'Questions', title: 'Complete the onboarding form.' },
+  { when: 'Photos', title: 'Send front, side, and back photos. Required unless the form marks them optional.' },
+  { when: INSTANT_PLAN_WINDOW_LABEL, title: `The first plan arrives within ${INSTANT_PLAN_WINDOW_LABEL} after that.` },
+  { when: 'Your plan', title: 'You get a diet and a workout. Cardio and supplements are on the 6- and 12-month plans.' },
+  { when: 'Every day', title: 'Start the daily trackers. A few form clips are free in the app. The full library is a separate purchase.' },
 ]
 
 const FAQ = [
   {
-    q: 'When do I get my plan?',
-    a: 'Within 3 hours of answering the questions after you pay.',
+    q: 'Can I train at home?',
+    a: 'Yes. The workout is written for home, a gym, or both, using the equipment you actually have. A gym membership is not required.',
   },
-  { q: 'Do I need a gym?', a: 'No. The plan uses a gym, home, or a mix, based on what you have.' },
-  { q: 'Can I message my coach?', a: 'Yes, in the app, once your coaching is active.' },
   {
-    q: 'Can I switch to a longer plan?',
-    a: 'Usually, yes. Within 48 hours of buying there is no late upgrade fee. After that it may cost ₹250.',
+    q: 'Will the diet work with food I have at home?',
+    a: 'Yes. Meals are built around the food you already eat and the schedule you already keep. You do not need a separate grocery list of foods you have never cooked.',
+  },
+  {
+    q: 'What does coaching cost?',
+    a: 'Fat loss is ₹599 for 90 days, under ₹7 a day. Fat loss and muscle gain is ₹999 for 6 months, under ₹6 a day. The athletic plan is ₹1,699 for the year, under ₹5 a day.',
+  },
+  {
+    q: 'Is the plan personalised?',
+    a: 'Yes. After payment you answer the questions and send photos. Your coach writes the plan for your body, your goal, and your day. It is not a copied template.',
+  },
+  {
+    q: 'Why are the rates this low?',
+    a: 'This is online coaching in the app: a plan written for you, check-ins, and coach chat. It is not a trainer standing with you in person every session. That is why it starts at ₹599.',
+  },
+  {
+    q: 'What happens after I pay?',
+    a: `${FIRST_PLAN_TARGET} You then get your diet and workout. Cardio and supplement guidance are on the 6-month and 12-month plans. Daily trackers start after that. A few form clips are free in the app. The full library is a separate purchase.`,
   },
   {
     q: 'What is the refund policy?',
@@ -190,27 +194,6 @@ const FAQ = [
 
 function perDay(goal: Goal) {
   return `under ₹${Math.ceil(COACHING_PLANS[goal.slug].amountPaise / 100 / goal.days)} a day`
-}
-
-function deliveryParts(now: Date) {
-  const at = new Date(now.getTime() + 3 * 60 * 60 * 1000)
-  const zone = 'Asia/Kolkata'
-  const day = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: zone })
-  const hour = Number(at.toLocaleString('en-GB', { timeZone: zone, hour: '2-digit', hour12: false }))
-  const clock = at.toLocaleTimeString('en-IN', { timeZone: zone, hour: 'numeric', minute: '2-digit', hour12: true }).toUpperCase()
-  const phrase = day(at) !== day(now) ? `by ${clock} tomorrow` : `by ${clock}${hour >= 18 ? ' tonight' : ' today'}`
-  return { phrase, clock }
-}
-
-function useDelivery() {
-  const [parts, setParts] = useState<{ phrase: string; clock: string } | null>(null)
-  useEffect(() => {
-    const tick = () => setParts(deliveryParts(new Date()))
-    tick()
-    const id = window.setInterval(tick, 60_000)
-    return () => window.clearInterval(id)
-  }, [])
-  return parts
 }
 
 function BeforeAfter({ coach }: { coach: CoachResult }) {
@@ -263,7 +246,6 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
   }
   const goal = GOALS.find((item) => item.slug === slug) ?? GOALS[0]
   const plan = COACHING_PLANS[goal.slug]
-  const delivery = useDelivery()
   const rootRef = useRef<HTMLDivElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
   const railRef = useRef<HTMLOListElement>(null)
@@ -338,18 +320,22 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
     window.addEventListener('resize', onScroll)
 
     const heroCta = root.querySelector('.lxo-hero .lxo-cta')
-    const blockers = [heroCta, ...root.querySelectorAll('main .lxo-btn'), root.querySelector('#pricing')]
-    const seen = new Map<Element, boolean>()
+    const pricing = root.querySelector('#pricing')
+    let heroGone = false
+    let pricingOn = false
+    const syncSticky = () => setStickyOn(heroGone && !pricingOn)
     const sticky = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) seen.set(entry.target, entry.isIntersecting)
-        const anyOn = [...seen.values()].some(Boolean)
-        const heroGone = heroCta ? seen.get(heroCta) === false : false
-        setStickyOn(heroGone && !anyOn)
+        for (const entry of entries) {
+          if (entry.target === heroCta) heroGone = !entry.isIntersecting
+          if (entry.target === pricing) pricingOn = entry.isIntersecting && entry.intersectionRatio >= 0.2
+        }
+        syncSticky()
       },
-      { threshold: 0 }
+      { threshold: [0, 0.2] }
     )
-    for (const node of blockers) if (node) sticky.observe(node)
+    if (heroCta) sticky.observe(heroCta)
+    if (pricing) sticky.observe(pricing)
 
     return () => {
       reveal.disconnect()
@@ -393,7 +379,7 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
           <div className="lxo-hero-copy">
             <p className="lxo-kicker">Online coaching · Piyush &amp; Rakshit&apos;s method</p>
             <h1 key={goal.slug}>{goal.title}</h1>
-            <p className="lxo-sub">A workout and diet written for you. In your phone within 3 hours.</p>
+            <p className="lxo-sub">A workout and diet written for you. In your phone within {INSTANT_PLAN_WINDOW_LABEL} of finishing onboarding.</p>
             <div className="lxo-goals" role="tablist" aria-label="Choose your goal">
               {GOALS.map((item) => (
                 <button
@@ -415,7 +401,7 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
                 {startLabel}
               </PrimaryCta>
               <p className="lxo-meta">
-                <span className="lxo-live">{delivery ? `Plan ${delivery.phrase}` : 'Plan within 3 hours'}</span>
+                <span className="lxo-live">Plan within {INSTANT_PLAN_WINDOW_LABEL} of onboarding</span>
                 <span>
                   {goal.length} · {perDay(goal)}
                 </span>
@@ -441,7 +427,10 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
         </section>
 
         <section className="lxo-journey" id="method">
-          <h2 className="lxo-rise">If you start now, your first 12 days.</h2>
+          <h2 className="lxo-rise lxo-moment">
+            <span>No perfect moment will come.</span>
+            <span>Only what you have is now.</span>
+          </h2>
           <ol className="lxo-rail" ref={railRef}>
             {START_STEPS.map((step) => (
               <li key={step.title}>
@@ -458,8 +447,11 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
         </section>
 
         <section className="lxo-coaches" id="coaching">
-          <p className="lxo-eyebrow lxo-rise">The method comes from</p>
-          <h2 className="lxo-rise">Two coaches who did it first.</h2>
+          <blockquote className="lxo-voice lxo-rise">
+            <p>We looked fat. No confidence. No support.</p>
+            <p>We learned on our own, the hard way, so you don&apos;t have to.</p>
+            <footer>Piyush and Rakshit</footer>
+          </blockquote>
           <div className="lxo-coach-list">
             {coaches.map((coach) => (
               <article className="lxo-rise lxo-coach" key={coach.key}>
@@ -522,13 +514,13 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
               return (
                 <article
                   key={item.slug}
-                  className={['lxo-rise', 'lxo-plan', item.slug === goal.slug ? 'is-chosen' : ''].filter(Boolean).join(' ')}
+                  className={['lxo-rise', 'lxo-plan', item.slug === '12_months' ? 'is-featured' : '', item.slug === goal.slug ? 'is-chosen' : ''].filter(Boolean).join(' ')}
                   onClick={() => pickPlan(item.slug)}
                 >
                   <div className="lxo-plan-top">
                     <p>
                       {item.length}
-                      {item.slug === '6_months' ? <em>Most popular</em> : null}
+                      {item.slug === '6_months' ? <em>Weekly rewrites</em> : null}
                       {item.slug === '12_months' ? <em>Lowest monthly</em> : null}
                     </p>
                     <h3>{details.name}</h3>
@@ -575,7 +567,7 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
               {startLabel}
             </PrimaryCta>
             <p className="lxo-meta">
-              <span className="lxo-live">{delivery ? `Plan ${delivery.phrase}` : 'Plan within 3 hours'}</span>
+              <span className="lxo-live">Plan within {INSTANT_PLAN_WINDOW_LABEL} of onboarding</span>
             </p>
           </div>
         </section>
@@ -596,7 +588,7 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
         <PrimaryCta plan={goal.slug} className="lxo-btn">
           {startLabel}
         </PrimaryCta>
-        <span className="lxo-live">{delivery ? `By ${delivery.clock}` : 'In 3 hours'}</span>
+        <span className="lxo-live">Plan within {INSTANT_PLAN_WINDOW_LABEL} of onboarding</span>
       </div>
     </div>
   )

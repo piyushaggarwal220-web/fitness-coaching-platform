@@ -13,6 +13,8 @@ export function trackFunnelStep(
   step:
     | 'view_landing'
     | 'view_plans'
+    | 'quiz_start'
+    | 'quiz_complete'
     | 'plan_click'
     | 'talk_to_coach'
     | 'checkout_view'

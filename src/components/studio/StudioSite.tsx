@@ -2,73 +2,32 @@
 
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import Image from 'next/image'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import Lenis from 'lenis'
+import { trackFunnelStep } from '@/lib/analytics/funnel'
+import { COACHING_PLANS, type CoachingPlanSlug } from '@/lib/payments/plans'
 import { CheckoutSheet } from './CheckoutSheet'
+import { PreviewAdCapture } from './PreviewAdCapture'
 import { LogoMark, Mark } from './icons'
 import { PhoneMock } from './PhoneMock'
 import { IncludeGrid, StepList } from './PhotoStory'
 import { PlanFinder } from './PlanFinder'
-import { ClipRow, HeroFilm, TrendChart } from './visuals'
+import { ClipRow, HeroFilm } from './visuals'
 import {
   FAQS,
+  FIRST_PLAN_TARGET,
   INCLUDED,
   PLANS,
   QUOTES,
   STATS,
   STEPS,
   monthlyLabel,
+  planName,
   planPrice,
   type StudioPlan,
 } from './content'
-import type { CoachingPlanSlug } from '@/lib/payments/plans'
 
 const ease = [0.16, 1, 0.3, 1] as const
-
-function Count({ to, prefix = '', suffix = '' }: { to: number; prefix?: string; suffix?: string }) {
-  const ref = useRef<HTMLSpanElement>(null)
-  const reduce = useReducedMotion()
-  const [value, setValue] = useState(0)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    if (reduce) {
-      setValue(to)
-      return
-    }
-    let frame = 0
-    let started = false
-    const run = () => {
-      if (started) return
-      started = true
-      const start = performance.now()
-      const step = (now: number) => {
-        const t = Math.min(1, (now - start) / 900)
-        setValue(Math.round((1 - Math.pow(1 - t, 3)) * to))
-        if (t < 1) frame = requestAnimationFrame(step)
-      }
-      frame = requestAnimationFrame(step)
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) run()
-      },
-      { threshold: 0.4 },
-    )
-    io.observe(el)
-    return () => {
-      io.disconnect()
-      cancelAnimationFrame(frame)
-    }
-  }, [reduce, to])
-  return (
-    <span ref={ref}>
-      {prefix}
-      {value.toLocaleString('en-IN')}
-      {suffix}
-    </span>
-  )
-}
 
 function MagnetButton({
   className,
@@ -118,38 +77,14 @@ function Reveal({ children, className, delay = 0 }: { children: ReactNode; class
   )
 }
 
-function SpinLine({ lines, start = 0, hot = false }: { lines: string[]; start?: number; hot?: boolean }) {
-  const reduce = useReducedMotion()
-  const [index, setIndex] = useState(start % lines.length)
-  useEffect(() => {
-    if (reduce) return
-    const id = window.setInterval(() => setIndex((current) => (current + 1) % lines.length), 3400)
-    return () => window.clearInterval(id)
-  }, [lines.length, reduce])
-  const line = lines[index] ?? lines[0]
-  return (
-    <p className={`st-spin${hot ? ' is-hot' : ''}`} aria-hidden="true">
-      <AnimatePresence mode="wait">
-        <motion.span
-          key={line}
-          initial={reduce ? false : { y: '110%', opacity: 0 }}
-          animate={{ y: '0%', opacity: 1 }}
-          exit={reduce ? undefined : { y: '-110%', opacity: 0 }}
-          transition={{ duration: 0.45, ease }}
-        >
-          {line}
-        </motion.span>
-      </AnimatePresence>
-    </p>
-  )
-}
-
 export function StudioSite() {
   const reduce = useReducedMotion()
   const [scrolled, setScrolled] = useState(false)
   const [menu, setMenu] = useState(false)
   const [intro, setIntro] = useState(false)
   const [pastHero, setPastHero] = useState(false)
+  const [covered, setCovered] = useState(false)
+  const [keyboard, setKeyboard] = useState(false)
   const [openFaq, setOpenFaq] = useState(0)
   const [checkout, setCheckout] = useState<StudioPlan | null>(null)
   const [cursor, setCursor] = useState({ x: -40, y: -40 })
@@ -199,6 +134,36 @@ export function StudioSite() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  useEffect(() => {
+    const nodes = ['plans', 'quiz']
+      .map((id) => document.getElementById(id))
+      .filter((node): node is HTMLElement => Boolean(node))
+    if (!nodes.length) return
+    const visible = new Set<string>()
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = entry.target.id
+          if (entry.isIntersecting) visible.add(id)
+          else visible.delete(id)
+        }
+        setCovered(visible.size > 0)
+      },
+      { threshold: 0.25 },
+    )
+    for (const node of nodes) io.observe(node)
+    return () => io.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const viewport = window.visualViewport
+    if (!viewport) return
+    const onResize = () => setKeyboard(viewport.height < window.innerHeight * 0.75)
+    onResize()
+    viewport.addEventListener('resize', onResize)
+    return () => viewport.removeEventListener('resize', onResize)
+  }, [])
+
   function go(id: string) {
     setMenu(false)
     const el = document.getElementById(id)
@@ -220,8 +185,17 @@ export function StudioSite() {
     burst.style.top = `${rect.top + rect.height / 2}px`
     document.body.appendChild(burst)
     window.setTimeout(() => burst.remove(), 500)
+    trackFunnelStep('plan_click', {
+      plan: plan.slug,
+      plan_name: planName(plan.slug),
+      value: COACHING_PLANS[plan.slug].amountPaise / 100,
+      currency: 'INR',
+      source: 'preview1',
+    })
     window.setTimeout(() => setCheckout(plan), 160)
   }
+
+  const showDock = pastHero && !checkout && !covered && !keyboard && !menu
 
   const headline = 'Your athletic body starts today.'
 
@@ -263,14 +237,14 @@ export function StudioSite() {
               transition={{ delay: i * 0.06 }}
               onClick={() => go(id)}
             >
-              {id === 'how' ? 'How it works' : id === 'quiz' ? 'Take the quiz' : id === 'faq' ? 'FAQ' : id[0].toUpperCase() + id.slice(1)}
+              {id === 'how' ? 'How it works' : id === 'quiz' ? 'Find my plan' : id === 'faq' ? 'FAQ' : id === 'results' ? 'The weeks' : id[0].toUpperCase() + id.slice(1)}
             </motion.button>
           ))}
         </div>
       ) : null}
 
       <main id="top">
-        <section className="st-hero" ref={heroRef}>
+        <section className="st-hero" id="hero" ref={heroRef}>
           <div className="st-blob" aria-hidden="true" />
           <div className="st-hero-copy">
             <p className="st-kicker">Online fitness coaching</p>
@@ -291,29 +265,24 @@ export function StudioSite() {
                 </span>
               ))}
             </h1>
-            <p className="st-lede">One workout. One diet. Rewritten from your check-ins.</p>
+            <p className="st-lede">A workout and a diet written for your goal, schedule, and food, with a coach checking the week.</p>
             <div className="st-hero-actions">
-              <MagnetButton className="st-btn st-btn-solid" onClick={() => go('plans')}>See the plans</MagnetButton>
-              <MagnetButton className="st-btn st-btn-ghost" onClick={() => go('quiz')}>Take the quiz</MagnetButton>
+              <MagnetButton className="st-btn st-btn-solid" onClick={() => go('quiz')}>Find my plan</MagnetButton>
+              <MagnetButton className="st-btn st-btn-ghost" onClick={() => go('plans')}>Compare plans</MagnetButton>
             </div>
-            <p className="st-note">A coach writes the plan within 3 hours of payment. From ₹599.</p>
+            <p className="st-note">From {planPrice('3_months')} for 3 months, paid once. {FIRST_PLAN_TARGET}</p>
           </div>
           <HeroFilm />
         </section>
 
-        <SpinLine hot lines={['A coach writes it within 3 hours.', 'One workout. One diet.', 'From ₹599.']} />
-
         <section className="st-stats" aria-label="The offer">
           {STATS.map((stat) => (
-            <div key={stat.label} className={stat.giant ? 'is-giant' : ''}>
-              <Mark name={stat.icon} />
-              <strong><Count to={stat.to} prefix={stat.prefix} suffix={stat.suffix} /></strong>
+            <div key={stat.label}>
+              <strong>{stat.value}</strong>
               <span>{stat.label}</span>
             </div>
           ))}
         </section>
-
-        <SpinLine start={1} lines={['25 questions after you pay.', 'Home, gym, or both.', 'The next week follows the check-in.']} />
 
         <section className="st-how" id="how">
           <Reveal>
@@ -322,8 +291,6 @@ export function StudioSite() {
           </Reveal>
           <StepList frames={STEPS} />
         </section>
-
-        <SpinLine start={1} lines={['Pay. Answer. Train.', 'Written within 3 hours.', 'Rewritten from the check-in.']} />
 
         <section className="st-device" id="tracker">
           <div className="st-device-copy">
@@ -334,8 +301,6 @@ export function StudioSite() {
           <PhoneMock />
         </section>
 
-        <SpinLine hot lines={['Diet and the workout, in one app.', 'Mark the meal when it’s done.', 'The coach reads the log.']} />
-
         <section className="st-included" id="included">
           <Reveal>
             <p className="st-kicker">What’s included</p>
@@ -344,11 +309,7 @@ export function StudioSite() {
           <IncludeGrid frames={INCLUDED} />
         </section>
 
-        <SpinLine start={2} lines={['Meals from food you already eat.', 'Cardio and supplements from 6 months.', 'A check-in, then an answer.']} />
-
         <ClipRow />
-
-        <SpinLine hot start={1} lines={['Squat. Row. Press. Hinge.', 'The movements in your plan.', 'Train at home or in a gym.']} />
 
         <PlanFinder
           onStart={(slug, event) => {
@@ -360,8 +321,6 @@ export function StudioSite() {
             go('plans')
           }}
         />
-
-        <SpinLine lines={['Eight questions. Then a price.', 'The workout matches where you train.', 'Fat loss, muscle, or the full year.']} />
 
         <section className="st-pricing" id="plans">
           <Reveal>
@@ -403,19 +362,15 @@ export function StudioSite() {
                   {pick === plan.slug ? <span className="st-match">Your match</span> : null}
                 </div>
                 <div className="st-plan-head">
-                  <h3>{plan.duration}</h3>
+                  <h3>{planName(plan.slug)}</h3>
                   <p className="st-price">{planPrice(plan.slug)}</p>
                 </div>
+                <p className="st-plan-duration">{plan.duration}</p>
                 <p className="st-month">{monthlyLabel(plan.slug)}</p>
                 <p className="st-plan-pitch">{plan.pitch}</p>
                 <ul>
                   {plan.points.map((point) => <li key={point}>{point}</li>)}
                 </ul>
-                {plan.checks ? (
-                  <p className="st-plan-chips">
-                    {plan.checks.map((point) => <span key={point}>{point}</span>)}
-                  </p>
-                ) : null}
                 <MagnetButton className="st-btn st-btn-solid" onClick={(event) => openPlan(plan, event)}>
                   {plan.cta} — {planPrice(plan.slug)}
                 </MagnetButton>
@@ -425,30 +380,18 @@ export function StudioSite() {
           <p className="st-aside">Sales are final once payment is captured, except where the <a href="/refund-policy">Refund Policy</a> says otherwise.</p>
         </section>
 
-        <SpinLine hot start={2} lines={['₹599 · ₹999 · ₹1,699.', 'A longer plan is rewritten more often.', 'The coach stays for the months you pick.']} />
-
         <section className="st-results" id="results">
           <div className="st-results-copy">
-            <p className="st-kicker">Results</p>
+            <p className="st-kicker">The weeks</p>
             <h2>The week you had changes the next one.</h2>
             <ul>
               <li><Mark name="dumbbell" /><span>You train on the days you have, with the equipment you have.</span></li>
               <li><Mark name="plate" /><span>You eat food you already cook.</span></li>
-              <li><Mark name="trend" /><span>You check in, and the next week changes.</span></li>
+              <li><Mark name="trend" /><span>You check in, and the next plan can change from that.</span></li>
             </ul>
-            <p className="st-aside">Each point on the line is a week: the plan, your check-in, then the rewrite.</p>
+            <p className="st-aside">You train, you check in, and the next plan can change from that.</p>
           </div>
-          <TrendChart />
         </section>
-
-        <SpinLine lines={['You check in. Next week changes.', 'Food you already cook.', 'Days and equipment you actually have.']} />
-
-        <section className="st-promise" aria-label="What the coaching delivers">
-          <p className="st-kicker">What you get</p>
-          <p className="st-promise-line">A workout and a diet written for your week, then rewritten after you check in.</p>
-        </section>
-
-        <SpinLine hot lines={['Written for your week.', 'Then rewritten after you check in.', 'One workout. One diet.']} />
 
         <section className="st-founders" aria-label="From the founders">
           {QUOTES.map((item) => (
@@ -459,8 +402,6 @@ export function StudioSite() {
             </figure>
           ))}
         </section>
-
-        <SpinLine start={1} lines={['Piyush Aggarwal and Rakshit Mohla.', 'We learned it the hard way.', 'So the plan is written for you.']} />
 
         <section className="st-faq" id="faq">
           <Reveal>
@@ -490,11 +431,11 @@ export function StudioSite() {
           </div>
         </section>
 
-        <section className="st-close st-bleed">
+        <section className="st-close st-bleed" id="close">
           <Image src="/images/lurvox/studio/hero-2.webp" alt="" fill sizes="100vw" />
           <div>
-            <h2>The plan can be in your phone within 3 hours.</h2>
-            <p>Pay, answer, send the photos. A coach writes that week.</p>
+            <h2>The first plan is written after onboarding.</h2>
+            <p>{FIRST_PLAN_TARGET}</p>
             <MagnetButton className="st-btn st-btn-solid" onClick={() => go('plans')}>Choose a plan</MagnetButton>
           </div>
         </section>
@@ -514,10 +455,11 @@ export function StudioSite() {
         <p className="st-pay">Payments processed by Razorpay.</p>
       </footer>
 
-      <div className={`st-dock${pastHero ? ' is-on' : ''}`}>
-        <button type="button" onClick={() => go('plans')}>View plans · from ₹599</button>
+      <div className={`st-dock${showDock ? ' is-on' : ''}`}>
+        <button type="button" onClick={() => go('plans')}>Compare plans · from {planPrice('3_months')}</button>
       </div>
 
+      <PreviewAdCapture />
       <CheckoutSheet plan={checkout} onClose={() => setCheckout(null)} />
     </div>
   )
