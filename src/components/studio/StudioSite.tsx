@@ -15,7 +15,6 @@ import {
   INCLUDED,
   PLANS,
   QUOTES,
-  STALLS,
   STATS,
   STEPS,
   monthlyLabel,
@@ -315,16 +314,6 @@ export function StudioSite() {
         </section>
 
         <SpinLine start={1} lines={['25 questions after you pay.', 'Home, gym, or both.', 'The next week follows the check-in.']} />
-
-        <section className="st-problem">
-          <Reveal>
-            <p className="st-kicker">Why plans stall</p>
-            <h2>Advice is everywhere. A plan that stays is not.</h2>
-          </Reveal>
-          <StepList frames={STALLS} />
-        </section>
-
-        <SpinLine hot start={2} lines={['A plan that knows your week.', 'Someone checks the skipped day.', 'Built for your body, not a template.']} />
 
         <section className="st-how" id="how">
           <Reveal>

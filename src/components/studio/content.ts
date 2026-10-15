@@ -95,30 +95,6 @@ export type StoryFrame = {
   caption?: string
 }
 
-export const STALLS: StoryFrame[] = [
-  {
-    n: '01',
-    title: 'Scattered advice',
-    text: 'None of it knows your week.',
-    image: '/images/lurvox/studio/stall-scatter.webp',
-    alt: 'An athlete looking at a phone in a white studio',
-  },
-  {
-    n: '02',
-    title: 'No one checking',
-    text: 'A file does not notice a skipped Tuesday.',
-    image: '/images/lurvox/studio/stall-alone.webp',
-    alt: 'An athlete sitting alone on a bench after training',
-  },
-  {
-    n: '03',
-    title: 'A copied template',
-    text: 'The same sets for every body.',
-    image: '/images/lurvox/studio/stall-sheet.webp',
-    alt: 'An athlete standing beside a stack of blank sheets',
-  },
-]
-
 export const STEPS: StoryFrame[] = [
   {
     n: '01',
