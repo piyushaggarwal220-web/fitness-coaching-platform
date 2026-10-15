@@ -1063,3 +1063,68 @@ body:has(.st-root) [data-dev-panel] {
 
 .st-close { display: grid; justify-items: start; gap: 12px; }
 .st-foot { display: grid; justify-items: start; gap: 0; }
+
+@media (max-width: 799px) {
+  html:has(.st-root) {
+    scroll-padding-top: calc(68px + env(safe-area-inset-top));
+    scroll-padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+  .st-root {
+    padding-top: calc(64px + env(safe-area-inset-top));
+    font-size: 16px;
+    overflow-x: clip;
+  }
+  .st-nav,
+  .st-nav.is-on {
+    height: calc(56px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 14px 0;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(16px);
+  }
+  .st-nav-cta { display: none; }
+  .st-menu-btn { margin-left: auto; }
+  .st-root h1 { font-size: clamp(38px, 11vw, 52px); max-width: 11ch; }
+  .st-root h2 { font-size: clamp(30px, 8.4vw, 42px); }
+  .st-lede { margin-top: 12px; font-size: 16px; }
+  .st-hero { gap: 16px; padding: 4px 0 16px; }
+  .st-hero-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+  .st-hero-actions .st-btn { width: 100%; min-height: 48px; padding: 0 8px; font-size: 14px; }
+  .st-hero-photo { border-radius: 20px; }
+  .st-spin { height: 68px; margin: 6px auto; }
+  .st-spin span { font-size: clamp(20px, 5.6vw, 28px); line-height: 1.12; }
+  .st-stats { gap: 12px 14px; padding-bottom: 8px; }
+  .st-stats .is-giant strong { font-size: clamp(64px, 20vw, 92px); }
+  .st-problem, .st-includes, .st-pricing, .st-results, .st-faq { padding: 36px 0; }
+  .st-how { padding: 44px 0 36px; clip-path: none; }
+  .st-device { padding: 28px 0 8px; gap: 16px; }
+  .st-step-list { gap: 14px; }
+  .st-step-list li { grid-template-columns: 84px 1fr; gap: 12px; }
+  .st-step-list figure,
+  .st-step-list figure.is-pair span { height: 84px; }
+  .st-step-list h3 { font-size: 18px; }
+  .st-include { gap: 10px; }
+  .st-include h3 { font-size: 16px; line-height: 1.15; }
+  .st-include p { font-size: 13px; }
+  .st-clips { padding: 20px 0 28px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+  .st-clip-row { padding-bottom: 4px; }
+  .st-clip-row button { height: 220px; scroll-snap-align: start; }
+  .st-quiz { padding: 12px 0 36px; }
+  .st-quiz-card { padding: 14px; border-radius: 20px; }
+  .st-quiz-options button { min-height: 52px; }
+  .st-quiz-result .st-btn { width: 100%; justify-self: stretch; }
+  .st-plan-row .st-btn { padding: 10px 12px; font-size: 15px; line-height: 1.15; }
+  .st-bleed { width: 100%; max-width: 100%; margin-left: 0; min-height: 70vh; }
+  .st-bleed > div { margin-left: 0; padding-bottom: 88px; }
+  .st-founders { gap: 16px; padding: 8px 0 28px; }
+  .st-founders blockquote { font-size: 18px; }
+  .st-faq button { min-height: 56px; padding: 14px 0; font-size: 16px; }
+  .st-menu { padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom)); }
+  .st-menu button { font-size: clamp(30px, 8.5vw, 38px); min-height: 52px; }
+  .st-dock { padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); }
+  .st-close { padding-bottom: 48px; }
+  .st-foot { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .st-foot a { display: inline-flex; align-items: center; min-height: 44px; margin-right: 12px; }
+  .st-sheet-card input,
+  .st-root .st-sheet-card input:not([type="checkbox"]) { font-size: 16px; }
+}

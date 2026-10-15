@@ -264,7 +264,7 @@ export function StudioSite() {
               transition={{ delay: i * 0.06 }}
               onClick={() => go(id)}
             >
-              {id === 'how' ? 'How it works' : id === 'quiz' ? 'Take the quiz' : id[0].toUpperCase() + id.slice(1)}
+              {id === 'how' ? 'How it works' : id === 'quiz' ? 'Take the quiz' : id === 'faq' ? 'FAQ' : id[0].toUpperCase() + id.slice(1)}
             </motion.button>
           ))}
         </div>
