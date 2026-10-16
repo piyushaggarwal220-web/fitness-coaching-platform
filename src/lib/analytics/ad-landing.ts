@@ -1,6 +1,11 @@
 /** Ad URL for the studio preview. `/studio` is the rewritten page, so reports use one path. */
 export const PREVIEW_AD_PATH = '/preview1'
 
+/** Ad URL for the purple landing preview. */
+export const PREVIEW2_AD_PATH = '/preview2'
+
+export type PreviewAdPath = typeof PREVIEW_AD_PATH | typeof PREVIEW2_AD_PATH
+
 export const PREVIEW_DROPOFF_SECTIONS = [
   { id: 'hero', key: 'p1_hero', index: 0, label: 'Hero' },
   { id: 'how', key: 'p1_how', index: 1, label: 'How it works' },
@@ -14,8 +19,20 @@ export const PREVIEW_DROPOFF_SECTIONS = [
   { id: 'close', key: 'p1_close', index: 9, label: 'Closing offer' },
 ] as const
 
-/** Only the preview ad page may set the purchase source URL. Anything else stays on /checkout. */
-export function previewAdLandingPath(value: unknown): typeof PREVIEW_AD_PATH | null {
+/** Sections on the purple preview. Keys stay off the homepage and preview 1 lists. */
+export const PREVIEW2_DROPOFF_SECTIONS = [
+  { id: 'top', key: 'p2_hero', index: 0, label: 'Hero' },
+  { id: 'why', key: 'p2_why', index: 1, label: 'Tired of no results' },
+  { id: 'method', key: 'p2_method', index: 2, label: 'How it works' },
+  { id: 'coaching', key: 'p2_coaching', index: 3, label: 'Coaches' },
+  { id: 'pricing', key: 'p2_pricing', index: 4, label: 'Plans' },
+  { id: 'faq', key: 'p2_faq', index: 5, label: 'Questions' },
+  { id: 'close', key: 'p2_close', index: 6, label: 'Closing offer' },
+] as const
+
+/** Only a known preview ad page may set the purchase source URL. Anything else stays on /checkout. */
+export function previewAdLandingPath(value: unknown): PreviewAdPath | null {
   if (value === PREVIEW_AD_PATH || value === '/studio') return PREVIEW_AD_PATH
+  if (value === PREVIEW2_AD_PATH) return PREVIEW2_AD_PATH
   return null
 }

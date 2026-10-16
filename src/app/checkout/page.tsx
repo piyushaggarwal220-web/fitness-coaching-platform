@@ -23,6 +23,7 @@ import {
  readMetaBrowserIds,
 } from '@/lib/analytics/meta-attribution';
 import { trackFunnelStep } from '@/lib/analytics/funnel';
+import { previewAdLandingPath } from '@/lib/analytics/ad-landing';
 import {
  formatInrFromPaise,
  firstTimerSalePaise,
@@ -92,6 +93,10 @@ declare global {
 
 function CheckoutForm() {
  const searchParams = useSearchParams();
+ const adLandingPath = previewAdLandingPath(searchParams.get('landing'));
+ const adFunnel = adLandingPath
+ ? { source: adLandingPath === '/preview2' ? 'preview2' : 'preview1', path: adLandingPath }
+ : {};
  const rawPlan = searchParams.get('plan') ?? '3_months';
  const initialPlan = rawPlan === '1_week_trial' ? '3_months' : rawPlan;
  const codeFromUrlRaw = (searchParams.get('code') ?? '').trim().toUpperCase();
@@ -482,6 +487,7 @@ function CheckoutForm() {
  plan: plan.slug,
  plan_name: plan.name,
  value: (sale ?? plan.amountPaise) / 100,
+ ...adFunnel,
  });
  }, [plan, testMode]);
 
@@ -665,6 +671,7 @@ function CheckoutForm() {
  trackFunnelStep('checkout_view', {
  plan: plan.slug,
  screen: SKIP_CHECKOUT_MORE_INFO ? 'details' : 'more_info',
+ ...adFunnel,
  });
  };
 
@@ -703,6 +710,7 @@ function CheckoutForm() {
  phone,
  meta_fbp: metaIds.fbp,
  meta_fbc: metaIds.fbc,
+ ...(adLandingPath ? { landingPath: adLandingPath } : {}),
  ...payload,
  }),
  });
@@ -761,6 +769,7 @@ function CheckoutForm() {
  plan: plan.slug,
  plan_name: plan.name,
  value: (appliedDiscount?.amountPaise ?? sale ?? plan.amountPaise) / 100,
+ ...adFunnel,
  });
 
  const orderRes = await fetch('/api/payment/create-order', {
@@ -782,6 +791,7 @@ function CheckoutForm() {
  return {
  ...(ids.fbp ? { meta_fbp: ids.fbp } : {}),
  ...(ids.fbc ? { meta_fbc: ids.fbc } : {}),
+ ...(adLandingPath ? { landingPath: adLandingPath } : {}),
  }
  })(),
  }),
@@ -959,7 +969,7 @@ function CheckoutForm() {
  onContinue={() => {
  setError('');
  setCheckoutScreen(3);
- trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'details' });
+ trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'details', ...adFunnel });
  }}
  styles={styles}
  dig={dig}
@@ -984,7 +994,7 @@ function CheckoutForm() {
  return (
  <Link
  key={item.slug}
- href={`/checkout?plan=${item.slug}${!isDigitalCheckout && referralCode ? `&code=${encodeURIComponent(referralCode)}` : ''}`}
+ href={`/checkout?plan=${item.slug}${!isDigitalCheckout && referralCode ? `&code=${encodeURIComponent(referralCode)}` : ''}${adLandingPath ? `&landing=${encodeURIComponent(adLandingPath)}` : ''}`}
  role="tab"
  aria-selected={selected}
  onClick={() =>
@@ -992,6 +1002,7 @@ function CheckoutForm() {
  plan: item.slug,
  plan_name: item.name,
  value: item.amountPaise / 100,
+ ...adFunnel,
  })
  }
  style={{

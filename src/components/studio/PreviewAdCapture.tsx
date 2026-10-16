@@ -1,7 +1,11 @@
 'use client'
 
 import { useEffect } from 'react'
-import { PREVIEW_AD_PATH, PREVIEW_DROPOFF_SECTIONS } from '@/lib/analytics/ad-landing'
+import {
+  PREVIEW_AD_PATH,
+  PREVIEW_DROPOFF_SECTIONS,
+  type PreviewAdPath,
+} from '@/lib/analytics/ad-landing'
 import { trackFunnelStep } from '@/lib/analytics/funnel'
 import { persistMetaClickIdsFromLocation } from '@/lib/analytics/meta-attribution'
 import { createClient } from '@/lib/supabase/client'
@@ -33,22 +37,34 @@ function trafficSource() {
   return 'other' as const
 }
 
+type DropoffSection = { id: string; key: string; index: number; label: string }
+
 /** Same ad click, landing view, and scroll records the main landing page keeps. */
-export function PreviewAdCapture() {
+export function PreviewAdCapture({
+  path = PREVIEW_AD_PATH,
+  sections = PREVIEW_DROPOFF_SECTIONS,
+  funnelSource = 'preview1',
+  viewKey = VIEW_KEY,
+}: {
+  path?: PreviewAdPath
+  sections?: readonly DropoffSection[]
+  funnelSource?: string
+  viewKey?: string
+} = {}) {
   useEffect(() => {
     persistMetaClickIdsFromLocation()
-    const source = trafficSource()
-    if (!sessionStorage.getItem(VIEW_KEY)) {
-      sessionStorage.setItem(VIEW_KEY, '1')
+    const traffic = trafficSource()
+    if (!sessionStorage.getItem(viewKey)) {
+      sessionStorage.setItem(viewKey, '1')
       trackFunnelStep('view_landing', {
-        source: 'preview1',
-        path: PREVIEW_AD_PATH,
-        traffic: source,
+        source: funnelSource,
+        path,
+        traffic,
       })
     }
 
     const sent = new Set<string>()
-    const nodes = PREVIEW_DROPOFF_SECTIONS.flatMap((section) => {
+    const nodes = sections.flatMap((section) => {
       const node = document.getElementById(section.id)
       return node ? [[node, section] as const] : []
     })
@@ -70,8 +86,8 @@ export function PreviewAdCapture() {
               section_key: section.key,
               section_index: section.index,
               section_label: section.label,
-              source,
-              path: PREVIEW_AD_PATH,
+              source: traffic,
+              path,
             })
             .then(() => undefined, () => undefined)
         }
@@ -80,7 +96,7 @@ export function PreviewAdCapture() {
     )
     for (const [node] of nodes) observer.observe(node)
     return () => observer.disconnect()
-  }, [])
+  }, [funnelSource, path, sections, viewKey])
 
   return null
 }

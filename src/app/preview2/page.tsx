@@ -24,5 +24,5 @@ export const viewport: Viewport = {
 export const dynamic = 'force-dynamic'
 
 export default function Preview2Page() {
-  return <OfferLanding coaches={loadOfferCoaches()} />
+  return <OfferLanding coaches={loadOfferCoaches()} adPath="/preview2" />
 }

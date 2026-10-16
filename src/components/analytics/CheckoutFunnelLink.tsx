@@ -13,6 +13,7 @@ export function CheckoutFunnelLink({
   planName,
   value,
   source = 'instant',
+  landingPath,
   className,
   children,
 }: {
@@ -20,15 +21,18 @@ export function CheckoutFunnelLink({
   planName?: string
   value?: number
   source?: string
+  landingPath?: string
   className?: string
   children: React.ReactNode
 }) {
-  const [href, setHref] = useState(`/checkout?plan=${plan}`)
+  const [href, setHref] = useState(
+    `/checkout?plan=${plan}${landingPath ? `&landing=${encodeURIComponent(landingPath)}` : ''}`
+  )
 
   useEffect(() => {
     persistMetaClickIdsFromLocation()
-    setHref(checkoutHrefWithAttribution(plan))
-  }, [plan])
+    setHref(checkoutHrefWithAttribution(plan, landingPath))
+  }, [plan, landingPath])
 
   return (
     <Link
@@ -40,6 +44,7 @@ export function CheckoutFunnelLink({
           plan_name: planName,
           value,
           source,
+          ...(landingPath ? { path: landingPath } : {}),
         })
       }
     >

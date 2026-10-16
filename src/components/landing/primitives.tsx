@@ -184,10 +184,14 @@ export function PrimaryCta({
   children,
   className = '',
   plan = '3_months',
+  source = 'landing',
+  landingPath,
 }: {
   children: ReactNode
   className?: string
   plan?: string
+  source?: string
+  landingPath?: string
 }) {
   const catalog = getCoachingPlan(plan)
   return (
@@ -195,7 +199,8 @@ export function PrimaryCta({
       plan={plan}
       planName={catalog?.name}
       value={catalog ? catalog.amountPaise / 100 : undefined}
-      source="landing"
+      source={source}
+      landingPath={landingPath}
       className={['lx-btn', 'lx-btn-primary', className].filter(Boolean).join(' ')}
     >
       {children}

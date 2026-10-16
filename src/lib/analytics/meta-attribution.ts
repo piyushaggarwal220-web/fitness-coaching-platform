@@ -1,3 +1,5 @@
+import { previewAdLandingPath } from '@/lib/analytics/ad-landing'
+
 const META_COOKIE_MAX_AGE_SEC = 90 * 24 * 60 * 60
 
 function readCookie(name: string): string | undefined {
@@ -43,12 +45,15 @@ export function persistMetaClickIdsFromLocation() {
   }
 }
 
-/** Keep ad click ids when moving Instant landing → checkout. */
-export function checkoutHrefWithAttribution(planSlug: string): string {
+/** Keep ad click ids when moving a landing page → checkout. */
+export function checkoutHrefWithAttribution(planSlug: string, landingPath?: string | null): string {
   const params = new URLSearchParams(
     typeof window === 'undefined' ? '' : window.location.search
   )
   params.set('plan', planSlug)
+  const landing = previewAdLandingPath(landingPath)
+  if (landing) params.set('landing', landing)
+  else params.delete('landing')
   return `/checkout?${params.toString()}`
 }
 

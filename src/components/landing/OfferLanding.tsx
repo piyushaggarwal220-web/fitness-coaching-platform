@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
 import { COACHING_PLANS, type CoachingPlanSlug } from '@/lib/payments/plans'
 import { FIRST_PLAN_TARGET } from '@/lib/payments/plan-pages'
+import { PreviewAdCapture } from '@/components/studio/PreviewAdCapture'
+import { PREVIEW2_AD_PATH, PREVIEW2_DROPOFF_SECTIONS } from '@/lib/analytics/ad-landing'
 import { PrimaryCta } from './primitives'
 
 export type CoachResult = {
@@ -200,7 +202,13 @@ function BeforeAfter({ coach }: { coach: CoachResult }) {
   )
 }
 
-export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
+export function OfferLanding({
+  coaches,
+  adPath,
+}: {
+  coaches: CoachResult[]
+  adPath?: typeof PREVIEW2_AD_PATH
+}) {
   const [slug, setSlug] = useState<CoachingPlanSlug>('3_months')
   const rotateTimer = useRef<number | null>(null)
   const heroInView = useRef(true)
@@ -318,9 +326,19 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
   }, [])
 
   const startLabel = `Start for ${plan.displayPrice}`
+  const ctaSource = adPath === PREVIEW2_AD_PATH ? 'preview2' : 'landing'
+  const ctaLanding = adPath === PREVIEW2_AD_PATH ? PREVIEW2_AD_PATH : undefined
 
   return (
     <div className="lxo" ref={rootRef}>
+      {adPath === PREVIEW2_AD_PATH ? (
+        <PreviewAdCapture
+          path={PREVIEW2_AD_PATH}
+          sections={PREVIEW2_DROPOFF_SECTIONS}
+          funnelSource="preview2"
+          viewKey="lx_preview2_view"
+        />
+      ) : null}
       <div className="lxo-progress" ref={progressRef} aria-hidden="true" />
 
       <header className="lxo-header">
@@ -368,7 +386,7 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
               ))}
             </div>
             <div className="lxo-cta">
-              <PrimaryCta plan={goal.slug} className="lxo-btn">
+              <PrimaryCta plan={goal.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding}>
                 {startLabel}
               </PrimaryCta>
               <p className="lxo-meta">
@@ -411,7 +429,7 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
             ))}
           </ol>
           <div className="lxo-inline-cta lxo-rise">
-            <PrimaryCta plan={goal.slug} className="lxo-btn">
+            <PrimaryCta plan={goal.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding}>
               Start now for {plan.displayPrice}
             </PrimaryCta>
           </div>
@@ -470,7 +488,7 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
                       </li>
                     ))}
                   </ul>
-                  <PrimaryCta plan={item.slug} className="lxo-btn">
+                  <PrimaryCta plan={item.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding}>
                     Start for {details.displayPrice}
                   </PrimaryCta>
                 </article>
@@ -492,10 +510,10 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
           </p>
         </section>
 
-        <section className="lx-final lxo-close">
+        <section className="lx-final lxo-close" id="close">
           <p className="lxo-rise lxo-big">A year from now, you&apos;ll wish you started today.</p>
           <div className="lxo-rise lxo-close-cta">
-            <PrimaryCta plan={goal.slug} className="lxo-btn lxo-btn-light">
+            <PrimaryCta plan={goal.slug} className="lxo-btn lxo-btn-light" source={ctaSource} landingPath={ctaLanding}>
               {startLabel}
             </PrimaryCta>
             <p className="lxo-meta">
@@ -517,7 +535,7 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
       </footer>
 
       <div className={stickyOn ? 'lxo-sticky is-on' : 'lxo-sticky'} aria-hidden={!stickyOn}>
-        <PrimaryCta plan={goal.slug} className="lxo-btn">
+        <PrimaryCta plan={goal.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding}>
           {startLabel}
         </PrimaryCta>
         <span className="lxo-live">Plan within {INSTANT_PLAN_WINDOW_LABEL} of onboarding</span>
