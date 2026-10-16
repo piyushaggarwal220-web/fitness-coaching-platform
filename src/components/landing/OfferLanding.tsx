@@ -27,8 +27,6 @@ type Goal = {
   finish: string
   image: string
   focus: string
-  tier: string
-  short: string
 }
 
 const GOALS: Goal[] = [
@@ -43,8 +41,6 @@ const GOALS: Goal[] = [
     finish: 'Day 90',
     image: '/images/lurvox/offer/hero-fat-loss.webp',
     focus: 'center 22%',
-    tier: 'Basics',
-    short: 'Fat loss',
   },
   {
     slug: '6_months',
@@ -57,8 +53,6 @@ const GOALS: Goal[] = [
     finish: 'Month 6',
     image: '/images/lurvox/offer/hero-muscle.webp?v=2',
     focus: 'center 22%',
-    tier: 'More',
-    short: 'Fat + muscle',
   },
   {
     slug: '12_months',
@@ -71,8 +65,6 @@ const GOALS: Goal[] = [
     finish: 'Month 12',
     image: '/images/lurvox/offer/hero-athletic.webp?v=3',
     focus: 'center 22%',
-    tier: 'Everything',
-    short: 'Athletic',
   },
 ]
 
@@ -108,27 +100,6 @@ const DAILY = [
     alt: 'Man holding a shaker after training',
   },
 ]
-
-type CompareCell = true | false | string
-
-const COMPARE: { label: string; gold?: boolean; cells: Record<CoachingPlanSlug, CompareCell> }[] = [
-  { label: 'Workout and diet', cells: { '3_months': true, '6_months': true, '12_months': true } },
-  { label: 'Check-ins and coach chat', cells: { '3_months': true, '6_months': true, '12_months': true } },
-  { label: 'Daily tracking and photos', cells: { '3_months': true, '6_months': true, '12_months': true } },
-  { label: 'Plan rewritten', cells: { '3_months': '14 days', '6_months': 'Weekly', '12_months': 'Weekly' } },
-  { label: 'Cardio plan', cells: { '3_months': false, '6_months': true, '12_months': true } },
-  { label: 'Supplement plan', cells: { '3_months': false, '6_months': true, '12_months': true } },
-  { label: 'Help if progress stalls', cells: { '3_months': false, '6_months': 'From day 90', '12_months': 'All year' } },
-  { label: 'Stamina work', cells: { '3_months': false, '6_months': false, '12_months': true } },
-]
-
-function CompareMark({ value, gold }: { value: CompareCell; gold?: boolean }) {
-  if (value === true) {
-    return <span className={gold ? 'lxo-tick is-gold' : 'lxo-tick'} role="img" aria-label="Included" />
-  }
-  if (value === false) return <span className="lxo-miss" aria-label="Not included">—</span>
-  return <span className="lxo-cell-note">{value}</span>
-}
 
 const PLAN_POINTS: Record<CoachingPlanSlug, { text: string; gold?: boolean }[]> = {
   '3_months': [
@@ -464,45 +435,6 @@ export function OfferLanding({ coaches }: { coaches: CoachResult[] }) {
                 </div>
               </article>
             ))}
-          </div>
-        </section>
-
-        <section className="lxo-included" id="system">
-          <h2 className="lxo-rise">What each plan includes.</h2>
-          <p className="lxo-rise lxo-compare-lead">
-            Basics on fat loss. More on fat loss + muscle. Everything on the year plan.
-          </p>
-          <div className="lxo-rise lxo-table-wrap">
-            <table className="lxo-compare">
-              <thead>
-                <tr>
-                  <th scope="col">
-                    <span className="lxo-sr">Feature</span>
-                  </th>
-                  {GOALS.map((item) => (
-                    <th key={item.slug} scope="col" className={item.slug === goal.slug ? 'is-on' : undefined}>
-                      <button type="button" onClick={() => pickPlan(item.slug)}>
-                        <span>{item.tier}</span>
-                        <strong>{item.short}</strong>
-                        <em>{COACHING_PLANS[item.slug].displayPrice}</em>
-                      </button>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {COMPARE.map((row) => (
-                  <tr key={row.label} className={row.gold ? 'is-gold' : undefined}>
-                    <th scope="row">{row.label}</th>
-                    {GOALS.map((item) => (
-                      <td key={item.slug} className={item.slug === goal.slug ? 'is-on' : undefined}>
-                        <CompareMark value={row.cells[item.slug]} gold={row.gold && item.slug === '12_months'} />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </section>
 
