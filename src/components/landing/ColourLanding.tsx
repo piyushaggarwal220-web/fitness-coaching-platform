@@ -1,15 +1,21 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { CheckoutFunnelLink } from '@/components/analytics/CheckoutFunnelLink'
+import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations'
+import { InstantFitnessQuiz } from '@/components/landing/InstantFitnessQuiz'
 import { PreviewAdCapture } from '@/components/studio/PreviewAdCapture'
 import type { CoachResult } from '@/components/landing/OfferLanding'
 import { PREVIEW3_AD_PATH, PREVIEW3_DROPOFF_SECTIONS } from '@/lib/analytics/ad-landing'
-import { FIRST_PLAN_TARGET } from '@/lib/payments/plan-pages'
 import { COACHING_PLANS, type CoachingPlanSlug } from '@/lib/payments/plans'
 
 const LANDING = PREVIEW3_AD_PATH
+
+const PORTRAIT: Record<CoachResult['key'], string> = {
+  piyush: '/landing/instant-coach-piyush.png',
+  rakshit: '/landing/instant-coach-rakshit.png',
+}
 
 type PlanCard = {
   slug: CoachingPlanSlug
@@ -17,6 +23,7 @@ type PlanCard = {
   length: string
   monthly: string
   tone: 'fat' | 'mid' | 'athletic'
+  tag?: string
   note?: string
   points: string[]
   extras?: { label: string; items: string[] }
@@ -28,85 +35,106 @@ const PLANS: PlanCard[] = [
     slug: '3_months',
     chip: 'Fat loss · 3 months',
     length: '90 days',
-    monthly: '₹200 a month',
+    monthly: '3 months · ≈ ₹200/mo',
     tone: 'fat',
     points: [
-      'Workout for your level, at a gym or at home',
-      'Diet built around the food you already eat',
-      'Check-in mid-week and every week',
-      'Coach chat in the app when you are stuck',
-      'Plan rewritten every 14 days',
+      'New workout + diet each week',
+      'Trackers unlocked',
+      'Coach chat unlocked',
+      'Journey unlocked',
+      'Weekly check-ins',
+      'Progress photos',
     ],
     cta: 'Get Fat loss',
   },
   {
     slug: '6_months',
-    chip: 'Fat loss + muscle gain · 6 months',
+    chip: 'Fat loss + muscle · 6 months',
     length: '6 months',
-    monthly: '₹167 a month',
+    monthly: '≈ ₹167/mo',
     tone: 'mid',
-    note: 'Everything in Fat loss, for 6 months, with muscle programmed in.',
+    tag: 'Most popular',
+    note: 'Everything in Fat loss, plus muscle programmed in for 6 months.',
     points: [
-      'Workout and diet, rewritten every week',
-      'A cardio plan on top of the training',
-      'A supplement plan',
-      'Extra help if progress stalls after 90 days',
-      'Check-ins and coach chat the whole way',
+      'New workout + diet each week',
+      'Trackers, coach chat, Journey unlocked',
+      'Weekly check-ins',
+      'Progress photos',
+      'Fat loss and muscle in one plan',
+      'Longer runway to keep results',
     ],
     extras: {
-      label: 'On this plan',
-      items: ['Cardio', 'Supplement guidance', 'Weekly plan updates'],
+      label: 'At no extra cost',
+      items: ['Muscle programming', 'Weekly plan updates'],
     },
-    cta: 'Get Fat loss + muscle gain',
+    cta: 'Get Fat loss + muscle',
   },
   {
     slug: '12_months',
     chip: 'Athletic body · 12 months',
     length: '12 months',
-    monthly: '₹142 a month',
+    monthly: '≈ ₹142/mo · lowest monthly cost',
     tone: 'athletic',
-    note: 'A full year. Fat loss, muscle, and stamina.',
+    tag: 'Best value',
+    note: 'Full year of coaching. Fat loss, muscle, and stamina in one plan.',
     points: [
-      'Everything included in fat loss + muscle gain',
-      'Stamina work',
-      'Updated every week',
+      'New workout + diet each week',
+      'Trackers, coach chat, Journey unlocked',
+      'Weekly check-ins all year',
+      'Progress photos + plan tweaks',
+      'Fat loss, muscle, and stamina',
+      'Longest runway to keep results',
     ],
     extras: {
-      label: 'Lowest monthly price',
-      items: ['Stamina work', 'Weekly plan updates', '₹142 a month, paid once'],
+      label: '12-month athletic runway',
+      items: ['Stamina programming', 'Lowest ₹/month'],
     },
     cta: 'Get Athletic body',
   },
 ]
 
+const FAIL = [
+  'Generic AI plans copy the same template for everyone',
+  'Old beliefs like “more sweat means more fat loss”',
+  'Random YouTube workouts with no weekly structure',
+  'Crash diets that crash your energy and adherence',
+  'Ignoring sleep, water, and recovery',
+  'Changing plans every week before results can show',
+]
+
+const WIN = [
+  'A new personal workout and diet every week',
+  'Trackers, coach chat, and Journey unlocked from day one',
+  'Science first: calories, protein, progressive overload, recovery',
+  'Weekly check-ins so the next plan matches real progress',
+  'Daily trackers so we can see what is actually happening',
+  'Built for your schedule, gym or home, veg or mixed diet',
+]
+
 const FAQ = [
   {
-    q: 'Can I train at home?',
-    a: 'Yes. The workout is written for home, a gym, or both, using the equipment you actually have. A gym membership is not required.',
-  },
-  {
-    q: 'Will the diet work with food I have at home?',
-    a: 'Yes. Meals are built around the food you already eat and the schedule you already keep. You do not need a separate grocery list of foods you have never cooked.',
-  },
-  {
-    q: 'What does coaching cost?',
-    a: 'Fat loss is ₹599 for 90 days, under ₹7 a day. Fat loss and muscle gain is ₹999 for 6 months, under ₹6 a day. The athletic plan is ₹1,699 for the year, under ₹5 a day. Each price is paid once.',
-  },
-  {
-    q: 'Is the plan personalised?',
-    a: 'Yes. After payment you answer the questions and send photos. Your coach writes the plan for your body, your goal, and your day. It is not a copied template.',
-  },
-  {
-    q: 'Why are the rates this low?',
-    a: 'This is online coaching in the app: a plan written for you, check-ins, and coach chat. It is not a trainer standing with you in person every session. That is why it starts at ₹599.',
-  },
-  {
     q: 'What happens after I pay?',
-    a: `${FIRST_PLAN_TARGET} You then get your diet and workout. Cardio and supplement guidance are on the 6-month and 12-month plans. Daily trackers start after that. A few form clips are free in the app. The full library is a separate purchase.`,
+    a: 'Razorpay confirms the payment. We email you the next steps with a secure account link. Create your login, finish a short assessment with progress photos, then your personal workout and diet lands in the app — usually within a few hours, always inside 48 hours. After that you use daily trackers, weekly check-ins, and coach chat.',
   },
   {
-    q: 'What is the refund policy?',
-    a: 'Sales are final once payment is captured, except where the Terms say otherwise.',
+    q: 'How do you make sure I get what I paid for?',
+    a: 'Your purchase is recorded against your email. If onboarding is complete and we do not deliver your first plan within 48 hours, you get a full refund if you request it within 7 days. The plan sits in the app under My Plan, and we email you when it is ready.',
+  },
+  {
+    q: 'What exactly is included?',
+    a: 'A new personal workout and diet each week, plus daily trackers, coach chat, and Journey already unlocked. Weekly check-ins and progress photos sit on top of that. One price. No weekly phone calls — support is inside the app.',
+  },
+  {
+    q: 'Is this real 1-to-1 coaching?',
+    a: 'Yes. Your plan, check-ins, and progress are handled as your case — with personalised updates and chat support inside the app.',
+  },
+  {
+    q: 'Gym or home? Beginners? Vegetarians?',
+    a: 'All welcome. Plans are built for gym, home, or mixed setups, matched to your experience level, and diet is customised for vegetarian, vegan, and allergy needs.',
+  },
+  {
+    q: 'What if I want a refund?',
+    a: 'Full refund if onboarding is complete and we do not deliver your first plan within 48 hours, requested within 7 days of purchase. After plan delivery, purchases are generally non-refundable. Details are in the Terms.',
   },
 ]
 
@@ -134,7 +162,43 @@ function PlanLink({
   )
 }
 
+function Stamp() {
+  return (
+    <div className="lx3-stamp" aria-label="Guaranteed results, moneyback if none">
+      <span>
+        <b>Guaranteed</b>
+        <strong>Results</strong>
+        <b>Moneyback</b>
+      </span>
+    </div>
+  )
+}
+
 export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
+  const [sticky, setSticky] = useState(false)
+  const athletic = PLANS[2]
+
+  useEffect(() => {
+    const onScroll = () => {
+      const plans = document.getElementById('plans')
+      const footer = document.getElementById('close')
+      let show = window.scrollY > 420
+      if (plans) {
+        const box = plans.getBoundingClientRect()
+        if (box.top < window.innerHeight * 0.2 && box.bottom > 80) show = true
+      }
+      if (footer && footer.getBoundingClientRect().top < window.innerHeight - 40) show = false
+      setSticky(show)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [])
+
   return (
     <div className="lx3">
       <PreviewAdCapture
@@ -151,23 +215,26 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
         <div className="lx3-hero-grid">
           <div>
             <h1 id="lx3-title">
-              Personalised fitness plans, <span>within 1–2 hours.</span>
+              Personalised fitness plans, <span>within 48 hours.</span>
             </h1>
             <div className="lx3-offers" aria-label="Choose a plan">
               {PLANS.map((plan) => (
                 <PlanLink key={plan.slug} plan={plan} className={`lx3-offer lx3-offer-${plan.tone}`}>
-                  <span>{plan.chip}</span>
+                  <span>
+                    {plan.tag === 'Most popular' ? <em>Most popular</em> : null}
+                    {plan.chip}
+                  </span>
                   <strong>{COACHING_PLANS[plan.slug].displayPrice}</strong>
                 </PlanLink>
               ))}
             </div>
             <p className="lx3-lede">
-              {FIRST_PLAN_TARGET} Coach-made workout and diet from ₹599, paid once. Fat loss is rewritten every 14 days. The 6- and 12-month plans are rewritten every week, and they include cardio and supplement guidance.
+              Coach-made workout and diet around your goals, from ₹599. You get a <strong>new plan every week</strong>, and trackers, coach chat, and Journey are already unlocked from day one — not add-ons later.
             </p>
             <ul className="lx3-trust">
-              <li>Gym, home, or both</li>
-              <li>Diet around your food</li>
-              <li>Check-ins in the app</li>
+              <li>New weekly plans</li>
+              <li>Trackers, coach chat, Journey unlocked</li>
+              <li>Beginner friendly</li>
             </ul>
           </div>
 
@@ -182,7 +249,7 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
                     rel="noopener noreferrer"
                     aria-label={`${coach.name} on Instagram ${coach.handle}`}
                   >
-                    <img src={coach.portrait} alt={`${coach.name}, LURVOX coach`} width={400} height={533} />
+                    <img src={PORTRAIT[coach.key]} alt={`${coach.name}, LURVOX coach`} width={400} height={533} />
                   </a>
                   <figcaption>
                     <strong>{coach.name.split(' ')[0]}</strong>
@@ -194,8 +261,14 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
               ))}
             </div>
             <p className="lx3-hint">Tap a photo to open Instagram</p>
-            <p className="lx3-pill">First plan within 1–2 hours after onboarding</p>
+            <div className="lx3-people">
+              <p>Transformed over 7000 people</p>
+              <span>First plan within 48 hours, or a refund within 7 days</span>
+            </div>
           </div>
+        </div>
+        <div className="lx3-stamp-row">
+          <Stamp />
         </div>
       </section>
 
@@ -203,17 +276,16 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
         <p className="lx3-eyebrow">Choose your plan</p>
         <h2 id="lx3-plans-title">Simple plans. Real coaching.</h2>
         <p className="lx3-plans-lede">
-          Paid once. Fat loss is rewritten every 14 days. The longer plans are rewritten every week.
+          The price is for a <strong>new weekly plan</strong> plus trackers, coach chat, and Journey already unlocked — not a one-time PDF.
         </p>
         <div className="lx3-stack">
           {PLANS.map((plan) => (
             <article key={plan.slug} className={`lx3-card lx3-card-${plan.tone}`}>
+              {plan.tag ? <p className={`lx3-tag${plan.tone === 'athletic' ? ' lx3-tag-best' : ''}`}>{plan.tag}</p> : null}
               <span className="lx3-dur">{plan.length}</span>
-              <h3>{COACHING_PLANS[plan.slug].name}</h3>
+              <h3>{plan.tone === 'mid' ? 'Fat loss + muscle' : COACHING_PLANS[plan.slug].name}</h3>
               <p className="lx3-price">{COACHING_PLANS[plan.slug].displayPrice}</p>
-              <p className="lx3-meta">
-                {plan.monthly} · paid once
-              </p>
+              <p className="lx3-meta">{plan.monthly}</p>
               {plan.note ? <p className={`lx3-note${plan.tone === 'athletic' ? ' lx3-note-gold' : ''}`}>{plan.note}</p> : null}
               <ul>
                 {plan.points.map((point) => (
@@ -244,6 +316,32 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
         </div>
       </section>
 
+      <section className="lx3-truth" id="truth" aria-labelledby="lx3-truth-title">
+        <p className="lx3-eyebrow lx3-eyebrow-orange">Truth check</p>
+        <h2 id="lx3-truth-title">Why we give results, but you fail</h2>
+        <p className="lx3-plans-lede">
+          Most people fail on generic templates and gym myths. We build customised plans on science and coach principles.
+        </p>
+        <div className="lx3-truth-grid">
+          <article className="lx3-truth-fail">
+            <p>Why people fail</p>
+            <ul>
+              {FAIL.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
+          <article className="lx3-truth-win">
+            <p>Why our plans work</p>
+            <ul>
+              {WIN.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
+        </div>
+      </section>
+
       <section className="lx3-steps" id="steps" aria-labelledby="lx3-steps-title">
         <p className="lx3-eyebrow lx3-eyebrow-orange">How it works</p>
         <h2 id="lx3-steps-title">Your plan in 3 steps</h2>
@@ -252,42 +350,50 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
             <span>01</span>
             <div>
               <strong>Pay once</strong>
-              <p>Checkout with Razorpay. UPI, cards, or netbanking.</p>
+              <p>Checkout with Razorpay. UPI, cards, or netbanking. You get an email with every next step.</p>
             </div>
           </li>
           <li>
             <span>02</span>
             <div>
               <strong>Create your account</strong>
-              <p>Finish the onboarding form and send front, side, and back photos. Photos are required unless the form marks them optional.</p>
+              <p>We email the next steps. Finish the short assessment and photos in the app.</p>
             </div>
           </li>
           <li>
             <span>03</span>
             <div>
               <strong>Receive your plan</strong>
-              <p>
-                {FIRST_PLAN_TARGET} Fat loss is rewritten every 14 days. The 6- and 12-month plans are rewritten every week.
-              </p>
+              <p>First workout and diet in 24–48 hours, then a new plan each week. Trackers, coach chat, and Journey are already unlocked. If the first plan does not arrive, you get a refund.</p>
             </div>
           </li>
         </ol>
       </section>
 
+      <div id="changes">
+        <AnimatedTransformations
+          eyebrow="Expected changes"
+          heading="Within 30 days of consistent work"
+          lede="Skinny to bulky. Fat to shredded. Soft to toned. Men and women."
+        />
+      </div>
+
+      <div id="quiz" className="lx3-quiz">
+        <InstantFitnessQuiz offer="coaching" />
+      </div>
+
       <section className="lx3-faq" id="faq" aria-labelledby="lx3-faq-title">
         <p className="lx3-eyebrow lx3-eyebrow-orange">FAQ</p>
         <h2 id="lx3-faq-title">Questions before you start</h2>
+        <p className="lx3-plans-lede">Straight answers on coaching, what is included, and how the system works — before you pick a plan.</p>
         <div className="lx3-faq-list">
           {FAQ.map((item) => (
             <details key={item.q}>
               <summary>{item.q}</summary>
               <p>
-                {item.a}
-                {item.q === 'What is the refund policy?' ? (
-                  <>
-                    {' '}
-                    <Link href="/terms#payments-refunds-guarantees">Terms</Link>
-                  </>
+                {item.a}{' '}
+                {item.q === 'What if I want a refund?' ? (
+                  <Link href="/terms#payments-refunds-guarantees">Terms</Link>
                 ) : null}
               </p>
             </details>
@@ -297,21 +403,47 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
 
       <section className="lx3-close" id="close" aria-label="Choose your plan and start">
         <p className="lx3-eyebrow lx3-eyebrow-orange">Ready to start</p>
-        <h2>Start with your goal.</h2>
+        <h2>Start with your goal. We build everything around it.</h2>
         <p>
-          Fat loss is 90 days · ₹599. Fat loss + muscle gain is 6 months · ₹999. Athletic body is 12 months · ₹1,699.
+          Goal first. Time is the runway. <strong>Fat loss</strong> is 90 days · <strong>₹599</strong>. <strong>Fat loss + muscle gain</strong> is 6 months · <strong>₹999</strong>. <strong>Athletic body</strong> is 12 months · <strong>₹1,699</strong> — fat loss, muscle, and stamina, with coach chat and weekly check-ins all year.
         </p>
+        <a className="lx3-jump" href="#plans">
+          See plans — ₹599 · ₹999 · ₹1,699
+        </a>
+        <div className="lx3-stamp-row">
+          <Stamp />
+        </div>
+        <p className="lx3-stamp-note">Guaranteed results · moneyback if none</p>
+        <div className="lx3-badges" aria-label="Secure checkout">
+          <span>Razorpay Secure</span>
+          <span>UPI</span>
+          <span>Cards</span>
+          <span>Netbanking</span>
+        </div>
         <div className="lx3-close-actions">
           {PLANS.map((plan) => (
             <PlanLink key={plan.slug} plan={plan} className={`lx3-close-btn lx3-close-${plan.tone}`}>
-              {COACHING_PLANS[plan.slug].name} · {COACHING_PLANS[plan.slug].displayPrice}
+              {plan.tone === 'mid' ? 'Fat loss + muscle' : COACHING_PLANS[plan.slug].name} · {COACHING_PLANS[plan.slug].displayPrice}
             </PlanLink>
           ))}
         </div>
         <p className="lx3-terms">
-          Service rules and refunds are in the <Link href="/terms#payments-refunds-guarantees">Terms</Link>.
+          Service rules, refunds, and any guarantees are only in the <Link href="/terms#payments-refunds-guarantees">Terms</Link>.
+        </p>
+        <p className="lx3-alt">
+          Still deciding? <a href="#quiz">Take the fitness quiz</a>
         </p>
       </section>
+
+      <div className={`lx3-sticky${sticky ? ' is-on' : ''}`}>
+        <div>
+          <strong>Athletic body</strong>
+          <span>12 months · ₹1,699 · lowest monthly cost</span>
+        </div>
+        <PlanLink plan={athletic} className="lx3-sticky-cta">
+          Get Athletic body
+        </PlanLink>
+      </div>
     </div>
   )
 }

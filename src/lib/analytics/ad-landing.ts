@@ -40,6 +40,9 @@ export const PREVIEW3_DROPOFF_SECTIONS = [
   { id: 'steps', key: 'p3_steps', index: 2, label: 'How it works' },
   { id: 'faq', key: 'p3_faq', index: 3, label: 'Questions' },
   { id: 'close', key: 'p3_close', index: 4, label: 'Closing offer' },
+  { id: 'truth', key: 'p3_truth', index: 5, label: 'Truth check' },
+  { id: 'changes', key: 'p3_changes', index: 6, label: 'Expected changes' },
+  { id: 'quiz', key: 'p3_quiz', index: 7, label: 'Fitness quiz' },
 ] as const
 
 /** Only a known preview ad page may set the purchase source URL. Anything else stays on /checkout. */

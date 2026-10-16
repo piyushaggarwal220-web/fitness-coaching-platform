@@ -7,6 +7,7 @@ import styles from './AnimatedTransformations.module.css'
 type Props = {
   /** Visual tone for Instant Plan dark page vs checkout. */
   variant?: 'instant' | 'checkout'
+  eyebrow?: string
   heading?: string
   lede?: string
 }
@@ -74,6 +75,7 @@ function TransformationCard({
 
 export function AnimatedTransformations({
   variant = 'instant',
+  eyebrow = 'Transformations',
   heading = 'Expected changes within 30 days',
   lede = 'Skinny to bulky. Fat to shredded. Weak to strong. Men and women.',
 }: Props) {
@@ -93,7 +95,7 @@ export function AnimatedTransformations({
       aria-label="Body transformations within 30 days"
     >
       <div className={styles.head}>
-        <p className={styles.eyebrow}>Transformations</p>
+        <p className={styles.eyebrow}>{eyebrow}</p>
         <h2 className={styles.title}>{heading}</h2>
         <p className={styles.lede}>{lede}</p>
       </div>

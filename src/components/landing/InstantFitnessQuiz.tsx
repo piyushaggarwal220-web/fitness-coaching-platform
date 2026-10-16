@@ -133,7 +133,8 @@ const ACCENTS = [
   styles.accentGold,
 ]
 
-export function InstantFitnessQuiz() {
+export function InstantFitnessQuiz({ offer = 'digital' }: { offer?: 'digital' | 'coaching' } = {}) {
+  const coaching = offer === 'coaching'
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [done, setDone] = useState(false)
@@ -258,29 +259,45 @@ export function InstantFitnessQuiz() {
           <p className={styles.resultBlurb}>
             {strong
               ? 'You already know a lot. We still build workout + diet around your body, schedule, and food — so you execute instead of researching.'
-              : 'Most people fail on generic tips and gym myths. We take care of the science: personal diet, workout, sleep, and cardio guidance after a short questionnaire.'}
+              : coaching
+                ? 'Most people fail on generic tips and gym myths. A coach writes the workout and diet, then check-ins update the next plan.'
+                : 'Most people fail on generic tips and gym myths. We take care of the science: personal diet, workout, sleep, and cardio guidance after a short questionnaire.'}
           </p>
           <ul className={styles.resultPoints}>
-            <li>
-              <Check size={15} aria-hidden /> You do not need to memorise every rule
-            </li>
-            <li>
-              <Check size={15} aria-hidden /> Coach-made plan from your answers
-            </li>
-            <li>
-              <Check size={15} aria-hidden /> Delivered to app + email in 1–2 hours
-            </li>
-            <li>
-              <Check size={15} aria-hidden /> Complete ₹99 — sleep, cardio, water &amp; supplement guidance free
-            </li>
+            {(coaching
+              ? [
+                  'You do not need to memorise every rule',
+                  'New personal workout and diet each week',
+                  'Trackers, coach chat, and Journey already unlocked',
+                  'Weekly check-ins so the next plan matches real progress',
+                ]
+              : [
+                  'You do not need to memorise every rule',
+                  'Coach-made plan from your answers',
+                  'Delivered to app + email in 1–2 hours',
+                  'Complete ₹99 — sleep, cardio, water & supplement guidance free',
+                ]
+            ).map((point) => (
+              <li key={point}>
+                <Check size={15} aria-hidden /> {point}
+              </li>
+            ))}
           </ul>
           <div className={styles.resultActions}>
-            <Link href="/checkout?plan=digital_complete" className={styles.primaryCta}>
-              Get Complete Guidance · ₹99
-            </Link>
-            <a href="#plans" className={styles.secondaryCta}>
-              See all plans
-            </a>
+            {coaching ? (
+              <a href="#plans" className={styles.primaryCta}>
+                See plans — from ₹599
+              </a>
+            ) : (
+              <Link href="/checkout?plan=digital_complete" className={styles.primaryCta}>
+                Get Complete Guidance · ₹99
+              </Link>
+            )}
+            {coaching ? null : (
+              <a href="#plans" className={styles.secondaryCta}>
+                See all plans
+              </a>
+            )}
             <button type="button" className={styles.restart} onClick={restart}>
               Retake quiz
             </button>
