@@ -6,6 +6,8 @@ import { brandTitle } from '@/lib/brand'
 import { createClient } from '@/lib/supabase/client'
 import { colors, spacing, radius } from '@/lib/design-tokens'
 import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
+import { previewAdLandingPath } from '@/lib/analytics/ad-landing'
+import { checkoutThemeForLanding } from '@/lib/payments/checkout-theme'
 
 const marketingBaseUrl = resolveMarketingBaseUrl()
 
@@ -15,6 +17,12 @@ function ConfirmEmailInner() {
   const verificationId = searchParams.get('vid')?.trim() ?? ''
   const plan = searchParams.get('plan')?.trim() ?? '3_months'
   const code = searchParams.get('code')?.trim() ?? ''
+  const landing = previewAdLandingPath(searchParams.get('landing'))
+  const theme = checkoutThemeForLanding(landing, {
+    manrope: 'Manrope, system-ui, sans-serif',
+    inter: 'Inter, system-ui, sans-serif',
+  })
+  const landingParam = landing ? `&landing=${encodeURIComponent(landing)}` : ''
   const [message, setMessage] = useState('Confirming your email…')
   const [failed, setFailed] = useState(false)
 
@@ -69,7 +77,7 @@ function ConfirmEmailInner() {
         )
         const codeParam = code ? `&code=${encodeURIComponent(code)}` : ''
         router.replace(
-          `/checkout?plan=${encodeURIComponent(plan)}&vid=${encodeURIComponent(verificationId)}&emailVerified=1${codeParam}`
+          `/checkout?plan=${encodeURIComponent(plan)}&vid=${encodeURIComponent(verificationId)}&emailVerified=1${codeParam}${landingParam}`
         )
       }
     }
@@ -78,22 +86,22 @@ function ConfirmEmailInner() {
     return () => {
       cancelled = true
     }
-  }, [verificationId, plan, code, router])
+  }, [verificationId, plan, code, router, landingParam])
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <a href={marketingBaseUrl} style={styles.backLink}>
+    <div style={{ ...styles.page, ...theme.page }}>
+      <div style={{ ...styles.card, ...theme.card }}>
+        <a href={marketingBaseUrl} style={{ ...styles.backLink, ...theme.backLink }}>
           ← Back to home
         </a>
-        <h1 style={styles.title}>{brandTitle(failed ? 'Verification needed' : 'Verifying email')}</h1>
-        <p style={styles.subtitle}>{message}</p>
+        <h1 style={{ ...styles.title, ...theme.title }}>{brandTitle(failed ? 'Verification needed' : 'Verifying email')}</h1>
+        <p style={{ ...styles.subtitle, ...theme.subtitle }}>{message}</p>
         {failed && (
           <a
             href={`/checkout?plan=${encodeURIComponent(plan)}${
               code ? `&code=${encodeURIComponent(code)}` : ''
-            }`}
-            style={styles.link}
+            }${landingParam}`}
+            style={{ ...styles.link, ...theme.inlineLink }}
           >
             Back to checkout
           </a>

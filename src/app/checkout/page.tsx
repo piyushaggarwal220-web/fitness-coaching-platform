@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
-import { Manrope } from 'next/font/google';
+import { Inter, Manrope } from 'next/font/google';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
@@ -23,7 +23,8 @@ import {
  readMetaBrowserIds,
 } from '@/lib/analytics/meta-attribution';
 import { trackFunnelStep } from '@/lib/analytics/funnel';
-import { previewAdFunnelSource, previewAdLandingPath } from '@/lib/analytics/ad-landing';
+import { PREVIEW_AD_PATH, previewAdFunnelSource, previewAdLandingPath } from '@/lib/analytics/ad-landing';
+import { checkoutThemeForLanding } from '@/lib/payments/checkout-theme';
 import {
  formatInrFromPaise,
  firstTimerSalePaise,
@@ -55,6 +56,11 @@ const marketingBaseUrl = resolveMarketingBaseUrl();
 const checkoutFont = Manrope({
  subsets: ['latin'],
  weight: ['400', '500', '600', '700', '800'],
+ display: 'swap',
+});
+const studioFont = Inter({
+ subsets: ['latin'],
+ weight: ['400', '500', '600', '700'],
  display: 'swap',
 });
 
@@ -94,6 +100,13 @@ declare global {
 function CheckoutForm() {
  const searchParams = useSearchParams();
  const adLandingPath = previewAdLandingPath(searchParams.get('landing'));
+ const intakeTheme = checkoutThemeForLanding(adLandingPath, {
+ manrope: checkoutFont.style.fontFamily,
+ inter: studioFont.style.fontFamily,
+ });
+ const fontClass = adLandingPath === PREVIEW_AD_PATH
+ ? `${checkoutFont.className} ${studioFont.className}`
+ : checkoutFont.className;
  const adFunnel = adLandingPath
  ? { source: previewAdFunnelSource(adLandingPath), path: adLandingPath }
  : {};
@@ -158,13 +171,26 @@ function CheckoutForm() {
  useEffect(() => {
  const previousBackground = document.body.style.backgroundColor
  const previousColor = document.body.style.color
- document.body.style.backgroundColor = '#f4efe6'
- document.body.style.color = '#1c1915'
+ const previousImage = document.body.style.backgroundImage
+ const themeMeta = document.querySelector('meta[name="theme-color"]')
+ const previousTheme = themeMeta?.getAttribute('content') ?? ''
+ const pageColor = String(intakeTheme.page.backgroundColor ?? '')
+ document.body.style.backgroundColor = pageColor
+ document.body.style.color = String(intakeTheme.page.color ?? '')
+ document.body.style.backgroundImage = String(intakeTheme.page.backgroundImage ?? 'none')
+ if (themeMeta && pageColor) themeMeta.setAttribute('content', pageColor)
  return () => {
  document.body.style.backgroundColor = previousBackground
  document.body.style.color = previousColor
+ document.body.style.backgroundImage = previousImage
+ if (themeMeta) themeMeta.setAttribute('content', previousTheme)
  }
- }, [])
+ }, [
+ adLandingPath,
+ intakeTheme.page.backgroundColor,
+ intakeTheme.page.backgroundImage,
+ intakeTheme.page.color,
+ ])
 
  useEffect(() => {
  let cancelled = false
@@ -557,7 +583,7 @@ function CheckoutForm() {
  referralCode.trim()
  ? `&code=${encodeURIComponent(referralCode.trim())}`
  : ''
- }`;
+ }${adLandingPath ? `&landing=${encodeURIComponent(adLandingPath)}` : ''}`;
  const { error: otpError } = await supabase.auth.signInWithOtp({
  email: email.trim().toLowerCase(),
  options: {
@@ -854,12 +880,15 @@ function CheckoutForm() {
 
  if (paymentConfirmed) {
  return (
- <div style={styles.page}>
- <div style={styles.card}>
- <Link href={marketingBaseUrl} style={styles.backLink}>{'<- Back to home'}</Link>
- <p style={styles.brandMark}>{BRAND_NAME}</p>
- <h1 style={styles.title}>Payment received</h1>
- <p style={styles.subtitle}>
+ <div className={fontClass} style={{ ...styles.page, ...intakeTheme.page }}>
+ {adLandingPath === PREVIEW_AD_PATH ? (
+ <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&display=swap" />
+ ) : null}
+ <div style={{ ...styles.card, ...intakeTheme.card }}>
+ <Link href={marketingBaseUrl} style={{ ...styles.backLink, ...intakeTheme.backLink }}>{'<- Back to home'}</Link>
+ <p style={{ ...styles.brandMark, ...intakeTheme.brandMark }}>{BRAND_NAME}</p>
+ <h1 style={{ ...styles.title, ...intakeTheme.title }}>Payment received</h1>
+ <p style={{ ...styles.subtitle, ...intakeTheme.subtitle }}>
  {plan.isDigital
  ? 'Next: set your password on the following screen. Then a short questionnaire. Your plan arrives within 1–2 hours. We email the same steps if you leave.'
  : 'Next: set your password on the following screen. Then a short setup with photos. Your plan arrives within 1–2 hours. We email the same steps if you leave.'}
@@ -871,11 +900,11 @@ function CheckoutForm() {
 
  if (demoHandoff) {
  return (
- <div style={styles.page}>
- <div style={styles.card}>
- <p style={styles.brandMark}>{BRAND_NAME}</p>
- <h1 style={styles.title}>Opening checkout</h1>
- <p style={styles.subtitle}>Leaving the demo so you can pay with your own details.</p>
+ <div className={fontClass} style={{ ...styles.page, ...intakeTheme.page }}>
+ <div style={{ ...styles.card, ...intakeTheme.card }}>
+ <p style={{ ...styles.brandMark, ...intakeTheme.brandMark }}>{BRAND_NAME}</p>
+ <h1 style={{ ...styles.title, ...intakeTheme.title }}>Opening checkout</h1>
+ <p style={{ ...styles.subtitle, ...intakeTheme.subtitle }}>Leaving the demo so you can pay with your own details.</p>
  </div>
  </div>
  )
@@ -892,16 +921,23 @@ function CheckoutForm() {
  ? formatInrFromPaise(firstTimerSavingsPaise)
  : null);
 
- const dig = (base: CSSProperties, key?: keyof typeof intakeTheme): CSSProperties =>
- key ? { ...base, ...intakeTheme[key] } : base
+ const dig = (base: CSSProperties, key?: string): CSSProperties => {
+ if (!key) return base
+ const overlay = intakeTheme[key as keyof typeof intakeTheme]
+ return overlay ? { ...base, ...overlay } : base
+ }
 
  return (
  <div
+ className={fontClass}
  style={{
  ...styles.page,
  ...intakeTheme.page,
  }}
  >
+ {adLandingPath === PREVIEW_AD_PATH ? (
+ <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&display=swap" />
+ ) : null}
  <div style={{ ...styles.card, ...intakeTheme.card }}>
  <Link
  href={isDigitalCheckout ? '/customised-plan' : marketingBaseUrl}
@@ -941,6 +977,7 @@ function CheckoutForm() {
  key={step}
  style={{
  ...styles.screenDot,
+ ...intakeTheme.screenDot,
  ...(checkoutScreen === step ? styles.screenDotActive : null),
  ...(checkoutScreen === step ? intakeTheme.dotActive : null),
  }}
@@ -1072,7 +1109,7 @@ function CheckoutForm() {
  </div>
  </section>
 
- <p style={styles.leagueNote}>
+ <p style={{ ...styles.leagueNote, color: intakeTheme.paySecureNote.color }}>
  {isTrialCheckout
  ? 'Once per person. Includes coach chat, personal plan, trackers, and check-ins.'
  : isDigitalCheckout
@@ -1178,196 +1215,6 @@ export default function CheckoutPage() {
  <CheckoutForm />
  </Suspense>
  );
-}
-
-const intakeTheme: Record<string, CSSProperties> = {
-  page: {
-    backgroundColor: '#f4efe6',
-    backgroundImage: 'none',
-    fontFamily: checkoutFont.style.fontFamily,
-    color: '#1c1915',
-  },
-  card: {
-    backgroundColor: '#fffaf3',
-    border: '1px solid rgba(28, 25, 21, 0.12)',
-    boxShadow: 'none',
-    overflowX: 'hidden',
-    minWidth: 0,
-  },
-  backLink: {
-    color: '#4e4942',
-  },
-  brandMark: {
-    color: '#1e4d3d',
-    textAlign: 'center',
-  },
-  eyebrow: {
-    margin: '0 auto 8px',
-    display: 'block',
-    width: 'fit-content',
-    padding: 0,
-    borderRadius: 0,
-    backgroundColor: 'transparent',
-    color: '#1e4d3d',
-    fontSize: 12,
-    fontWeight: 800,
-    letterSpacing: '0.08em',
-    textAlign: 'center',
-  },
-  title: {
-    color: '#1c1915',
-    textAlign: 'center',
-    letterSpacing: 0,
-  },
-  subtitle: {
-    color: '#4e4942',
-    textAlign: 'center',
-  },
-  dotActive: {
-    backgroundColor: '#1e4d3d',
-  },
-  trustStrip: {
-    backgroundColor: '#f4efe6',
-    border: '1px solid rgba(28, 25, 21, 0.12)',
-  },
-  trustBadge: {
-    backgroundColor: '#fffaf3',
-    border: '1px solid rgba(30, 77, 61, 0.28)',
-    color: '#1c1915',
-  },
-  trustLine: {
-    color: '#4e4942',
-  },
-  planChip: {
-    backgroundColor: '#fffaf3',
-    border: '1px solid rgba(28, 25, 21, 0.12)',
-    color: '#1c1915',
-  },
-  planChipSelected: {
-    backgroundColor: '#fffaf3',
-    border: '2px solid #1e4d3d',
-    borderColor: '#1e4d3d',
-    boxShadow: 'none',
-  },
-  planChipName: {
-    color: '#1c1915',
-  },
-  planChipDuration: {
-    color: '#6d675e',
-  },
-  planChipPrice: {
-    color: '#1c1915',
-  },
-  planChipPopular: {
-    fontSize: 11,
-    fontWeight: 700,
-    color: '#1e4d3d',
-    textDecoration: 'none',
-  },
-  planChipBest: {
-    fontSize: 11,
-    fontWeight: 700,
-    color: '#1e4d3d',
-    textDecoration: 'none',
-  },
-  orderSummary: {
-    backgroundColor: '#f4efe6',
-    border: '1px solid rgba(28, 25, 21, 0.12)',
-  },
-  orderPlanName: {
-    color: '#1c1915',
-  },
-  orderPlanMeta: {
-    color: '#4e4942',
-  },
-  orderSummaryPrice: {
-    color: '#1c1915',
-  },
-  sectionLabel: {
-    color: '#1e4d3d',
-    textAlign: 'center',
-  },
-  label: {
-    color: '#1c1915',
-  },
-  input: {
-    backgroundColor: '#fffaf3',
-    border: '1px solid rgba(28, 25, 21, 0.16)',
-    color: '#1c1915',
-    borderRadius: 12,
-    colorScheme: 'light',
-  },
-  payBtn: {
-    backgroundColor: '#1e4d3d',
-    color: '#f4efe6',
-    borderRadius: 12,
-    fontWeight: 600,
-  },
-  paySecureNote: {
-    color: '#6d675e',
-  },
-  stickyPayBar: {
-    backgroundColor: 'rgba(244, 239, 230, 0.96)',
-    borderTop: '1px solid rgba(28, 25, 21, 0.12)',
-  },
-  stickyPayLabel: {
-    color: '#6d675e',
-  },
-  stickyPayAmount: {
-    color: '#1c1915',
-  },
-  stickyPayBtn: {
-    backgroundColor: '#1e4d3d',
-    color: '#f4efe6',
-    borderRadius: 12,
-    fontWeight: 600,
-  },
-  stickyPayNote: {
-    color: '#6d675e',
-  },
-  secure: {
-    color: '#6d675e',
-  },
-  inlineLink: {
-    color: '#1e4d3d',
-  },
-  otpBox: {
-    backgroundColor: '#f4efe6',
-    border: '1px solid rgba(28, 25, 21, 0.12)',
-  },
-  otpTitle: {
-    color: '#1c1915',
-  },
-  otpHint: {
-    color: '#4e4942',
-  },
-  otpInput: {
-    backgroundColor: '#fffaf3',
-    border: '1px solid rgba(28, 25, 21, 0.16)',
-    color: '#1c1915',
-    borderRadius: 12,
-    colorScheme: 'light',
-  },
-  otpBtn: {
-    backgroundColor: '#1e4d3d',
-    color: '#f4efe6',
-    borderRadius: 12,
-  },
-  otpBtnSecondary: {
-    border: '1px solid rgba(28, 25, 21, 0.16)',
-    color: '#1c1915',
-    backgroundColor: '#fffaf3',
-    borderRadius: 12,
-  },
-  policyText: {
-    color: '#4e4942',
-  },
-  honestNote: {
-    margin: '12px 0 0',
-    fontSize: 13,
-    lineHeight: 1.45,
-    color: '#4e4942',
-  },
 }
 
 const styles: Record<string, CSSProperties> = {
