@@ -1,5 +1,11 @@
 export type CoachingPlanSlug = '3_months' | '6_months' | '12_months'
 
+/**
+ * Preview offer: one product, two lengths. Both unlock the full coaching catalog.
+ * Not part of the live ₹599 / ₹999 / ₹1,699 storefront.
+ */
+export type DurationOfferSlug = 'offer_1_month' | 'offer_3_months'
+
 /** Historical slugs kept for existing purchases / entitlements only. */
 export type LegacyCoachingPlanSlug = '1_month' | '1_week_trial'
 
@@ -7,7 +13,7 @@ export type LegacyCoachingPlanSlug = '1_month' | '1_week_trial'
 export type DigitalPlanSlug = 'digital_workout' | 'digital_diet' | 'digital_complete'
 
 export type AnyCoachingPlanSlug = CoachingPlanSlug | LegacyCoachingPlanSlug
-export type AnyProductPlanSlug = AnyCoachingPlanSlug | DigitalPlanSlug
+export type AnyProductPlanSlug = AnyCoachingPlanSlug | DigitalPlanSlug | DurationOfferSlug
 
 export type DigitalPlanSections = 'workout' | 'diet' | 'both'
 
@@ -151,6 +157,36 @@ export const LEGACY_COACHING_PLANS: Record<LegacyCoachingPlanSlug, CoachingPlan>
   },
 }
 
+/** Preview 4 / 5 / 6 only. Same inclusions; access is 1 month or 3 months. */
+export const DURATION_OFFER_PLANS: Record<DurationOfferSlug, CoachingPlan> = {
+  offer_1_month: {
+    slug: 'offer_1_month',
+    name: '1 month',
+    displayPrice: '₹249',
+    amountPaise: 24900,
+    durationMonths: 1,
+    saveLabel: 'Full access',
+  },
+  offer_3_months: {
+    slug: 'offer_3_months',
+    name: '3 months',
+    displayPrice: '₹499',
+    amountPaise: 49900,
+    durationMonths: 3,
+    saveLabel: 'Full access',
+    best: true,
+  },
+}
+
+export const DURATION_PLAN_LIST = [
+  DURATION_OFFER_PLANS.offer_1_month,
+  DURATION_OFFER_PLANS.offer_3_months,
+]
+
+export function isDurationOfferSlug(slug: string | null | undefined): slug is DurationOfferSlug {
+  return Boolean(slug && slug in DURATION_OFFER_PLANS)
+}
+
 export const COACHING_PLAN_LIST = Object.values(COACHING_PLANS)
 /** Display order: singles on the sides, Complete featured in the centre. */
 export const DIGITAL_PLAN_LIST = [
@@ -171,15 +207,17 @@ export function getDigitalPlan(slug: string | null | undefined): CoachingPlan | 
 export function getCoachingPlan(slug: string | null | undefined): CoachingPlan | null {
   if (!slug) return null
   if (slug in COACHING_PLANS) return COACHING_PLANS[slug as CoachingPlanSlug]
+  if (slug in DURATION_OFFER_PLANS) return DURATION_OFFER_PLANS[slug as DurationOfferSlug]
   if (slug in DIGITAL_PLANS) return DIGITAL_PLANS[slug as DigitalPlanSlug]
   if (slug in LEGACY_COACHING_PLANS) return LEGACY_COACHING_PLANS[slug as LegacyCoachingPlanSlug]
   return null
 }
 
-/** Purchasable plans — coaching 3/6/12 + digital customised SKUs. */
+/** Purchasable plans — live coaching 3/6/12, preview duration offer, and digital SKUs. */
 export function getPurchasablePlan(slug: string | null | undefined): CoachingPlan | null {
   if (!slug) return null
   if (slug in COACHING_PLANS) return COACHING_PLANS[slug as CoachingPlanSlug]
+  if (slug in DURATION_OFFER_PLANS) return DURATION_OFFER_PLANS[slug as DurationOfferSlug]
   if (slug in DIGITAL_PLANS) return DIGITAL_PLANS[slug as DigitalPlanSlug]
   return null
 }
@@ -189,7 +227,7 @@ export function isValidPlanSlug(slug: string): slug is CoachingPlanSlug {
 }
 
 export function isValidPurchasableSlug(slug: string): boolean {
-  return slug in COACHING_PLANS || slug in DIGITAL_PLANS
+  return slug in COACHING_PLANS || slug in DURATION_OFFER_PLANS || slug in DIGITAL_PLANS
 }
 
 export function isTrialPlanSlug(slug: string | null | undefined): boolean {

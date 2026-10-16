@@ -277,6 +277,8 @@ export function goalMatchesBodyType(
 
 export function planTierRank(slug: string | null | undefined): number {
   if (!slug) return -1
+  // Preview duration plans are the same product. Every goal is unlocked.
+  if (slug === 'offer_1_month' || slug === 'offer_3_months') return planTierRank('12_months')
   // Retired 1-month purchases map to the current starter tier for goal unlock.
   if (slug === '1_month') return planTierRank('3_months')
   return PLAN_GOAL_TIER_ORDER.indexOf(slug as PlanGoalTier)
@@ -300,6 +302,7 @@ export function resolveGoalPlanTier(
   ) {
     return '12_months'
   }
+  if (planSlug === 'offer_1_month' || planSlug === 'offer_3_months') return '12_months'
   if (planSlug === '1_month') return '3_months'
   if (isValidPlanGoalTier(planSlug)) return planSlug
   return '3_months'

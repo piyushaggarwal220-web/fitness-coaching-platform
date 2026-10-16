@@ -2,10 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
-import { COACHING_PLANS, type CoachingPlanSlug } from '@/lib/payments/plans'
+import { DURATION_OFFER_POINTS, DURATION_OFFER_RECEIVE } from '@/lib/payments/duration-offer-points'
+import { getCoachingPlan, isDurationOfferSlug, type CoachingPlanSlug } from '@/lib/payments/plans'
 import { FIRST_PLAN_TARGET } from '@/lib/payments/plan-pages'
 import { PreviewAdCapture } from '@/components/studio/PreviewAdCapture'
-import { PREVIEW2_AD_PATH, PREVIEW2_DROPOFF_SECTIONS } from '@/lib/analytics/ad-landing'
+import {
+  PREVIEW2_AD_PATH,
+  PREVIEW2_DROPOFF_SECTIONS,
+  PREVIEW5_AD_PATH,
+  PREVIEW5_DROPOFF_SECTIONS,
+} from '@/lib/analytics/ad-landing'
+import { DirectCheckout } from './DirectCheckout'
 import { PrimaryCta } from './primitives'
 
 export type CoachResult = {
@@ -19,7 +26,7 @@ export type CoachResult = {
 }
 
 type Goal = {
-  slug: CoachingPlanSlug
+  slug: string
   label: string
   title: string
   length: string
@@ -66,6 +73,33 @@ const GOALS: Goal[] = [
     update: 'Every week',
     finish: 'Month 12',
     image: '/images/lurvox/offer/hero-athletic.webp?v=3',
+    focus: 'center 22%',
+  },
+]
+
+const DURATION_GOALS: Goal[] = [
+  {
+    slug: 'offer_1_month',
+    label: '1 month',
+    title: 'One month of the full plan.',
+    length: '1 month',
+    days: 30,
+    monthly: '₹249 a month',
+    update: 'Included',
+    finish: 'Day 30',
+    image: '/images/lurvox/offer/hero-fat-loss.webp',
+    focus: 'center 22%',
+  },
+  {
+    slug: 'offer_3_months',
+    label: '3 months',
+    title: 'Three months of the same plan.',
+    length: '3 months',
+    days: 90,
+    monthly: '₹166 a month',
+    update: 'Included',
+    finish: 'Day 90',
+    image: '/images/lurvox/offer/hero-muscle.webp?v=2',
     focus: 'center 22%',
   },
 ]
@@ -125,6 +159,8 @@ const PLAN_POINTS: Record<CoachingPlanSlug, { text: string; gold?: boolean }[]> 
   ],
 }
 
+const FULL_PLAN_POINTS: { text: string; gold?: boolean }[] = DURATION_OFFER_POINTS.map((text) => ({ text }))
+
 const START_STEPS = [
   { when: 'Payment', title: 'Payment is confirmed.' },
   { when: 'Questions', title: 'Complete the onboarding form.' },
@@ -166,7 +202,13 @@ const FAQ = [
 ]
 
 function perDay(goal: Goal) {
-  return `under ₹${Math.ceil(COACHING_PLANS[goal.slug].amountPaise / 100 / goal.days)} a day`
+  const amount = getCoachingPlan(goal.slug)?.amountPaise ?? 0
+  return `under ₹${Math.ceil(amount / 100 / goal.days)} a day`
+}
+
+function pointsFor(slug: string) {
+  if (isDurationOfferSlug(slug)) return FULL_PLAN_POINTS
+  return PLAN_POINTS[slug as CoachingPlanSlug]
 }
 
 function BeforeAfter({ coach }: { coach: CoachResult }) {
@@ -205,11 +247,17 @@ function BeforeAfter({ coach }: { coach: CoachResult }) {
 export function OfferLanding({
   coaches,
   adPath,
+  durationOffer = false,
 }: {
   coaches: CoachResult[]
-  adPath?: typeof PREVIEW2_AD_PATH
+  adPath?: typeof PREVIEW2_AD_PATH | typeof PREVIEW5_AD_PATH
+  durationOffer?: boolean
 }) {
-  const [slug, setSlug] = useState<CoachingPlanSlug>('3_months')
+  const goals = durationOffer ? DURATION_GOALS : GOALS
+  const goalsRef = useRef(goals)
+  goalsRef.current = goals
+  const [slug, setSlug] = useState(durationOffer ? 'offer_3_months' : '3_months')
+  const [payPlan, setPayPlan] = useState<string | null>(null)
   const rotateTimer = useRef<number | null>(null)
   const heroInView = useRef(true)
 
@@ -219,12 +267,13 @@ export function OfferLanding({
     rotateTimer.current = null
   }
 
-  const pickPlan = (next: CoachingPlanSlug) => {
+  const pickPlan = (next: string) => {
     stopRotation()
     setSlug(next)
   }
-  const goal = GOALS.find((item) => item.slug === slug) ?? GOALS[0]
-  const plan = COACHING_PLANS[goal.slug]
+  const goal = goals.find((item) => item.slug === slug) ?? goals[0]
+  const plan = getCoachingPlan(goal.slug)!
+  const startLabel = `Start for ${plan.displayPrice}`
   const rootRef = useRef<HTMLDivElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
   const railRef = useRef<HTMLOListElement>(null)
@@ -240,8 +289,9 @@ export function OfferLanding({
     rotateTimer.current = window.setInterval(() => {
       if (!heroInView.current || document.hidden) return
       setSlug((current) => {
-        const index = GOALS.findIndex((item) => item.slug === current)
-        return GOALS[(index + 1) % GOALS.length].slug
+        const list = goalsRef.current
+        const index = list.findIndex((item) => item.slug === current)
+        return list[(index + 1) % list.length].slug
       })
     }, 1500)
     return () => {
@@ -325,18 +375,69 @@ export function OfferLanding({
     }
   }, [])
 
-  const startLabel = `Start for ${plan.displayPrice}`
-  const ctaSource = adPath === PREVIEW2_AD_PATH ? 'preview2' : 'landing'
-  const ctaLanding = adPath === PREVIEW2_AD_PATH ? PREVIEW2_AD_PATH : undefined
+  const openPay = durationOffer ? setPayPlan : undefined
+  const ctaSource = adPath === PREVIEW5_AD_PATH ? 'preview5' : adPath === PREVIEW2_AD_PATH ? 'preview2' : 'landing'
+  const ctaLanding = adPath === PREVIEW5_AD_PATH || adPath === PREVIEW2_AD_PATH ? adPath : undefined
+  const daily = durationOffer
+    ? DAILY.map((item) => {
+        if (item.title === 'Diet') {
+          return { ...item, title: 'Diet chart and diet plan', body: 'A diet chart and a diet plan around your food and your schedule.' }
+        }
+        if (item.title === 'Workout') return { ...item, title: 'Workout plan', body: 'Sessions for your level and equipment. Gym, home, or both.' }
+        if (item.title === 'Cardio') return { ...item, body: 'Written around your training. Included on both lengths.' }
+        if (item.title === 'Supplement guidance') {
+          return { ...item, body: 'What to take and what to skip. Included on both lengths.' }
+        }
+        return item
+      })
+    : DAILY
+  const steps = durationOffer
+    ? START_STEPS.map((step) =>
+        step.when === 'Your plan'
+          ? { ...step, title: 'You get a diet chart, a diet plan, a workout plan, and guidance for sleep, cardio, and supplements.' }
+          : step
+      )
+    : START_STEPS
+  const faq = durationOffer
+    ? FAQ.map((item) => {
+        if (item.q === 'What does coaching cost?') {
+          return {
+            ...item,
+            a: '1 month is ₹249, about ₹8 a day. 3 months is ₹499, about ₹6 a day. Both include the same plan.',
+          }
+        }
+        if (item.q === 'Why are the rates this low?') {
+          return {
+            ...item,
+            a: 'This is online coaching in the app: a plan written for you, check-ins, and coach chat. It is not a trainer standing with you in person every session. 1 month is ₹249.',
+          }
+        }
+        if (item.q === 'What happens after I pay?') {
+          return {
+            ...item,
+            a: `${FIRST_PLAN_TARGET} ${DURATION_OFFER_RECEIVE} A few form clips are free in the app. The full library is a separate purchase.`,
+          }
+        }
+        return item
+      })
+    : FAQ
 
   return (
-    <div className="lxo" ref={rootRef}>
+    <div className={durationOffer ? 'lxo lxo-duration' : 'lxo'} ref={rootRef}>
       {adPath === PREVIEW2_AD_PATH ? (
         <PreviewAdCapture
           path={PREVIEW2_AD_PATH}
           sections={PREVIEW2_DROPOFF_SECTIONS}
           funnelSource="preview2"
           viewKey="lx_preview2_view"
+        />
+      ) : null}
+      {adPath === PREVIEW5_AD_PATH ? (
+        <PreviewAdCapture
+          path={PREVIEW5_AD_PATH}
+          sections={PREVIEW5_DROPOFF_SECTIONS}
+          funnelSource="preview5"
+          viewKey="lx_preview5_view"
         />
       ) : null}
       <div className="lxo-progress" ref={progressRef} aria-hidden="true" />
@@ -346,14 +447,14 @@ export function OfferLanding({
           LURVOX
         </a>
         <a className="lxo-login" href="/login">
-          Log in
+          {adPath ? 'Client login' : 'Log in'}
         </a>
       </header>
 
       <main>
-        <section className={goal.slug === '6_months' ? 'lxo-hero' : 'lxo-hero is-bright'} id="top">
+        <section className={goal.slug === '6_months' || goal.slug === 'offer_3_months' ? 'lxo-hero' : 'lxo-hero is-bright'} id="top">
           <div className="lxo-hero-media" aria-hidden="true">
-            {GOALS.map((item) => (
+            {goals.map((item) => (
               <img
                 key={item.slug}
                 src={item.image}
@@ -361,16 +462,20 @@ export function OfferLanding({
                 className={item.slug === goal.slug ? 'is-on' : undefined}
                 style={{ objectPosition: item.focus }}
                 loading="eager"
-                fetchPriority={item.slug === '3_months' ? 'high' : 'auto'}
+                fetchPriority={item.slug === goals[0].slug ? 'high' : 'auto'}
               />
             ))}
           </div>
           <div className="lxo-hero-copy">
             <p className="lxo-kicker">Online coaching · Piyush &amp; Rakshit&apos;s method</p>
             <h1 key={goal.slug}>{goal.title}</h1>
-            <p className="lxo-sub">A workout and diet written for you. In your phone within {INSTANT_PLAN_WINDOW_LABEL} of finishing onboarding.</p>
-            <div className="lxo-goals" role="tablist" aria-label="Choose your goal">
-              {GOALS.map((item) => (
+            <p className="lxo-sub">
+              {durationOffer
+                ? 'Diet chart, diet plan, workout plan, plus sleep, cardio, and supplement guidance. Only the length changes.'
+                : `A workout and diet written for you. In your phone within ${INSTANT_PLAN_WINDOW_LABEL} of finishing onboarding.`}
+            </p>
+            <div className="lxo-goals" role="tablist" aria-label={durationOffer ? 'Choose how long' : 'Choose your goal'}>
+              {goals.map((item) => (
                 <button
                   key={item.slug}
                   type="button"
@@ -381,12 +486,12 @@ export function OfferLanding({
                   onClick={() => pickPlan(item.slug)}
                 >
                   <span>{item.label}</span>
-                  <strong>{COACHING_PLANS[item.slug].displayPrice}</strong>
+                  <strong>{getCoachingPlan(item.slug)?.displayPrice}</strong>
                 </button>
               ))}
             </div>
             <div className="lxo-cta">
-              <PrimaryCta plan={goal.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding}>
+              <PrimaryCta plan={goal.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding} onPay={openPay}>
                 {startLabel}
               </PrimaryCta>
               <p className="lxo-meta">
@@ -403,7 +508,7 @@ export function OfferLanding({
           <p className="lxo-rise lxo-big">Tired of no results?</p>
           <p className="lxo-rise lxo-big lxo-accent">It&apos;s time to change it.</p>
           <div className="lxo-daily">
-            {DAILY.map((item) => (
+            {daily.map((item) => (
               <article className="lxo-rise lxo-row" key={item.title}>
                 <img src={item.image} alt={item.alt} loading="lazy" />
                 <div>
@@ -421,7 +526,7 @@ export function OfferLanding({
             <span>Only what you have is now.</span>
           </h2>
           <ol className="lxo-rail" ref={railRef}>
-            {START_STEPS.map((step) => (
+            {steps.map((step) => (
               <li key={step.title}>
                 <span className="lxo-when">{step.when}</span>
                 <strong>{step.title}</strong>
@@ -429,7 +534,7 @@ export function OfferLanding({
             ))}
           </ol>
           <div className="lxo-inline-cta lxo-rise">
-            <PrimaryCta plan={goal.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding}>
+            <PrimaryCta plan={goal.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding} onPay={openPay}>
               Start now for {plan.displayPrice}
             </PrimaryCta>
           </div>
@@ -457,14 +562,14 @@ export function OfferLanding({
         </section>
 
         <section className="lxo-pricing" id="pricing">
-          <h2 className="lxo-rise">Pick your plan.</h2>
+          <h2 className="lxo-rise">{durationOffer ? 'Same plan. Two lengths.' : 'Pick your plan.'}</h2>
           <div className="lxo-plans">
-            {GOALS.map((item) => {
-              const details = COACHING_PLANS[item.slug]
+            {goals.map((item) => {
+              const details = getCoachingPlan(item.slug)!
               return (
                 <article
                   key={item.slug}
-                  className={['lxo-rise', 'lxo-plan', item.slug === '12_months' ? 'is-featured' : '', item.slug === goal.slug ? 'is-chosen' : ''].filter(Boolean).join(' ')}
+                  className={['lxo-rise', 'lxo-plan', item.slug === '12_months' || item.slug === 'offer_3_months' ? 'is-featured' : '', item.slug === goal.slug ? 'is-chosen' : ''].filter(Boolean).join(' ')}
                   onClick={() => pickPlan(item.slug)}
                 >
                   <div className="lxo-plan-top">
@@ -472,6 +577,7 @@ export function OfferLanding({
                       {item.length}
                       {item.slug === '6_months' ? <em>Weekly rewrites</em> : null}
                       {item.slug === '12_months' ? <em>Lowest monthly</em> : null}
+                      {item.slug === 'offer_3_months' ? <em>Best value</em> : null}
                     </p>
                     <h3>{details.name}</h3>
                   </div>
@@ -482,13 +588,13 @@ export function OfferLanding({
                     </span>
                   </p>
                   <ul>
-                    {PLAN_POINTS[item.slug].map((point) => (
+                    {pointsFor(item.slug).map((point) => (
                       <li key={point.text} className={point.gold ? 'is-gold' : undefined}>
                         {point.text}
                       </li>
                     ))}
                   </ul>
-                  <PrimaryCta plan={item.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding}>
+                  <PrimaryCta plan={item.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding} onPay={openPay}>
                     Start for {details.displayPrice}
                   </PrimaryCta>
                 </article>
@@ -499,7 +605,7 @@ export function OfferLanding({
 
         <section className="lxo-faq" id="faq">
           <h2 className="lxo-rise">Quick answers</h2>
-          {FAQ.map((item) => (
+          {faq.map((item) => (
             <details key={item.q} className="lxo-rise">
               <summary>{item.q}</summary>
               <p>{item.a}</p>
@@ -511,9 +617,11 @@ export function OfferLanding({
         </section>
 
         <section className="lx-final lxo-close" id="close">
-          <p className="lxo-rise lxo-big">A year from now, you&apos;ll wish you started today.</p>
+          <p className="lxo-rise lxo-big">
+            {durationOffer ? 'A month from now, you\'ll wish you started today.' : 'A year from now, you\'ll wish you started today.'}
+          </p>
           <div className="lxo-rise lxo-close-cta">
-            <PrimaryCta plan={goal.slug} className="lxo-btn lxo-btn-light" source={ctaSource} landingPath={ctaLanding}>
+            <PrimaryCta plan={goal.slug} className="lxo-btn lxo-btn-light" source={ctaSource} landingPath={ctaLanding} onPay={openPay}>
               {startLabel}
             </PrimaryCta>
             <p className="lxo-meta">
@@ -535,11 +643,20 @@ export function OfferLanding({
       </footer>
 
       <div className={stickyOn ? 'lxo-sticky is-on' : 'lxo-sticky'} aria-hidden={!stickyOn}>
-        <PrimaryCta plan={goal.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding}>
+        <PrimaryCta plan={goal.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding} onPay={openPay}>
           {startLabel}
         </PrimaryCta>
         <span className="lxo-live">Plan within {INSTANT_PLAN_WINDOW_LABEL} of onboarding</span>
       </div>
+      {durationOffer && adPath ? (
+        <DirectCheckout
+          planSlug={payPlan}
+          landingPath={adPath}
+          source={ctaSource}
+          tone="purple"
+          onClose={() => setPayPlan(null)}
+        />
+      ) : null}
     </div>
   )
 }

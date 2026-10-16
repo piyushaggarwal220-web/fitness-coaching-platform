@@ -48,15 +48,15 @@ body:has(.lx3) {
   z-index: 2;
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
-  padding: 0 14px;
+  min-height: 38px;
+  padding: 0 16px;
   border-radius: 999px;
   background: var(--yellow);
   color: #111;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   text-decoration: none;
-  box-shadow: 0 8px 18px rgba(251, 191, 36, 0.28);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.35), 0 10px 22px rgba(251, 191, 36, 0.4);
 }
 
 .lx3-hero-grid {
@@ -83,6 +83,16 @@ body:has(.lx3) {
   gap: 8px;
   margin-top: 16px;
 }
+
+button.lx3-offer,
+button.lx3-cta,
+button.lx3-close-btn,
+button.lx3-sticky-cta {
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+button.lx3-offer { width: 100%; }
 
 .lx3-offer {
   display: flex;
@@ -863,6 +873,13 @@ body:has(.lx3) {
   .lx3-stack,
   .lx3-steps ol {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .lx3.lx3-duration .lx3-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 860px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .lx3-card-mid { transform: translateY(-8px); }

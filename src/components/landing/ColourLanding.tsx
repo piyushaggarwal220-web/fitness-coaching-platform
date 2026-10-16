@@ -3,12 +3,21 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { CheckoutFunnelLink } from '@/components/analytics/CheckoutFunnelLink'
+import { trackFunnelStep } from '@/lib/analytics/funnel'
+import { persistMetaClickIdsFromLocation } from '@/lib/analytics/meta-attribution'
+import { DirectCheckout } from '@/components/landing/DirectCheckout'
 import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations'
 import { InstantFitnessQuiz } from '@/components/landing/InstantFitnessQuiz'
 import { PreviewAdCapture } from '@/components/studio/PreviewAdCapture'
 import type { CoachResult } from '@/components/landing/OfferLanding'
-import { PREVIEW3_AD_PATH, PREVIEW3_DROPOFF_SECTIONS } from '@/lib/analytics/ad-landing'
-import { COACHING_PLANS, type CoachingPlanSlug } from '@/lib/payments/plans'
+import {
+  PREVIEW3_AD_PATH,
+  PREVIEW3_DROPOFF_SECTIONS,
+  PREVIEW6_AD_PATH,
+  PREVIEW6_DROPOFF_SECTIONS,
+} from '@/lib/analytics/ad-landing'
+import { DURATION_OFFER_POINTS, DURATION_OFFER_RECEIVE } from '@/lib/payments/duration-offer-points'
+import { COACHING_PLANS, getCoachingPlan, type CoachingPlanSlug } from '@/lib/payments/plans'
 
 const LANDING = PREVIEW3_AD_PATH
 
@@ -18,7 +27,7 @@ const PORTRAIT: Record<CoachResult['key'], string> = {
 }
 
 type PlanCard = {
-  slug: CoachingPlanSlug
+  slug: CoachingPlanSlug | 'offer_1_month' | 'offer_3_months'
   chip: string
   length: string
   monthly: string
@@ -93,6 +102,31 @@ const PLANS: PlanCard[] = [
   },
 ]
 
+const FULL_POINTS = [...DURATION_OFFER_POINTS]
+
+const DURATION_PLANS: PlanCard[] = [
+  {
+    slug: 'offer_1_month',
+    chip: '1 month · full access',
+    length: '1 month',
+    monthly: '₹249 · about ₹8 a day',
+    tone: 'fat',
+    points: FULL_POINTS,
+    cta: 'Start for ₹249',
+  },
+  {
+    slug: 'offer_3_months',
+    chip: '3 months · full access',
+    length: '3 months',
+    monthly: '₹166 a month · about ₹6 a day',
+    tone: 'athletic',
+    tag: 'Best value',
+    note: 'The same plan as 1 month.',
+    points: FULL_POINTS,
+    cta: 'Start for ₹499',
+  },
+]
+
 const FAIL = [
   'Generic AI plans copy the same template for everyone',
   'Old beliefs like “more sweat means more fat loss”',
@@ -142,24 +176,63 @@ function PlanLink({
   plan,
   className,
   children,
+  source = 'preview3',
+  landing = LANDING,
+  onPay,
 }: {
   plan: PlanCard
   className: string
   children: ReactNode
+  source?: string
+  landing?: string
+  onPay?: (plan: string) => void
 }) {
-  const catalog = COACHING_PLANS[plan.slug]
+  const catalog = getCoachingPlan(plan.slug)
+  if (!catalog) return null
+  if (onPay) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={() => {
+          persistMetaClickIdsFromLocation()
+          trackFunnelStep('plan_click', {
+            plan: plan.slug,
+            plan_name: catalog.name,
+            value: catalog.amountPaise / 100,
+            currency: 'INR',
+            source,
+            path: landing,
+          })
+          onPay(plan.slug)
+        }}
+      >
+        {children}
+      </button>
+    )
+  }
   return (
     <CheckoutFunnelLink
       plan={plan.slug}
       planName={catalog.name}
       value={catalog.amountPaise / 100}
-      source="preview3"
-      landingPath={LANDING}
+      source={source}
+      landingPath={landing}
       className={className}
     >
       {children}
     </CheckoutFunnelLink>
   )
+}
+
+function planPrice(slug: PlanCard['slug']) {
+  return getCoachingPlan(slug)?.displayPrice ?? ''
+}
+
+function planName(plan: PlanCard, durationOffer: boolean) {
+  if (durationOffer) return getCoachingPlan(plan.slug)?.name ?? plan.chip
+  if (plan.tone === 'mid') return 'Fat loss + muscle'
+  return COACHING_PLANS[plan.slug as CoachingPlanSlug].name
 }
 
 function Stamp() {
@@ -174,9 +247,47 @@ function Stamp() {
   )
 }
 
-export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
+export function ColourLanding({
+  coaches,
+  durationOffer = false,
+}: {
+  coaches: CoachResult[]
+  durationOffer?: boolean
+}) {
   const [sticky, setSticky] = useState(false)
-  const athletic = PLANS[2]
+  const [payPlan, setPayPlan] = useState<string | null>(null)
+  const openPay = durationOffer ? setPayPlan : undefined
+  const plans = durationOffer ? DURATION_PLANS : PLANS
+  const featured = durationOffer ? plans[1] : plans[2]
+  const source = durationOffer ? 'preview6' : 'preview3'
+  const landing = durationOffer ? PREVIEW6_AD_PATH : PREVIEW3_AD_PATH
+  const win = durationOffer
+    ? [
+        'Diet chart, diet plan, and workout plan',
+        'Sleep, cardio, and supplement guidance',
+        'Check-in and coach chat',
+        'Diet tracker and workout tracker',
+        'Science first: calories, protein, progressive overload, recovery',
+        'Built for your schedule, gym or home, veg or mixed diet',
+      ]
+    : WIN
+  const faq = durationOffer
+    ? FAQ.map((item) => {
+        if (item.q === 'What exactly is included?') {
+          return {
+            ...item,
+            a: `${DURATION_OFFER_RECEIVE} 1 month is ₹249. 3 months is ₹499. No weekly phone calls — support is inside the app.`,
+          }
+        }
+        if (item.q === 'What happens after I pay?') {
+          return {
+            ...item,
+            a: 'Razorpay confirms the payment. We email the next steps. After the short assessment, you get a diet chart, a diet plan, a workout plan, and guidance for sleep, cardio, and supplements — usually within a few hours, always inside 48 hours. Check-in, coach chat, and the trackers are in the app.',
+          }
+        }
+        return item
+      })
+    : FAQ
 
   useEffect(() => {
     const onScroll = () => {
@@ -200,12 +311,12 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
   }, [])
 
   return (
-    <div className="lx3">
+    <div className={durationOffer ? 'lx3 lx3-duration' : 'lx3'}>
       <PreviewAdCapture
-        path={LANDING}
-        sections={PREVIEW3_DROPOFF_SECTIONS}
-        funnelSource="preview3"
-        viewKey="lx_preview3_view"
+        path={landing}
+        sections={durationOffer ? PREVIEW6_DROPOFF_SECTIONS : PREVIEW3_DROPOFF_SECTIONS}
+        funnelSource={source}
+        viewKey={durationOffer ? 'lx_preview6_view' : 'lx_preview3_view'}
       />
 
       <section className="lx3-hero" id="top" aria-labelledby="lx3-title">
@@ -218,23 +329,35 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
               Personalised fitness plans, <span>within 48 hours.</span>
             </h1>
             <div className="lx3-offers" aria-label="Choose a plan">
-              {PLANS.map((plan) => (
-                <PlanLink key={plan.slug} plan={plan} className={`lx3-offer lx3-offer-${plan.tone}`}>
+              {plans.map((plan) => (
+                <PlanLink key={plan.slug} plan={plan} className={`lx3-offer lx3-offer-${plan.tone}`} source={source} landing={landing} onPay={openPay}>
                   <span>
-                    {plan.tag === 'Most popular' ? <em>Most popular</em> : null}
+                    {plan.tag === 'Most popular' || plan.tag === 'Best value' ? <em>{plan.tag}</em> : null}
                     {plan.chip}
                   </span>
-                  <strong>{COACHING_PLANS[plan.slug].displayPrice}</strong>
+                  <strong>{planPrice(plan.slug)}</strong>
                 </PlanLink>
               ))}
             </div>
             <p className="lx3-lede">
-              Coach-made workout and diet around your goals, from ₹599. Check-ins are mid-week and weekly. <strong>Fat loss is rewritten every 14 days.</strong> The 6- and 12-month plans are rewritten every week.
+              {durationOffer
+                ? 'Diet chart, diet plan, workout plan, plus sleep, cardio, and supplement guidance. 1 month is ₹249. 3 months is ₹499.'
+                : <>Coach-made workout and diet around your goals, from ₹599. Check-ins are mid-week and weekly. <strong>Fat loss is rewritten every 14 days.</strong> The 6- and 12-month plans are rewritten every week.</>}
             </p>
             <ul className="lx3-trust">
-              <li>Fat loss updates every 14 days</li>
-              <li>6 and 12 months update every week</li>
-              <li>Beginner friendly</li>
+              {durationOffer ? (
+                <>
+                  <li>₹249 for 1 month</li>
+                  <li>₹499 for 3 months</li>
+                  <li>Same plan on both</li>
+                </>
+              ) : (
+                <>
+                  <li>Fat loss updates every 14 days</li>
+                  <li>6 and 12 months update every week</li>
+                  <li>Beginner friendly</li>
+                </>
+              )}
             </ul>
           </div>
 
@@ -276,15 +399,17 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
         <p className="lx3-eyebrow">Choose your plan</p>
         <h2 id="lx3-plans-title">Simple plans. Real coaching.</h2>
         <p className="lx3-plans-lede">
-          Check-ins are mid-week and weekly on every plan. <strong>Fat loss</strong> is rewritten every 14 days. The 6- and 12-month plans are rewritten every week.
+          {durationOffer
+            ? 'Both lengths include the same list. The only difference is time.'
+            : <>Check-ins are mid-week and weekly on every plan. <strong>Fat loss</strong> is rewritten every 14 days. The 6- and 12-month plans are rewritten every week.</>}
         </p>
         <div className="lx3-stack">
-          {PLANS.map((plan) => (
+          {plans.map((plan) => (
             <article key={plan.slug} className={`lx3-card lx3-card-${plan.tone}`}>
               {plan.tag ? <p className={`lx3-tag${plan.tone === 'athletic' ? ' lx3-tag-best' : ''}`}>{plan.tag}</p> : null}
               <span className="lx3-dur">{plan.length}</span>
-              <h3>{plan.tone === 'mid' ? 'Fat loss + muscle' : COACHING_PLANS[plan.slug].name}</h3>
-              <p className="lx3-price">{COACHING_PLANS[plan.slug].displayPrice}</p>
+              <h3>{planName(plan, durationOffer)}</h3>
+              <p className="lx3-price">{planPrice(plan.slug)}</p>
               <p className="lx3-meta">{plan.monthly}</p>
               {plan.note ? <p className={`lx3-note${plan.tone === 'athletic' ? ' lx3-note-gold' : ''}`}>{plan.note}</p> : null}
               <ul>
@@ -308,7 +433,7 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
                   </ul>
                 </div>
               ) : null}
-              <PlanLink plan={plan} className="lx3-cta">
+              <PlanLink plan={plan} className="lx3-cta" source={source} landing={landing} onPay={openPay}>
                 {plan.cta}
               </PlanLink>
             </article>
@@ -334,7 +459,7 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
           <article className="lx3-truth-win">
             <p>Why our plans work</p>
             <ul>
-              {WIN.map((item) => (
+              {win.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
@@ -364,7 +489,11 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
             <span>03</span>
             <div>
               <strong>Receive your plan</strong>
-              <p>First workout and diet in 24–48 hours. Check-ins are mid-week and weekly. Fat loss is rewritten every 14 days. The 6- and 12-month plans are rewritten every week. If the first plan does not arrive, you get a refund.</p>
+              <p>
+                {durationOffer
+                  ? 'First plan in 24–48 hours: diet chart, diet plan, workout plan, and guidance for sleep, cardio, and supplements. If the first plan does not arrive, you get a refund.'
+                  : 'First workout and diet in 24–48 hours. Check-ins are mid-week and weekly. Fat loss is rewritten every 14 days. The 6- and 12-month plans are rewritten every week. If the first plan does not arrive, you get a refund.'}
+              </p>
             </div>
           </li>
         </ol>
@@ -378,16 +507,24 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
         />
       </div>
 
-      <div id="quiz" className="lx3-quiz">
-        <InstantFitnessQuiz offer="coaching" />
-      </div>
+        <div id="quiz" className="lx3-quiz">
+          <InstantFitnessQuiz
+            offer="coaching"
+            fromLabel={durationOffer ? 'See plans — ₹249 or ₹499' : undefined}
+            coachingPoints={
+              durationOffer
+                ? [...DURATION_OFFER_POINTS]
+                : undefined
+            }
+          />
+        </div>
 
       <section className="lx3-faq" id="faq" aria-labelledby="lx3-faq-title">
         <p className="lx3-eyebrow lx3-eyebrow-orange">FAQ</p>
         <h2 id="lx3-faq-title">Questions before you start</h2>
         <p className="lx3-plans-lede">Straight answers on coaching, what is included, and how the system works — before you pick a plan.</p>
         <div className="lx3-faq-list">
-          {FAQ.map((item) => (
+          {faq.map((item) => (
             <details key={item.q}>
               <summary>{item.q}</summary>
               <p>
@@ -403,12 +540,14 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
 
       <section className="lx3-close" id="close" aria-label="Choose your plan and start">
         <p className="lx3-eyebrow lx3-eyebrow-orange">Ready to start</p>
-        <h2>Start with your goal. We build everything around it.</h2>
+        <h2>{durationOffer ? 'Same plan. Pick the length.' : 'Start with your goal. We build everything around it.'}</h2>
         <p>
-          Goal first. Time is the runway. <strong>Fat loss</strong> is 90 days · <strong>₹599</strong>, rewritten every 14 days. <strong>Fat loss + muscle gain</strong> is 6 months · <strong>₹999</strong>, rewritten every week. <strong>Athletic body</strong> is 12 months · <strong>₹1,699</strong> — fat loss, muscle, and stamina, rewritten every week. Check-ins are mid-week and weekly on every plan.
+          {durationOffer
+            ? <>The product does not change. <strong>1 month</strong> is <strong>₹249</strong>. <strong>3 months</strong> is <strong>₹499</strong>. Diet chart, diet plan, workout plan, sleep, cardio, and supplement guidance are included on both.</>
+            : <>Goal first. Time is the runway. <strong>Fat loss</strong> is 90 days · <strong>₹599</strong>, rewritten every 14 days. <strong>Fat loss + muscle gain</strong> is 6 months · <strong>₹999</strong>, rewritten every week. <strong>Athletic body</strong> is 12 months · <strong>₹1,699</strong> — fat loss, muscle, and stamina, rewritten every week. Check-ins are mid-week and weekly on every plan.</>}
         </p>
         <a className="lx3-jump" href="#plans">
-          See plans — ₹599 · ₹999 · ₹1,699
+          {durationOffer ? 'See plans — ₹249 · ₹499' : 'See plans — ₹599 · ₹999 · ₹1,699'}
         </a>
         <div className="lx3-stamp-row">
           <Stamp />
@@ -421,9 +560,9 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
           <span>Netbanking</span>
         </div>
         <div className="lx3-close-actions">
-          {PLANS.map((plan) => (
-            <PlanLink key={plan.slug} plan={plan} className={`lx3-close-btn lx3-close-${plan.tone}`}>
-              {plan.tone === 'mid' ? 'Fat loss + muscle' : COACHING_PLANS[plan.slug].name} · {COACHING_PLANS[plan.slug].displayPrice}
+          {plans.map((plan) => (
+            <PlanLink key={plan.slug} plan={plan} className={`lx3-close-btn lx3-close-${plan.tone}`} source={source} landing={landing} onPay={openPay}>
+              {planName(plan, durationOffer)} · {planPrice(plan.slug)}
             </PlanLink>
           ))}
         </div>
@@ -437,13 +576,22 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
 
       <div className={`lx3-sticky${sticky ? ' is-on' : ''}`}>
         <div>
-          <strong>Athletic body</strong>
-          <span>12 months · ₹1,699 · lowest monthly cost</span>
+          <strong>{durationOffer ? '3 months' : 'Athletic body'}</strong>
+          <span>{durationOffer ? 'Full access · ₹499 · best value' : '12 months · ₹1,699 · lowest monthly cost'}</span>
         </div>
-        <PlanLink plan={athletic} className="lx3-sticky-cta">
-          Get Athletic body
+        <PlanLink plan={featured} className="lx3-sticky-cta" source={source} landing={landing} onPay={openPay}>
+          {durationOffer ? 'Start for ₹499' : 'Get Athletic body'}
         </PlanLink>
       </div>
+      {durationOffer ? (
+        <DirectCheckout
+          planSlug={payPlan}
+          landingPath={landing}
+          source={source}
+          tone="colour"
+          onClose={() => setPayPlan(null)}
+        />
+      ) : null}
     </div>
   )
 }

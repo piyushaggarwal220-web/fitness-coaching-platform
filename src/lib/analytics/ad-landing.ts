@@ -7,7 +7,22 @@ export const PREVIEW2_AD_PATH = '/preview2'
 /** Ad URL for the colourful coaching preview. */
 export const PREVIEW3_AD_PATH = '/preview3'
 
-export type PreviewAdPath = typeof PREVIEW_AD_PATH | typeof PREVIEW2_AD_PATH | typeof PREVIEW3_AD_PATH
+/** Beige landing with the 1 month / 3 month full-access offer. */
+export const PREVIEW4_AD_PATH = '/preview4'
+
+/** Purple landing with the 1 month / 3 month full-access offer. */
+export const PREVIEW5_AD_PATH = '/preview5'
+
+/** Mixed-colour landing with the 1 month / 3 month full-access offer. */
+export const PREVIEW6_AD_PATH = '/preview6'
+
+export type PreviewAdPath =
+  | typeof PREVIEW_AD_PATH
+  | typeof PREVIEW2_AD_PATH
+  | typeof PREVIEW3_AD_PATH
+  | typeof PREVIEW4_AD_PATH
+  | typeof PREVIEW5_AD_PATH
+  | typeof PREVIEW6_AD_PATH
 
 export const PREVIEW_DROPOFF_SECTIONS = [
   { id: 'hero', key: 'p1_hero', index: 0, label: 'Hero' },
@@ -45,16 +60,59 @@ export const PREVIEW3_DROPOFF_SECTIONS = [
   { id: 'quiz', key: 'p3_quiz', index: 7, label: 'Fitness quiz' },
 ] as const
 
+/** Sections on the beige duration preview. */
+export const PREVIEW4_DROPOFF_SECTIONS = [
+  { id: 'top', key: 'p4_hero', index: 0, label: 'Hero' },
+  { id: 'why', key: 'p4_why', index: 1, label: 'Why you won\'t fail' },
+  { id: 'system', key: 'p4_system', index: 2, label: 'What you get' },
+  { id: 'coaching', key: 'p4_coaching', index: 3, label: 'Coaches' },
+  { id: 'method', key: 'p4_method', index: 4, label: 'How it works' },
+  { id: 'pricing', key: 'p4_pricing', index: 5, label: 'Plans' },
+  { id: 'faq', key: 'p4_faq', index: 6, label: 'Questions' },
+  { id: 'close', key: 'p4_close', index: 7, label: 'Closing offer' },
+] as const
+
+/** Sections on the purple duration preview. Same layout as preview 2, separate keys. */
+export const PREVIEW5_DROPOFF_SECTIONS = [
+  { id: 'top', key: 'p5_hero', index: 0, label: 'Hero' },
+  { id: 'why', key: 'p5_why', index: 1, label: 'Tired of no results' },
+  { id: 'method', key: 'p5_method', index: 2, label: 'How it works' },
+  { id: 'coaching', key: 'p5_coaching', index: 3, label: 'Coaches' },
+  { id: 'pricing', key: 'p5_pricing', index: 4, label: 'Plans' },
+  { id: 'faq', key: 'p5_faq', index: 5, label: 'Questions' },
+  { id: 'close', key: 'p5_close', index: 6, label: 'Closing offer' },
+] as const
+
+/** Sections on the mixed-colour duration preview. */
+export const PREVIEW6_DROPOFF_SECTIONS = [
+  { id: 'top', key: 'p6_hero', index: 0, label: 'Hero' },
+  { id: 'plans', key: 'p6_plans', index: 1, label: 'Plans' },
+  { id: 'steps', key: 'p6_steps', index: 2, label: 'How it works' },
+  { id: 'faq', key: 'p6_faq', index: 3, label: 'Questions' },
+  { id: 'close', key: 'p6_close', index: 4, label: 'Closing offer' },
+  { id: 'truth', key: 'p6_truth', index: 5, label: 'Truth check' },
+  { id: 'changes', key: 'p6_changes', index: 6, label: 'Expected changes' },
+  { id: 'quiz', key: 'p6_quiz', index: 7, label: 'Fitness quiz' },
+] as const
+
 /** Only a known preview ad page may set the purchase source URL. Anything else stays on /checkout. */
 export function previewAdLandingPath(value: unknown): PreviewAdPath | null {
   if (value === PREVIEW_AD_PATH || value === '/studio') return PREVIEW_AD_PATH
   if (value === PREVIEW2_AD_PATH) return PREVIEW2_AD_PATH
   if (value === PREVIEW3_AD_PATH) return PREVIEW3_AD_PATH
+  if (value === PREVIEW4_AD_PATH) return PREVIEW4_AD_PATH
+  if (value === PREVIEW5_AD_PATH) return PREVIEW5_AD_PATH
+  if (value === PREVIEW6_AD_PATH) return PREVIEW6_AD_PATH
   return null
 }
 
-export function previewAdFunnelSource(path: PreviewAdPath): 'preview1' | 'preview2' | 'preview3' {
+export function previewAdFunnelSource(
+  path: PreviewAdPath
+): 'preview1' | 'preview2' | 'preview3' | 'preview4' | 'preview5' | 'preview6' {
   if (path === PREVIEW2_AD_PATH) return 'preview2'
   if (path === PREVIEW3_AD_PATH) return 'preview3'
+  if (path === PREVIEW4_AD_PATH) return 'preview4'
+  if (path === PREVIEW5_AD_PATH) return 'preview5'
+  if (path === PREVIEW6_AD_PATH) return 'preview6'
   return 'preview1'
 }

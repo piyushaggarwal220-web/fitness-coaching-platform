@@ -80,6 +80,10 @@ export function getActiveSubscription(
 export function checkoutHrefForSubscription(subscription: ActiveSubscription): string {
   const slug = subscription.planSlug
 
+  if (slug === 'offer_1_month' || slug === 'offer_3_months') {
+    return `/checkout?plan=${slug}`
+  }
+
   if (subscription.status === 'expired') {
     if (isTrialPlanSlug(slug) || slug === '1_month') return '/checkout?plan=3_months'
     if (getPurchasablePlan(slug) && !getCoachingPlan(slug)?.isTrial) {

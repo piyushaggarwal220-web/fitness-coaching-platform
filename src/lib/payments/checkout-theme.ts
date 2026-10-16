@@ -2,6 +2,8 @@ import type { CSSProperties } from 'react'
 import {
   PREVIEW2_AD_PATH,
   PREVIEW3_AD_PATH,
+  PREVIEW5_AD_PATH,
+  PREVIEW6_AD_PATH,
   PREVIEW_AD_PATH,
   type PreviewAdPath,
 } from '@/lib/analytics/ad-landing'
@@ -322,7 +324,7 @@ export function checkoutThemeForLanding(
     })
   }
 
-  if (path === PREVIEW2_AD_PATH) {
+  if (path === PREVIEW2_AD_PATH || path === PREVIEW5_AD_PATH) {
     return themeFrom({
       page: '#121216',
       pageImage:
@@ -361,7 +363,7 @@ export function checkoutThemeForLanding(
     })
   }
 
-  if (path === PREVIEW3_AD_PATH) {
+  if (path === PREVIEW3_AD_PATH || path === PREVIEW6_AD_PATH) {
     return themeFrom({
       page: '#12100f',
       pageImage:

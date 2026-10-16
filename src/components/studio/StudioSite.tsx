@@ -220,6 +220,7 @@ export function StudioSite() {
           <button type="button" onClick={() => go('results')}>Results</button>
           <button type="button" onClick={() => go('faq')}>FAQ</button>
         </nav>
+        <a className="st-nav-login" href="/login">Client login</a>
         <button type="button" className="st-btn st-btn-solid st-nav-cta" onClick={() => go('plans')}>Get started</button>
         <button type="button" className="st-menu-btn" aria-expanded={menu} aria-label="Menu" onClick={() => setMenu((v) => !v)}>
           <i /><i />

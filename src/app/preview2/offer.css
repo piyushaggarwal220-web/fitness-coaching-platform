@@ -84,13 +84,18 @@ body:has(.lxo) {
   font-weight: 800;
   letter-spacing: 0.22em;
 }
-.lxo-login {
+.lxo .lxo-login {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  color: rgba(245, 243, 238, 0.82);
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: #f4efe6;
+  color: #17151c;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
 }
 
 .lxo .lxo-btn {
@@ -105,10 +110,12 @@ body:has(.lxo) {
   border-radius: 14px;
   background: linear-gradient(100deg, #7c3aed 0%, #9d4edd 100%);
   color: #fff;
+  font-family: inherit;
   font-size: 17px;
   font-weight: 800;
   letter-spacing: -0.01em;
   line-height: 1.1;
+  cursor: pointer;
   box-shadow: 0 10px 34px rgba(139, 92, 246, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -230,6 +237,7 @@ body:has(.lxo) {
   gap: 8px;
   margin-top: 20px;
 }
+.lxo.lxo-duration .lxo-goals { grid-template-columns: repeat(2, 1fr); }
 .lxo-goals button {
   display: grid;
   gap: 2px;
@@ -979,5 +987,6 @@ body:has(.lxo) {
   }
   .lxo-dots { display: none; }
   .lxo-plans { grid-template-columns: repeat(3, 1fr); align-items: stretch; }
+  .lxo.lxo-duration .lxo-plans { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 860px; margin-left: auto; margin-right: auto; }
   .lxo-sticky { left: auto; right: 24px; bottom: 24px; width: 440px; border: 1px solid var(--line); border-radius: 18px; }
 }

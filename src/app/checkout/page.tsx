@@ -6,12 +6,15 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { BRAND_NAME } from '@/lib/brand';
+import { DURATION_OFFER_POINTS } from '@/lib/payments/duration-offer-points';
 import { planDurationLabel, planGoalName } from '@/lib/payments/plan-pages';
 import {
  COACHING_PLAN_LIST,
  DIGITAL_PLAN_LIST,
+ DURATION_PLAN_LIST,
  getPurchasablePlan,
  isDigitalPlanSlug,
+ isDurationOfferSlug,
 } from '@/lib/payments/plans';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
@@ -158,7 +161,11 @@ function CheckoutForm() {
  const testMode = isPaymentBypassClient();
  const isTrialCheckout = plan.isTrial === true;
  const isDigitalCheckout = plan.isDigital === true || isDigitalPlanSlug(plan.slug);
- const planPickerList = isDigitalCheckout ? DIGITAL_PLAN_LIST : COACHING_PLAN_LIST;
+ const planPickerList = isDigitalCheckout
+ ? DIGITAL_PLAN_LIST
+ : isDurationOfferSlug(plan.slug)
+ ? DURATION_PLAN_LIST
+ : COACHING_PLAN_LIST;
  const planPayablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
  const payablePaise = planPayablePaise;
  const payableDisplay = formatInrFromPaise(payablePaise);
@@ -940,10 +947,10 @@ function CheckoutForm() {
  ) : null}
  <div style={{ ...styles.card, ...intakeTheme.card }}>
  <Link
- href={isDigitalCheckout ? '/customised-plan' : marketingBaseUrl}
+ href={isDigitalCheckout ? '/customised-plan' : (adLandingPath ?? marketingBaseUrl)}
  style={dig(styles.backLink, 'backLink')}
  >
- {'<- '}{isDigitalCheckout ? 'Back to plans' : 'Back to home'}
+ {'<- '}{isDigitalCheckout ? 'Back to plans' : adLandingPath ? 'Back' : 'Back to home'}
  </Link>
 
  <p style={{ ...styles.brandMark, ...intakeTheme.brandMark }}>
@@ -966,10 +973,22 @@ function CheckoutForm() {
  {checkoutScreen === 2 ? null : (
  <p style={dig(styles.subtitle, 'subtitle')}>
  {checkoutScreen === 1
- ? 'Answer a few basics so we can customize your coaching.'
+ ? isDurationOfferSlug(plan.slug)
+ ? 'Same plan on both lengths. 1 month is ₹249. 3 months is ₹499.'
+ : 'Answer a few basics so we can customize your coaching.'
  : 'Enter your details, then continue to checkout.'}
  </p>
  )}
+ {isDurationOfferSlug(plan.slug) && checkoutScreen === 1 ? (
+ <ul style={styles.durationPoints}>
+ {DURATION_OFFER_POINTS.map((point) => (
+ <li key={point} style={{ ...styles.durationPoint, color: intakeTheme.subtitle.color }}>
+ <span style={{ ...styles.durationDot, backgroundColor: intakeTheme.eyebrow.color }} />
+ {point}
+ </li>
+ ))}
+ </ul>
+ ) : null}
 
  <div style={styles.screenDots} aria-label={`Checkout step ${SKIP_CHECKOUT_MORE_INFO ? (checkoutScreen === 1 ? 1 : 2) : checkoutScreen} of ${SKIP_CHECKOUT_MORE_INFO ? 2 : 3}`}>
  {(SKIP_CHECKOUT_MORE_INFO ? ([1, 3] as CheckoutScreen[]) : ([1, 2, 3] as CheckoutScreen[])).map((step) => (
@@ -1095,6 +1114,8 @@ function CheckoutForm() {
  : plan.sections === 'diet'
  ? 'Diet chart · digital delivery'
  : 'Workout Rs 49 · Diet Rs 89 · both Rs 99'
+ : isDurationOfferSlug(plan.slug)
+ ? 'Diet chart, diet plan, workout plan, sleep, cardio, and supplement guidance'
  : 'Basics done · next: your contact details'}
  </div>
  </div>
@@ -1369,6 +1390,29 @@ const styles: Record<string, CSSProperties> = {
     textAlign: 'center',
     fontSize: 15,
     lineHeight: 1.45,
+  },
+  durationPoints: {
+    listStyle: 'none',
+    margin: '0 0 18px',
+    padding: 0,
+    display: 'grid',
+    gap: 8,
+    textAlign: 'left',
+  },
+  durationPoint: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    margin: 0,
+    fontSize: 15,
+    fontWeight: 600,
+    lineHeight: 1.4,
+  },
+  durationDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+    flex: '0 0 7px',
   },
  trustStrip: {
  margin: '0 0 18px',

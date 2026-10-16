@@ -17,6 +17,8 @@ import {
 } from 'framer-motion'
 import Link from 'next/link'
 import { CheckoutFunnelLink } from '@/components/analytics/CheckoutFunnelLink'
+import { trackFunnelStep } from '@/lib/analytics/funnel'
+import { persistMetaClickIdsFromLocation } from '@/lib/analytics/meta-attribution'
 import { getCoachingPlan } from '@/lib/payments/plans'
 
 function useIsCompactViewport() {
@@ -186,14 +188,39 @@ export function PrimaryCta({
   plan = '3_months',
   source = 'landing',
   landingPath,
+  onPay,
 }: {
   children: ReactNode
   className?: string
   plan?: string
   source?: string
   landingPath?: string
+  onPay?: (plan: string) => void
 }) {
   const catalog = getCoachingPlan(plan)
+  const classes = ['lx-btn', 'lx-btn-primary', className].filter(Boolean).join(' ')
+  if (onPay) {
+    return (
+      <button
+        type="button"
+        className={classes}
+        onClick={() => {
+          persistMetaClickIdsFromLocation()
+          trackFunnelStep('plan_click', {
+            plan,
+            plan_name: catalog?.name,
+            value: catalog ? catalog.amountPaise / 100 : undefined,
+            currency: 'INR',
+            source,
+            ...(landingPath ? { path: landingPath } : {}),
+          })
+          onPay(plan)
+        }}
+      >
+        {children}
+      </button>
+    )
+  }
   return (
     <CheckoutFunnelLink
       plan={plan}
@@ -201,7 +228,7 @@ export function PrimaryCta({
       value={catalog ? catalog.amountPaise / 100 : undefined}
       source={source}
       landingPath={landingPath}
-      className={['lx-btn', 'lx-btn-primary', className].filter(Boolean).join(' ')}
+      className={classes}
     >
       {children}
     </CheckoutFunnelLink>

@@ -3,47 +3,44 @@
 import { useState } from 'react'
 import { coaches } from '@/lib/content'
 import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
+import { DURATION_OFFER_POINTS, DURATION_OFFER_RECEIVE } from '@/lib/payments/duration-offer-points'
 import { PLAN_INCLUSIONS } from '@/lib/payments/plan-pages'
-import { COACHING_PLANS, COACHING_PLAN_LIST, type CoachingPlanSlug } from '@/lib/payments/plans'
+import {
+  DURATION_OFFER_PLANS,
+  DURATION_PLAN_LIST,
+  COACHING_PLAN_LIST,
+  type DurationOfferSlug,
+} from '@/lib/payments/plans'
 import { CampaignImage, CtaLink, PrimaryCta } from './primitives'
 
-const entry = COACHING_PLANS['3_months']
+const entry = DURATION_OFFER_PLANS.offer_3_months
 
 const HERO_OPTIONS: {
-  slug: CoachingPlanSlug
+  slug: DurationOfferSlug
   label: string
-  title: string
+  title: string[]
   lead: string
   duration: string
   image: string
   alt: string
 }[] = [
   {
-    slug: '3_months',
-    label: 'Fat loss',
-    title: 'Your fat loss plan.',
-    lead: `Best for a 90-day fat-loss push. First plan within ${INSTANT_PLAN_WINDOW_LABEL} after onboarding.`,
-    duration: '90 days',
+    slug: 'offer_1_month',
+    label: 'Starter',
+    title: ['The starter.', 'One month.'],
+    lead: 'Diet, workout, sleep, and cardio, written for the week you actually have.',
+    duration: '1 month',
     image: '/images/lurvox/campaign/hero-fat-loss.webp',
     alt: 'Man walking uphill on a treadmill in a private gym',
   },
   {
-    slug: '6_months',
-    label: 'Muscle',
-    title: 'Fat loss and muscle.',
-    lead: `Best for losing fat while building muscle. First plan within ${INSTANT_PLAN_WINDOW_LABEL} after onboarding.`,
-    duration: '6 months',
+    slug: 'offer_3_months',
+    label: 'Finisher',
+    title: ['The finisher.', 'Three months.'],
+    lead: 'The starter stays. The finisher adds the time, and a few extras.',
+    duration: '3 months',
     image: '/images/lurvox/campaign/hero-muscle.webp',
     alt: 'Man in a heavy squat in a private studio',
-  },
-  {
-    slug: '12_months',
-    label: 'Athletic',
-    title: 'An athletic body.',
-    lead: `Best for building an athletic body — fat loss, muscle gain, and stamina. First plan within ${INSTANT_PLAN_WINDOW_LABEL} after onboarding.`,
-    duration: '12 months',
-    image: '/images/lurvox/campaign/hero-athletic.webp',
-    alt: 'Muscular man running in shorts along a waterfront at dawn',
   },
 ]
 
@@ -73,20 +70,26 @@ export function Nav() {
 export function Hero({
   slug,
   onChange,
+  onPay,
 }: {
-  slug: CoachingPlanSlug
-  onChange: (slug: CoachingPlanSlug) => void
+  slug: DurationOfferSlug
+  onChange: (slug: DurationOfferSlug) => void
+  onPay?: (plan: string) => void
 }) {
-  const option = HERO_OPTIONS.find((item) => item.slug === slug) ?? HERO_OPTIONS[0]
-  const plan = COACHING_PLANS[option.slug]
+  const option = HERO_OPTIONS.find((item) => item.slug === slug) ?? HERO_OPTIONS[1]
+  const plan = DURATION_OFFER_PLANS[option.slug]
   const monthly = Math.round(plan.amountPaise / 100 / plan.durationMonths)
   return (
     <section className="lx-hero" id="top">
       <div className="lx-hero-copy">
         <p className="lx-eyebrow">Online coaching</p>
-        <h1>{option.title}</h1>
+        <h1>
+          {option.title.map((line) => (
+            <span key={line}>{line}</span>
+          ))}
+        </h1>
         <p className="lx-lead">{option.lead}</p>
-        <div className="lx-switch" role="tablist" aria-label="Coaching plans">
+        <div className="lx-switch" role="tablist" aria-label="Choose how long">
           {HERO_OPTIONS.map((item) => (
             <button
               key={item.slug}
@@ -97,6 +100,7 @@ export function Hero({
               onClick={() => onChange(item.slug)}
             >
               {item.label}
+              <strong>{item.duration}</strong>
             </button>
           ))}
         </div>
@@ -106,11 +110,11 @@ export function Hero({
         <p className="lx-price">
           <strong>{plan.displayPrice}</strong>
           <em>
-            ₹{monthly} a month · {option.duration}
+            {plan.durationMonths === 1 ? 'for 1 month' : `for 3 months · ₹${monthly} a month`}
           </em>
         </p>
         <div className="lx-actions">
-          <PrimaryCta plan={option.slug} className="lx-btn-block">
+          <PrimaryCta plan={option.slug} className="lx-btn-block" source="preview4" landingPath="/preview4" onPay={onPay}>
             Start for {plan.displayPrice}
           </PrimaryCta>
         </div>
@@ -144,7 +148,7 @@ export function WhyFail() {
     {
       n: '02',
       title: 'It keeps up',
-      body: 'The 3-month plan updates every 14 days. The 6- and 12-month plans update every week.',
+      body: 'You get a diet chart, a diet plan, a workout plan, and guidance for sleep, cardio, and supplements.',
       image: '/images/lurvox/campaign/why-keeps.webp',
       alt: 'Man setting a dumbbell down beside a window after a week of training',
     },
@@ -169,7 +173,7 @@ export function WhyFail() {
     <section className="lx-fail" id="why">
       <p className="lx-eyebrow">With LURVOX</p>
       <h2>Why you won&apos;t fail with us.</h2>
-      <p className="lx-lead">The plan is built for your case, and it does not stop at a file.</p>
+      <p className="lx-lead">A plan for your week. Not a file you have to figure out.</p>
       <div className="lx-stage">
         <img key={current.n} className="lx-cover" src={current.image} alt={current.alt} />
         <div className="lx-stage-copy">
@@ -384,9 +388,9 @@ export function System() {
     <section className="lx-system" id="system">
       <p className="lx-eyebrow">What you get</p>
       <h2>One system. Your case.</h2>
-      <p className="lx-lead">The workout, the diet, the check-ins, and a coach reading them — built on tested principles.</p>
+      <p className="lx-lead">Diet, workout, sleep, cardio, then the check-ins and the trackers.</p>
       <ul className="lx-include">
-        {PLAN_INCLUSIONS.map((item) => (
+        {DURATION_OFFER_POINTS.map((item) => (
           <li key={item}>{item}</li>
         ))}
       </ul>
@@ -635,65 +639,59 @@ export function Method() {
   )
 }
 
-const PLAN_POINTS: Record<CoachingPlanSlug, string[]> = {
-  '3_months': [
-    'Workout and diet for your case',
-    'Professional principles, backed by science',
-    'Check-ins and daily tracking',
-    'Updates every 14 days',
-  ],
-  '6_months': [
-    'Everything in Fat loss',
-    'Updates every week',
-    'Cardio plan',
-    'Supplement plan',
-    'Plateau coaching after 90 days',
-  ],
-  '12_months': [
-    'Everything in Fat loss + muscle gain',
-    'Stamina coaching',
-    'Weekly updates for 12 months',
-    'Cardio and supplements, kept current',
-    'Plateau coaching through the year',
-    'Lowest rate, ₹142 a month',
-  ],
-}
+const MONTH_CARD_POINTS: { text: string; note?: string; gold?: boolean }[] = [
+  { text: 'Diet, workout, sleep, and cardio' },
+  { text: 'Wednesday and Sunday check-ins', note: 'Twice a week, on the platform' },
+  { text: 'Coach chat' },
+  { text: 'Diet tracker' },
+  { text: 'Workout tracker' },
+]
 
-export function Pricing() {
+const THREE_MONTH_CARD_POINTS: { text: string; note?: string; gold?: boolean }[] = [
+  { text: 'Everything in the starter' },
+  { text: 'Testosterone boosting protocol', note: 'Free for men', gold: true },
+  { text: 'Hourglass figure', note: 'For females', gold: true },
+  { text: 'Journey plan' },
+]
+
+export function Pricing({ onPay }: { onPay?: (plan: string) => void }) {
   return (
     <section className="lx-pricing" id="pricing">
       <p className="lx-eyebrow">Plans</p>
-      <h2>Choose your plan.</h2>
-      <p className="lx-shared">
-        Every plan includes personalized coaching, a workout, a diet, tracking and coach check-ins. A free
-        upgrade is available for 48 hours. After that, an upgrade is ₹250.
-      </p>
+      <h2>The starter, or the finisher.</h2>
+      <p className="lx-shared">The finisher keeps the starter, then goes further.</p>
       <div className="lx-plans">
-        {COACHING_PLAN_LIST.map((plan) => (
-          <article
-            key={plan.slug}
-            className={[plan.popular ? 'is-popular' : '', plan.best ? 'is-best' : ''].filter(Boolean).join(' ') || undefined}
-          >
+        {DURATION_PLAN_LIST.map((plan) => {
+          const points = plan.durationMonths === 1 ? MONTH_CARD_POINTS : THREE_MONTH_CARD_POINTS
+          return (
+          <article key={plan.slug} className={plan.best ? 'is-best' : undefined}>
             <p className="lx-kicker">
-              {plan.durationMonths === 3 ? '90 days' : `${plan.durationMonths} months`}
-              {plan.popular ? <span className="lx-tag">Most popular</span> : null}
-              {plan.best ? <span className="lx-tag">Lowest monthly</span> : null}
+              <span className="lx-length">{plan.durationMonths === 1 ? '1 month' : '3 months'}</span>
+              {plan.best ? <span className="lx-tag">Best value</span> : <span className="lx-tag">Full access</span>}
             </p>
-            <h3>{plan.name}</h3>
+            <h3>{plan.durationMonths === 1 ? 'The starter' : 'The finisher'}</h3>
             <p className="lx-plan-price">
               {plan.displayPrice}
-              <em>₹{Math.round(plan.amountPaise / 100 / plan.durationMonths)} a month</em>
+              <em>
+                {plan.durationMonths === 1
+                  ? 'for 1 month'
+                  : `for 3 months · ₹${Math.round(plan.amountPaise / 100 / plan.durationMonths)} a month`}
+              </em>
             </p>
             <ul className="lx-points">
-              {PLAN_POINTS[plan.slug as CoachingPlanSlug].map((point) => (
-                <li key={point}>{point}</li>
+              {points.map((point) => (
+                <li key={point.text} className={point.gold ? 'is-gold' : undefined}>
+                  {point.text}
+                  {point.note ? <em>{point.note}</em> : null}
+                </li>
               ))}
             </ul>
-            <PrimaryCta plan={plan.slug} className="lx-btn-block">
+            <PrimaryCta plan={plan.slug} className="lx-btn-block" source="preview4" landingPath="/preview4" onPay={onPay}>
               Start for {plan.displayPrice}
             </PrimaryCta>
           </article>
-        ))}
+          )
+        })}
       </div>
     </section>
   )
@@ -701,13 +699,13 @@ export function Pricing() {
 
 export function FaqSection() {
   const items = [
-    ['What is LURVOX?', 'Online fitness coaching. A personal workout, a personal diet, tracking, and a coach in the app.'],
-    ['What do I receive?', 'The plan for the goal you choose, check-ins, daily tracking, and coach chat. The 3-month plan updates every 14 days. The 6- and 12-month plans update every week.'],
+    ['What is LURVOX?', 'Online fitness coaching. A diet chart, a diet plan, a workout plan, guidance, check-in, and coach chat in the app.'],
+    ['What do I receive?', `${DURATION_OFFER_RECEIVE} 1 month is ₹249. 3 months is ₹499.`],
     ['What is the training based on?', 'Professional principles, backed by science. Not random workouts or diets.'],
     ['When do I receive my plan?', `After you finish onboarding and the required photos, the first plan arrives within ${INSTANT_PLAN_WINDOW_LABEL}.`],
     ['Do I need a gym?', 'No. The plan uses a gym, home, or a mix, based on what you have.'],
     ['Can I message my coach?', 'Yes, in the app, once your coaching access is active.'],
-    ['What happens during weekly check-ins?', 'You submit the week, including photos when they are required. Your coach reviews it and the plan can change from that.'],
+    ['What happens at check-in?', 'You submit the check-in, including photos when they are required. Your coach reviews it.'],
     ['What is the refund policy?', 'Sales are final once payment is captured, except where the Terms say otherwise. The Terms are the only refund rules.'],
   ]
   return (
@@ -726,16 +724,17 @@ export function FaqSection() {
   )
 }
 
-export function FinalCta() {
+export function FinalCta({ onPay }: { onPay?: (plan: string) => void }) {
   return (
-    <section className="lx-final">
+    <section className="lx-final" id="close">
       <div className="lx-final-copy">
-        <h2>Your next 90 days start here.</h2>
+        <h2>Start it, or finish it.</h2>
         <p className="lx-price">
-          <span>Starting from</span>
-          <strong>{entry.displayPrice}</strong>
+          <span>1 month ₹249 · 3 months ₹499</span>
         </p>
-        <PrimaryCta>Start for {entry.displayPrice}</PrimaryCta>
+        <PrimaryCta plan="offer_3_months" source="preview4" landingPath="/preview4" onPay={onPay}>
+          Start for {entry.displayPrice}
+        </PrimaryCta>
       </div>
     </section>
   )

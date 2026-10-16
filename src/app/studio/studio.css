@@ -121,6 +121,20 @@ body:has(.st-root) [data-dev-panel] {
   font-weight: 600;
 }
 .st-nav-cta { margin-left: auto; }
+.st-nav .st-nav-login {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  margin-left: 8px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #1e4d3d;
+  color: #f4efe6;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
 .st-menu-btn { display: grid; gap: 6px; width: 44px; padding: 0; place-items: center; }
 .st-menu-btn i { display: block; width: 18px; height: 1.5px; background: var(--ink); }
 
@@ -1070,7 +1084,8 @@ body:has(.st-root) [data-dev-panel] {
     backdrop-filter: blur(16px);
   }
   .st-nav-cta { display: none; }
-  .st-menu-btn { margin-left: auto; }
+  .st-nav .st-nav-login { margin-left: auto; }
+  .st-menu-btn { margin-left: 8px; }
   .st-root h1 { font-size: clamp(38px, 11vw, 52px); max-width: 11ch; }
   .st-root h2 { font-size: clamp(30px, 8.4vw, 42px); }
   .st-lede { margin-top: 12px; font-size: 16px; }

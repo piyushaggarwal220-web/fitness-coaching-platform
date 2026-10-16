@@ -133,7 +133,15 @@ const ACCENTS = [
   styles.accentGold,
 ]
 
-export function InstantFitnessQuiz({ offer = 'digital' }: { offer?: 'digital' | 'coaching' } = {}) {
+export function InstantFitnessQuiz({
+  offer = 'digital',
+  fromLabel,
+  coachingPoints,
+}: {
+  offer?: 'digital' | 'coaching'
+  fromLabel?: string
+  coachingPoints?: string[]
+} = {}) {
   const coaching = offer === 'coaching'
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
@@ -265,12 +273,12 @@ export function InstantFitnessQuiz({ offer = 'digital' }: { offer?: 'digital' | 
           </p>
           <ul className={styles.resultPoints}>
             {(coaching
-              ? [
+              ? (coachingPoints ?? [
                   'You do not need to memorise every rule',
                   'Check-ins are mid-week and weekly on every plan',
                   'Fat loss is rewritten every 14 days',
                   'The 6- and 12-month plans are rewritten every week',
-                ]
+                ])
               : [
                   'You do not need to memorise every rule',
                   'Coach-made plan from your answers',
@@ -286,7 +294,7 @@ export function InstantFitnessQuiz({ offer = 'digital' }: { offer?: 'digital' | 
           <div className={styles.resultActions}>
             {coaching ? (
               <a href="#plans" className={styles.primaryCta}>
-                See plans — from ₹599
+                {fromLabel ?? 'See plans — from ₹599'}
               </a>
             ) : (
               <Link href="/checkout?plan=digital_complete" className={styles.primaryCta}>

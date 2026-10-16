@@ -80,6 +80,10 @@ export function dietPreferenceLabel(value: string | null | undefined): string | 
 /** What this client bought, without prices. */
 export function purchasedPlanLine(slug: string | null | undefined): string {
   if (!slug) return 'Purchased plan: unknown. Do not guess a price or a plan name.'
+  if (slug === 'offer_1_month' || slug === 'offer_3_months') {
+    const months = slug === 'offer_1_month' ? '1 month' : '3 months'
+    return `Purchased plan: full coaching for ${months}. Workout, diet, cardio, supplements, trackers, Journey, and coach chat are included. Plan updates every week. All goals are unlocked.`
+  }
   if (slug === '3_months' || slug === '1_month') {
     return 'Purchased plan: Fat loss. Plan updates every 14 days.'
   }
