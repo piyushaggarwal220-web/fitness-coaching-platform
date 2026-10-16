@@ -23,7 +23,7 @@ import {
  readMetaBrowserIds,
 } from '@/lib/analytics/meta-attribution';
 import { trackFunnelStep } from '@/lib/analytics/funnel';
-import { previewAdLandingPath } from '@/lib/analytics/ad-landing';
+import { previewAdFunnelSource, previewAdLandingPath } from '@/lib/analytics/ad-landing';
 import {
  formatInrFromPaise,
  firstTimerSalePaise,
@@ -95,7 +95,7 @@ function CheckoutForm() {
  const searchParams = useSearchParams();
  const adLandingPath = previewAdLandingPath(searchParams.get('landing'));
  const adFunnel = adLandingPath
- ? { source: adLandingPath === '/preview2' ? 'preview2' : 'preview1', path: adLandingPath }
+ ? { source: previewAdFunnelSource(adLandingPath), path: adLandingPath }
  : {};
  const rawPlan = searchParams.get('plan') ?? '3_months';
  const initialPlan = rawPlan === '1_week_trial' ? '3_months' : rawPlan;

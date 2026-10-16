@@ -4,7 +4,10 @@ export const PREVIEW_AD_PATH = '/preview1'
 /** Ad URL for the purple landing preview. */
 export const PREVIEW2_AD_PATH = '/preview2'
 
-export type PreviewAdPath = typeof PREVIEW_AD_PATH | typeof PREVIEW2_AD_PATH
+/** Ad URL for the colourful coaching preview. */
+export const PREVIEW3_AD_PATH = '/preview3'
+
+export type PreviewAdPath = typeof PREVIEW_AD_PATH | typeof PREVIEW2_AD_PATH | typeof PREVIEW3_AD_PATH
 
 export const PREVIEW_DROPOFF_SECTIONS = [
   { id: 'hero', key: 'p1_hero', index: 0, label: 'Hero' },
@@ -30,9 +33,25 @@ export const PREVIEW2_DROPOFF_SECTIONS = [
   { id: 'close', key: 'p2_close', index: 6, label: 'Closing offer' },
 ] as const
 
+/** Sections on the colourful preview. Keys stay off the homepage and the other previews. */
+export const PREVIEW3_DROPOFF_SECTIONS = [
+  { id: 'top', key: 'p3_hero', index: 0, label: 'Hero' },
+  { id: 'plans', key: 'p3_plans', index: 1, label: 'Plans' },
+  { id: 'steps', key: 'p3_steps', index: 2, label: 'How it works' },
+  { id: 'faq', key: 'p3_faq', index: 3, label: 'Questions' },
+  { id: 'close', key: 'p3_close', index: 4, label: 'Closing offer' },
+] as const
+
 /** Only a known preview ad page may set the purchase source URL. Anything else stays on /checkout. */
 export function previewAdLandingPath(value: unknown): PreviewAdPath | null {
   if (value === PREVIEW_AD_PATH || value === '/studio') return PREVIEW_AD_PATH
   if (value === PREVIEW2_AD_PATH) return PREVIEW2_AD_PATH
+  if (value === PREVIEW3_AD_PATH) return PREVIEW3_AD_PATH
   return null
+}
+
+export function previewAdFunnelSource(path: PreviewAdPath): 'preview1' | 'preview2' | 'preview3' {
+  if (path === PREVIEW2_AD_PATH) return 'preview2'
+  if (path === PREVIEW3_AD_PATH) return 'preview3'
+  return 'preview1'
 }
