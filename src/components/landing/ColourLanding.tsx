@@ -38,11 +38,11 @@ const PLANS: PlanCard[] = [
     monthly: '3 months · ≈ ₹200/mo',
     tone: 'fat',
     points: [
-      'New workout + diet each week',
+      'Check-in mid-week and every week',
+      'Plan rewritten every 14 days',
       'Trackers unlocked',
       'Coach chat unlocked',
       'Journey unlocked',
-      'Weekly check-ins',
       'Progress photos',
     ],
     cta: 'Get Fat loss',
@@ -54,11 +54,11 @@ const PLANS: PlanCard[] = [
     monthly: '≈ ₹167/mo',
     tone: 'mid',
     tag: 'Most popular',
-    note: 'Everything in Fat loss, plus muscle programmed in for 6 months.',
+    note: 'Fat loss plus muscle, rewritten every week for 6 months.',
     points: [
-      'New workout + diet each week',
+      'Check-in mid-week and every week',
+      'Plan rewritten after each weekly check-in',
       'Trackers, coach chat, Journey unlocked',
-      'Weekly check-ins',
       'Progress photos',
       'Fat loss and muscle in one plan',
       'Longer runway to keep results',
@@ -78,9 +78,9 @@ const PLANS: PlanCard[] = [
     tag: 'Best value',
     note: 'Full year of coaching. Fat loss, muscle, and stamina in one plan.',
     points: [
-      'New workout + diet each week',
+      'Check-in mid-week and every week, all year',
+      'Plan rewritten after each weekly check-in',
       'Trackers, coach chat, Journey unlocked',
-      'Weekly check-ins all year',
       'Progress photos + plan tweaks',
       'Fat loss, muscle, and stamina',
       'Longest runway to keep results',
@@ -103,10 +103,10 @@ const FAIL = [
 ]
 
 const WIN = [
-  'A new personal workout and diet every week',
+  'Fat loss is rewritten every 14 days. The 6- and 12-month plans are rewritten every week',
   'Trackers, coach chat, and Journey unlocked from day one',
   'Science first: calories, protein, progressive overload, recovery',
-  'Weekly check-ins so the next plan matches real progress',
+  'Mid-week and weekly check-ins on every plan. A new plan every 14 days on Fat loss, every week on the longer plans',
   'Daily trackers so we can see what is actually happening',
   'Built for your schedule, gym or home, veg or mixed diet',
 ]
@@ -122,7 +122,7 @@ const FAQ = [
   },
   {
     q: 'What exactly is included?',
-    a: 'A new personal workout and diet each week, plus daily trackers, coach chat, and Journey already unlocked. Weekly check-ins and progress photos sit on top of that. One price. No weekly phone calls — support is inside the app.',
+    a: 'Check-ins are mid-week and weekly on every plan. Fat loss is rewritten every 14 days. The 6- and 12-month plans are rewritten after each weekly check-in. Daily trackers, coach chat, and Journey are included. No weekly phone calls — support is inside the app.',
   },
   {
     q: 'Is this real 1-to-1 coaching?',
@@ -229,11 +229,11 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
               ))}
             </div>
             <p className="lx3-lede">
-              Coach-made workout and diet around your goals, from ₹599. You get a <strong>new plan every week</strong>, and trackers, coach chat, and Journey are already unlocked from day one — not add-ons later.
+              Coach-made workout and diet around your goals, from ₹599. Check-ins are mid-week and weekly. <strong>Fat loss is rewritten every 14 days.</strong> The 6- and 12-month plans are rewritten every week.
             </p>
             <ul className="lx3-trust">
-              <li>New weekly plans</li>
-              <li>Trackers, coach chat, Journey unlocked</li>
+              <li>Fat loss updates every 14 days</li>
+              <li>6 and 12 months update every week</li>
               <li>Beginner friendly</li>
             </ul>
           </div>
@@ -276,7 +276,7 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
         <p className="lx3-eyebrow">Choose your plan</p>
         <h2 id="lx3-plans-title">Simple plans. Real coaching.</h2>
         <p className="lx3-plans-lede">
-          The price is for a <strong>new weekly plan</strong> plus trackers, coach chat, and Journey already unlocked — not a one-time PDF.
+          Check-ins are mid-week and weekly on every plan. <strong>Fat loss</strong> is rewritten every 14 days. The 6- and 12-month plans are rewritten every week.
         </p>
         <div className="lx3-stack">
           {PLANS.map((plan) => (
@@ -364,7 +364,7 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
             <span>03</span>
             <div>
               <strong>Receive your plan</strong>
-              <p>First workout and diet in 24–48 hours, then a new plan each week. Trackers, coach chat, and Journey are already unlocked. If the first plan does not arrive, you get a refund.</p>
+              <p>First workout and diet in 24–48 hours. Check-ins are mid-week and weekly. Fat loss is rewritten every 14 days. The 6- and 12-month plans are rewritten every week. If the first plan does not arrive, you get a refund.</p>
             </div>
           </li>
         </ol>
@@ -405,7 +405,7 @@ export function ColourLanding({ coaches }: { coaches: CoachResult[] }) {
         <p className="lx3-eyebrow lx3-eyebrow-orange">Ready to start</p>
         <h2>Start with your goal. We build everything around it.</h2>
         <p>
-          Goal first. Time is the runway. <strong>Fat loss</strong> is 90 days · <strong>₹599</strong>. <strong>Fat loss + muscle gain</strong> is 6 months · <strong>₹999</strong>. <strong>Athletic body</strong> is 12 months · <strong>₹1,699</strong> — fat loss, muscle, and stamina, with coach chat and weekly check-ins all year.
+          Goal first. Time is the runway. <strong>Fat loss</strong> is 90 days · <strong>₹599</strong>, rewritten every 14 days. <strong>Fat loss + muscle gain</strong> is 6 months · <strong>₹999</strong>, rewritten every week. <strong>Athletic body</strong> is 12 months · <strong>₹1,699</strong> — fat loss, muscle, and stamina, rewritten every week. Check-ins are mid-week and weekly on every plan.
         </p>
         <a className="lx3-jump" href="#plans">
           See plans — ₹599 · ₹999 · ₹1,699

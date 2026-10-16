@@ -267,9 +267,9 @@ export function InstantFitnessQuiz({ offer = 'digital' }: { offer?: 'digital' | 
             {(coaching
               ? [
                   'You do not need to memorise every rule',
-                  'New personal workout and diet each week',
-                  'Trackers, coach chat, and Journey already unlocked',
-                  'Weekly check-ins so the next plan matches real progress',
+                  'Check-ins are mid-week and weekly on every plan',
+                  'Fat loss is rewritten every 14 days',
+                  'The 6- and 12-month plans are rewritten every week',
                 ]
               : [
                   'You do not need to memorise every rule',
