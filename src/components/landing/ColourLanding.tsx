@@ -6,6 +6,8 @@ import { CheckoutFunnelLink } from '@/components/analytics/CheckoutFunnelLink'
 import { trackFunnelStep } from '@/lib/analytics/funnel'
 import { persistMetaClickIdsFromLocation } from '@/lib/analytics/meta-attribution'
 import { DirectCheckout } from '@/components/landing/DirectCheckout'
+import { PreviewSaleProvider, usePreviewSale } from '@/components/landing/PreviewSaleCode'
+import { SaleEndsTimer } from '@/components/landing/SaleEndsTimer'
 import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations'
 import { InstantFitnessQuiz } from '@/components/landing/InstantFitnessQuiz'
 import { PreviewAdCapture } from '@/components/studio/PreviewAdCapture'
@@ -23,7 +25,7 @@ import {
   durationOfferCardPoints,
   durationOfferCardTitle,
 } from '@/lib/payments/duration-offer-points'
-import { COACHING_PLANS, getCoachingPlan, type CoachingPlanSlug } from '@/lib/payments/plans'
+import { COACHING_PLANS, getCoachingPlan, isDurationOfferSlug, type CoachingPlanSlug } from '@/lib/payments/plans'
 
 const LANDING = PREVIEW3_AD_PATH
 
@@ -251,13 +253,29 @@ function Stamp() {
   )
 }
 
-export function ColourLanding({
+export function ColourLanding(props: {
+  coaches: CoachResult[]
+  durationOffer?: boolean
+}) {
+  return (
+    <PreviewSaleProvider>
+      <ColourLandingView {...props} />
+    </PreviewSaleProvider>
+  )
+}
+
+function ColourLandingView({
   coaches,
   durationOffer = false,
 }: {
   coaches: CoachResult[]
   durationOffer?: boolean
 }) {
+  const sale = usePreviewSale()
+  const priceOf = (slug: string) => {
+    if (durationOffer && isDurationOfferSlug(slug)) return sale.quote(slug)!.payLabel
+    return getCoachingPlan(slug)?.displayPrice ?? ''
+  }
   const [sticky, setSticky] = useState(false)
   const [payPlan, setPayPlan] = useState<string | null>(null)
   const openPay = durationOffer ? setPayPlan : undefined
@@ -280,7 +298,7 @@ export function ColourLanding({
         if (item.q === 'What exactly is included?') {
           return {
             ...item,
-            a: `${DURATION_OFFER_RECEIVE} 1 month is ₹249. 3 months is ₹499. No weekly phone calls — support is inside the app.`,
+            a: `${DURATION_OFFER_RECEIVE} 1 month is ${sale.quote('offer_1_month')!.payLabel}. 3 months is ${sale.quote('offer_3_months')!.payLabel}. No weekly phone calls — support is inside the app.`,
           }
         }
         if (item.q === 'What happens after I pay?') {
@@ -329,6 +347,7 @@ export function ColourLanding({
         </Link>
         <div className="lx3-hero-grid">
           <div>
+            {durationOffer ? <SaleEndsTimer tone="colour" /> : null}
             <h1 id="lx3-title">
               Personalised fitness plans, <span>within 48 hours.</span>
             </h1>
@@ -339,20 +358,20 @@ export function ColourLanding({
                     {plan.tag === 'Most popular' || plan.tag === 'Best value' ? <em>{plan.tag}</em> : null}
                     {plan.chip}
                   </span>
-                  <strong>{planPrice(plan.slug)}</strong>
+                  <strong>{priceOf(plan.slug)}</strong>
                 </PlanLink>
               ))}
             </div>
             <p className="lx3-lede">
               {durationOffer
-                ? `Diet chart, diet plan, workout plan, plus sleep, cardio, and supplement guidance. ${DURATION_OFFER_EXTRA} 1 month is ₹249. 3 months is ₹499.`
+                ? `Diet chart, diet plan, workout plan, plus sleep, cardio, and supplement guidance. ${DURATION_OFFER_EXTRA} 1 month is ${sale.quote('offer_1_month')!.payLabel}. 3 months is ${sale.quote('offer_3_months')!.payLabel}.`
                 : <>Coach-made workout and diet around your goals, from ₹599. Check-ins are mid-week and weekly. <strong>Fat loss is rewritten every 14 days.</strong> The 6- and 12-month plans are rewritten every week.</>}
             </p>
             <ul className="lx3-trust">
               {durationOffer ? (
                 <>
-                  <li>₹249 for 1 month</li>
-                  <li>₹499 for 3 months</li>
+                  <li>{sale.quote('offer_1_month')!.payLabel} for 1 month</li>
+                  <li>{sale.quote('offer_3_months')!.payLabel} for 3 months</li>
                   <li>3 months adds two extras</li>
                 </>
               ) : (
@@ -413,8 +432,14 @@ export function ColourLanding({
               {plan.tag ? <p className={`lx3-tag${plan.tone === 'athletic' ? ' lx3-tag-best' : ''}`}>{plan.tag}</p> : null}
               <span className="lx3-dur">{plan.length}</span>
               <h3>{planName(plan, durationOffer)}</h3>
-              <p className="lx3-price">{planPrice(plan.slug)}</p>
-              <p className="lx3-meta">{plan.monthly}</p>
+              <p className="lx3-price">{durationOffer ? priceOf(plan.slug) : planPrice(plan.slug)}</p>
+              <p className="lx3-meta">
+                {durationOffer && isDurationOfferSlug(plan.slug)
+                  ? plan.slug === 'offer_1_month'
+                    ? `${priceOf(plan.slug)} · under ₹${sale.quote(plan.slug)!.perDay} a day`
+                    : `₹${sale.quote(plan.slug)!.perMonth} a month · under ₹${sale.quote(plan.slug)!.perDay} a day`
+                  : plan.monthly}
+              </p>
               {plan.note ? <p className={`lx3-note${plan.tone === 'athletic' ? ' lx3-note-gold' : ''}`}>{plan.note}</p> : null}
               <ul>
                 {plan.points.map((point) => (
@@ -438,7 +463,7 @@ export function ColourLanding({
                 </div>
               ) : null}
               <PlanLink plan={plan} className="lx3-cta" source={source} landing={landing} onPay={openPay}>
-                {plan.cta}
+                {durationOffer ? `Start for ${priceOf(plan.slug)}` : plan.cta}
               </PlanLink>
             </article>
           ))}
@@ -514,7 +539,7 @@ export function ColourLanding({
         <div id="quiz" className="lx3-quiz">
           <InstantFitnessQuiz
             offer="coaching"
-            fromLabel={durationOffer ? 'See plans — ₹249 or ₹499' : undefined}
+            fromLabel={durationOffer ? `See plans — ${sale.quote('offer_1_month')!.payLabel} or ${sale.quote('offer_3_months')!.payLabel}` : undefined}
             coachingPoints={
               durationOffer
                 ? [...DURATION_OFFER_POINTS, DURATION_OFFER_EXTRA]
@@ -547,11 +572,11 @@ export function ColourLanding({
         <h2>{durationOffer ? 'The starter, or the finisher.' : 'Start with your goal. We build everything around it.'}</h2>
         <p>
           {durationOffer
-            ? <>The coaching stays. <strong>1 month</strong> is <strong>₹249</strong>. <strong>3 months</strong> is <strong>₹499</strong>. {DURATION_OFFER_EXTRA}</>
+            ? <>The coaching stays. <strong>1 month</strong> is <strong>{sale.quote('offer_1_month')!.payLabel}</strong>. <strong>3 months</strong> is <strong>{sale.quote('offer_3_months')!.payLabel}</strong>. {DURATION_OFFER_EXTRA}</>
             : <>Goal first. Time is the runway. <strong>Fat loss</strong> is 90 days · <strong>₹599</strong>, rewritten every 14 days. <strong>Fat loss + muscle gain</strong> is 6 months · <strong>₹999</strong>, rewritten every week. <strong>Athletic body</strong> is 12 months · <strong>₹1,699</strong> — fat loss, muscle, and stamina, rewritten every week. Check-ins are mid-week and weekly on every plan.</>}
         </p>
         <a className="lx3-jump" href="#plans">
-          {durationOffer ? 'See plans — ₹249 · ₹499' : 'See plans — ₹599 · ₹999 · ₹1,699'}
+          {durationOffer ? `See plans — ${sale.quote('offer_1_month')!.payLabel} · ${sale.quote('offer_3_months')!.payLabel}` : 'See plans — ₹599 · ₹999 · ₹1,699'}
         </a>
         <div className="lx3-stamp-row">
           <Stamp />
@@ -566,7 +591,7 @@ export function ColourLanding({
         <div className="lx3-close-actions">
           {plans.map((plan) => (
             <PlanLink key={plan.slug} plan={plan} className={`lx3-close-btn lx3-close-${plan.tone}`} source={source} landing={landing} onPay={openPay}>
-              {planName(plan, durationOffer)} · {planPrice(plan.slug)}
+              {planName(plan, durationOffer)} · {durationOffer ? priceOf(plan.slug) : planPrice(plan.slug)}
             </PlanLink>
           ))}
         </div>
@@ -581,10 +606,10 @@ export function ColourLanding({
       <div className={`lx3-sticky${sticky ? ' is-on' : ''}`}>
         <div>
           <strong>{durationOffer ? '3 months' : 'Athletic body'}</strong>
-          <span>{durationOffer ? '₹499 · best value' : '12 months · ₹1,699 · lowest monthly cost'}</span>
+          <span>{durationOffer ? `${sale.quote('offer_3_months')!.payLabel} · best value` : '12 months · ₹1,699 · lowest monthly cost'}</span>
         </div>
         <PlanLink plan={featured} className="lx3-sticky-cta" source={source} landing={landing} onPay={openPay}>
-          {durationOffer ? 'Start for ₹499' : 'Get Athletic body'}
+          {durationOffer ? `Start for ${sale.quote('offer_3_months')!.payLabel}` : 'Get Athletic body'}
         </PlanLink>
       </div>
       {durationOffer ? (

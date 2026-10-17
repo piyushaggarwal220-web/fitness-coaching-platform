@@ -204,6 +204,14 @@ body:has(.lxo) {
   position: relative;
   padding: 0 20px 26px;
 }
+/* Sale heading sits in the hero. On a short screen the copy can grow past the header, so keep it below the login row. */
+@media (max-width: 899px) {
+  .lxo.lxo-sale .lxo-hero {
+    height: auto;
+    min-height: calc(100svh - 34px);
+    padding-top: 64px !important;
+  }
+}
 .lxo-kicker {
   color: var(--purple-hi);
   font-size: 12.5px;
@@ -812,6 +820,19 @@ body:has(.lxo) {
   font-weight: 700;
 }
 .lxo-plan li.is-gold::before { background: #e2b657; }
+.lxo.lxo-duration .lxo-plan li em {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.lxo.lxo-duration .lxo-plan li.is-gold em {
+  color: #e7c97a;
+  font-weight: 600;
+}
 .lxo-plan .lxo-btn { margin-top: auto; }
 .lxo-plan:not(.is-chosen) .lxo-btn {
   background: transparent;

@@ -6,9 +6,15 @@ import {
 } from '@/lib/payments/affiliate-codes'
 import {
   getPurchasablePlan,
+  isDurationOfferSlug,
   type CoachingPlan,
   type CoachingPlanSlug,
 } from '@/lib/payments/plans'
+import {
+  isPreviewSaleCode,
+  PREVIEW_SALE_CODE,
+  previewSaleDiscountPaise,
+} from '@/lib/payments/preview-sale-code'
 import {
   computePromoDiscountPaise,
   getActivePromoCode,
@@ -391,6 +397,32 @@ export async function resolveCheckoutPricing(input: {
       ok: false,
       error: 'Enter a valid email before applying a code.',
       status: 400,
+    }
+  }
+
+  // Preview 4/5/6 only. One click on the hero sends LURVOX60. Without it, the plan price is unchanged.
+  if (isPreviewSaleCode(code)) {
+    if (!isDurationOfferSlug(plan.slug)) {
+      return { ok: false, error: 'This code is not available for this plan.', status: 400 }
+    }
+    const discountPaise = previewSaleDiscountPaise(listAmountPaise)
+    if (discountPaise <= 0) {
+      return { ok: false, error: 'This code is not available for this plan.', status: 400 }
+    }
+    const discount = buildAppliedDiscount({
+      kind: 'discount',
+      code: PREVIEW_SALE_CODE,
+      discountPaise,
+      listAmountPaise,
+    })
+    return {
+      ok: true,
+      pricing: {
+        plan,
+        listAmountPaise,
+        amountPaise: discount.amountPaise,
+        discount,
+      },
     }
   }
 

@@ -5,7 +5,9 @@ import { trackFunnelStep } from '@/lib/analytics/funnel'
 import { metaBrowserIdsForRequest, persistMetaClickIdsFromLocation, readMetaBrowserIds } from '@/lib/analytics/meta-attribution'
 import { queueMetaPurchase } from '@/lib/analytics/meta-pixel'
 import { FIRST_PLAN_TARGET } from '@/lib/payments/plan-pages'
-import { getCoachingPlan } from '@/lib/payments/plans'
+import { getCoachingPlan, isDurationOfferSlug } from '@/lib/payments/plans'
+import { PREVIEW_SALE_CODE } from '@/lib/payments/preview-sale-code'
+import { usePreviewSale } from './PreviewSaleCode'
 import styles from './DirectCheckout.module.css'
 
 type RazorpayResponse = {
@@ -64,6 +66,10 @@ export function DirectCheckout({
   onClose: () => void
 }) {
   const plan = planSlug ? getCoachingPlan(planSlug) : null
+  const sale = usePreviewSale()
+  const offer = plan && isDurationOfferSlug(plan.slug) ? sale.quote(plan.slug) : null
+  const payLabel = offer?.payLabel ?? plan?.displayPrice ?? ''
+  const payPaise = offer?.payPaise ?? plan?.amountPaise ?? 0
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -80,7 +86,7 @@ export function DirectCheckout({
     trackFunnelStep('checkout_view', {
       plan: plan.slug,
       plan_name: plan.name,
-      value: plan.amountPaise / 100,
+      value: payPaise / 100,
       currency: 'INR',
       screen: 'landing',
       source,
@@ -115,7 +121,7 @@ export function DirectCheckout({
     trackFunnelStep('pay_click', {
       plan: plan.slug,
       plan_name: plan.name,
-      value: plan.amountPaise / 100,
+      value: payPaise / 100,
       currency: 'INR',
       source,
       path: landingPath,
@@ -131,6 +137,7 @@ export function DirectCheckout({
           phone: cleanPhone,
           policyAgreementAccepted: true,
           landingPath,
+          discountCode: offer?.applied ? PREVIEW_SALE_CODE : undefined,
           ...metaBrowserIdsForRequest(),
         }),
       })
@@ -214,9 +221,17 @@ export function DirectCheckout({
         <button type="button" className={styles.back} onClick={onClose}>← Back</button>
         <p className={styles.kicker}>{plan.durationMonths === 1 ? '1 month' : `${plan.durationMonths} months`}</p>
         <h2 id="direct-checkout-title">{plan.name}</h2>
-        <p className={styles.price}>{plan.displayPrice}</p>
+        <p className={styles.price}>
+          {offer?.applied ? <s className={styles.was}>{offer.listLabel}</s> : null}
+          {payLabel}
+        </p>
+        {offer ? (
+          <button type="button" className={styles.code} onClick={sale.apply} disabled={offer.applied}>
+            {offer.applied ? `${PREVIEW_SALE_CODE} applied` : `Apply ${PREVIEW_SALE_CODE}`}
+          </button>
+        ) : null}
         <p className={styles.note}>
-          {plan.displayPrice} once. This is not a monthly charge. {FIRST_PLAN_TARGET}
+          {payLabel} once. This is not a monthly charge. {FIRST_PLAN_TARGET}
           {plan.slug === 'offer_3_months'
             ? ' Includes a testosterone protocol for men and hourglass for women.'
             : ''}
@@ -241,7 +256,7 @@ export function DirectCheckout({
         </label>
         {error ? <p className={styles.error} role="alert">{error}</p> : null}
         <button type="submit" className={styles.pay} disabled={loading}>
-          {loading ? 'Opening checkout…' : `Pay ${plan.displayPrice}`}
+          {loading ? 'Opening checkout…' : 'Start your transformation'}
         </button>
         <button type="button" className={styles.close} onClick={onClose}>← Back</button>
       </form>

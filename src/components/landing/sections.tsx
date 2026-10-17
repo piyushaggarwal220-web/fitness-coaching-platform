@@ -20,8 +20,8 @@ import {
   type DurationOfferSlug,
 } from '@/lib/payments/plans'
 import { CampaignImage, CtaLink, PrimaryCta } from './primitives'
-
-const entry = DURATION_OFFER_PLANS.offer_3_months
+import { usePreviewSale } from './PreviewSaleCode'
+import { SaleEndsTimer } from './SaleEndsTimer'
 
 const HERO_OPTIONS: {
   slug: DurationOfferSlug
@@ -86,10 +86,11 @@ export function Hero({
 }) {
   const option = HERO_OPTIONS.find((item) => item.slug === slug) ?? HERO_OPTIONS[1]
   const plan = DURATION_OFFER_PLANS[option.slug]
-  const monthly = Math.round(plan.amountPaise / 100 / plan.durationMonths)
+  const quote = usePreviewSale().quote(option.slug)!
   return (
     <section className="lx-hero" id="top">
       <div className="lx-hero-copy">
+        <SaleEndsTimer tone="beige" />
         <p className="lx-eyebrow">Online coaching</p>
         <h1>
           {option.title.map((line) => (
@@ -116,14 +117,15 @@ export function Hero({
           <CampaignImage src={option.image} alt={option.alt} priority className="lx-cover" />
         </div>
         <p className="lx-price">
-          <strong>{plan.displayPrice}</strong>
+          {quote.applied ? <s>{quote.listLabel}</s> : null}
+          <strong>{quote.payLabel}</strong>
           <em>
-            {plan.durationMonths === 1 ? 'for 1 month' : `for 3 months · ₹${monthly} a month`}
+            {plan.durationMonths === 1 ? 'for 1 month' : `for 3 months · ₹${quote.perMonth} a month`}
           </em>
         </p>
         <div className="lx-actions">
           <PrimaryCta plan={option.slug} className="lx-btn-block" source="preview4" landingPath="/preview4" onPay={onPay}>
-            Start for {plan.displayPrice}
+            Start for {quote.payLabel}
           </PrimaryCta>
         </div>
       </div>
@@ -649,6 +651,7 @@ export function Method() {
 }
 
 export function Pricing({ onPay }: { onPay?: (plan: string) => void }) {
+  const { quote } = usePreviewSale()
   return (
     <section className="lx-pricing" id="pricing">
       <p className="lx-eyebrow">Plans</p>
@@ -657,6 +660,7 @@ export function Pricing({ onPay }: { onPay?: (plan: string) => void }) {
       <div className="lx-plans">
         {DURATION_PLAN_LIST.map((plan) => {
           const points = durationOfferCardPoints(plan.durationMonths)
+          const priced = quote(plan.slug)!
           return (
           <article key={plan.slug} className={plan.best ? 'is-best' : undefined}>
             <p className="lx-kicker">
@@ -667,8 +671,9 @@ export function Pricing({ onPay }: { onPay?: (plan: string) => void }) {
             </p>
             <h3>{durationOfferCardTitle(plan.durationMonths)}</h3>
             <p className="lx-plan-price">
-              {plan.displayPrice}
-              <em>{durationOfferCardPriceNote(plan.amountPaise, plan.durationMonths)}</em>
+              {priced.applied ? <s>{priced.listLabel}</s> : null}
+              {priced.payLabel}
+              <em>{durationOfferCardPriceNote(priced.payPaise, plan.durationMonths)}</em>
             </p>
             <ul className="lx-points">
               {points.map((point) => (
@@ -679,7 +684,7 @@ export function Pricing({ onPay }: { onPay?: (plan: string) => void }) {
               ))}
             </ul>
             <PrimaryCta plan={plan.slug} className="lx-btn-block" source="preview4" landingPath="/preview4" onPay={onPay}>
-              Start for {plan.displayPrice}
+              Start for {priced.payLabel}
             </PrimaryCta>
           </article>
           )
@@ -690,9 +695,12 @@ export function Pricing({ onPay }: { onPay?: (plan: string) => void }) {
 }
 
 export function FaqSection() {
+  const { quote } = usePreviewSale()
+  const one = quote('offer_1_month')!
+  const three = quote('offer_3_months')!
   const items = [
     ['What is LURVOX?', 'Online fitness coaching. A diet chart, a diet plan, a workout plan, guidance, check-in, and coach chat in the app.'],
-    ['What do I receive?', `${DURATION_OFFER_RECEIVE} 1 month is ₹249. 3 months is ₹499.`],
+    ['What do I receive?', `${DURATION_OFFER_RECEIVE} 1 month is ${one.payLabel}. 3 months is ${three.payLabel}.`],
     ['What is the training based on?', 'Professional principles, backed by science. Not random workouts or diets.'],
     ['When do I receive my plan?', `After you finish onboarding and the required photos, the first plan arrives within ${INSTANT_PLAN_WINDOW_LABEL}.`],
     ['Do I need a gym?', 'No. The plan uses a gym, home, or a mix, based on what you have.'],
@@ -717,15 +725,18 @@ export function FaqSection() {
 }
 
 export function FinalCta({ onPay }: { onPay?: (plan: string) => void }) {
+  const { quote } = usePreviewSale()
+  const one = quote('offer_1_month')!
+  const three = quote('offer_3_months')!
   return (
     <section className="lx-final" id="close">
       <div className="lx-final-copy">
         <h2>Start it, or finish it.</h2>
         <p className="lx-price">
-          <span>1 month ₹249 · 3 months ₹499</span>
+          <span>1 month {one.payLabel} · 3 months {three.payLabel}</span>
         </p>
         <PrimaryCta plan="offer_3_months" source="preview4" landingPath="/preview4" onPay={onPay}>
-          Start for {entry.displayPrice}
+          Start for {three.payLabel}
         </PrimaryCta>
       </div>
     </section>

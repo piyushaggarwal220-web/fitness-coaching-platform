@@ -22,7 +22,8 @@ import {
   isPublicSaleCode,
   publicSaleDiscountPaise,
 } from '../src/lib/payments/checkout-discounts'
-import { COACHING_PLANS } from '../src/lib/payments/plans'
+import { COACHING_PLANS, DURATION_OFFER_PLANS } from '../src/lib/payments/plans'
+import { isPreviewSaleCode, previewSaleDiscountPaise } from '../src/lib/payments/preview-sale-code'
 
 function pass(label: string) {
   console.log(`  ✓ ${label}`)
@@ -145,6 +146,26 @@ const lukeExpected = expectedAmountPaiseFromOrderNotes(COACHING_PLANS['3_months'
 })
 assert.equal(lukeExpected, 56900)
 pass('order notes accept LUKE affiliate amounts')
+
+const previewOne = DURATION_OFFER_PLANS.offer_1_month
+const previewThree = DURATION_OFFER_PLANS.offer_3_months
+assert.equal(isPreviewSaleCode('lurvox60'), true)
+assert.equal(previewSaleDiscountPaise(previewOne.amountPaise), 14940)
+assert.equal(previewOne.amountPaise - previewSaleDiscountPaise(previewOne.amountPaise), 9960)
+assert.equal(previewThree.amountPaise - previewSaleDiscountPaise(previewThree.amountPaise), 19960)
+const previewNotes = expectedAmountPaiseFromOrderNotes(previewOne, {
+  amount_paise: '9960',
+  list_amount_paise: String(previewOne.amountPaise),
+  discount_paise: '14940',
+  discount_code: 'LURVOX60',
+})
+assert.equal(previewNotes, 9960)
+const previewFull = expectedAmountPaiseFromOrderNotes(previewOne, {
+  amount_paise: String(previewOne.amountPaise),
+  list_amount_paise: String(previewOne.amountPaise),
+})
+assert.equal(previewFull, previewOne.amountPaise)
+pass('LURVOX60 is 60% off preview 1-month and 3-month prices only when the code is on the order')
 
 const lukeMigration = readFileSync(
   resolve('supabase/migrations/20260809180000_luke_affiliate_promo.sql'),

@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import { PreviewAdCapture } from '@/components/studio/PreviewAdCapture'
 import { PREVIEW4_AD_PATH, PREVIEW4_DROPOFF_SECTIONS } from '@/lib/analytics/ad-landing'
-import { DURATION_OFFER_PLANS, type DurationOfferSlug } from '@/lib/payments/plans'
+import { type DurationOfferSlug } from '@/lib/payments/plans'
 import { DirectCheckout } from './DirectCheckout'
+import { PreviewSaleProvider, usePreviewSale } from './PreviewSaleCode'
 import {
   Coaching,
   FaqSection,
@@ -20,9 +21,17 @@ import {
 import { PrimaryCta } from './primitives'
 
 export function LandingPage() {
+  return (
+    <PreviewSaleProvider>
+      <LandingView />
+    </PreviewSaleProvider>
+  )
+}
+
+function LandingView() {
   const [slug, setSlug] = useState<DurationOfferSlug>('offer_3_months')
   const [payPlan, setPayPlan] = useState<string | null>(null)
-  const selected = DURATION_OFFER_PLANS[slug]
+  const selected = usePreviewSale().quote(slug)!
 
   useEffect(() => {
     const pricing = document.getElementById('pricing')
@@ -66,7 +75,7 @@ export function LandingPage() {
       <Footer />
       <div className="lx-sticky">
         <PrimaryCta plan={slug} className="lx-btn-block" source="preview4" landingPath="/preview4" onPay={setPayPlan}>
-          Start for {selected.displayPrice}
+          Start for {selected.payLabel}
         </PrimaryCta>
       </div>
       <DirectCheckout

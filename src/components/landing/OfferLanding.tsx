@@ -21,6 +21,8 @@ import {
 } from '@/lib/analytics/ad-landing'
 import { DirectCheckout } from './DirectCheckout'
 import { PrimaryCta } from './primitives'
+import { PreviewSaleProvider, usePreviewSale } from './PreviewSaleCode'
+import { SaleEndsTimer } from './SaleEndsTimer'
 
 export type CoachResult = {
   key: 'piyush' | 'rakshit'
@@ -248,7 +250,19 @@ function BeforeAfter({ coach }: { coach: CoachResult }) {
   )
 }
 
-export function OfferLanding({
+export function OfferLanding(props: {
+  coaches: CoachResult[]
+  adPath?: typeof PREVIEW2_AD_PATH | typeof PREVIEW5_AD_PATH
+  durationOffer?: boolean
+}) {
+  return (
+    <PreviewSaleProvider>
+      <OfferLandingView {...props} />
+    </PreviewSaleProvider>
+  )
+}
+
+function OfferLandingView({
   coaches,
   adPath,
   durationOffer = false,
@@ -257,6 +271,7 @@ export function OfferLanding({
   adPath?: typeof PREVIEW2_AD_PATH | typeof PREVIEW5_AD_PATH
   durationOffer?: boolean
 }) {
+  const sale = usePreviewSale()
   const goals = durationOffer ? DURATION_GOALS : GOALS
   const goalsRef = useRef(goals)
   goalsRef.current = goals
@@ -276,8 +291,11 @@ export function OfferLanding({
     setSlug(next)
   }
   const goal = goals.find((item) => item.slug === slug) ?? goals[0]
-  const plan = getCoachingPlan(goal.slug)!
-  const startLabel = `Start for ${plan.displayPrice}`
+  const payFor = (planSlug: string) => {
+    if (!durationOffer) return getCoachingPlan(planSlug)?.displayPrice ?? ''
+    return sale.quote(planSlug)?.payLabel ?? ''
+  }
+  const startLabel = `Start for ${payFor(goal.slug)}`
   const rootRef = useRef<HTMLDivElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
   const railRef = useRef<HTMLOListElement>(null)
@@ -405,15 +423,18 @@ export function OfferLanding({
   const faq = durationOffer
     ? FAQ.map((item) => {
         if (item.q === 'What does coaching cost?') {
+          const one = sale.quote('offer_1_month')!
+          const three = sale.quote('offer_3_months')!
           return {
             ...item,
-            a: `1 month is ₹249, about ₹8 a day. 3 months is ₹499, about ₹6 a day. ${DURATION_OFFER_EXTRA}`,
+            a: `1 month is ${one.payLabel}, under ₹${one.perDay} a day. 3 months is ${three.payLabel}, under ₹${three.perDay} a day. ${DURATION_OFFER_EXTRA}`,
           }
         }
         if (item.q === 'Why are the rates this low?') {
+          const one = sale.quote('offer_1_month')!
           return {
             ...item,
-            a: 'This is online coaching in the app: a plan written for you, check-ins, and coach chat. It is not a trainer standing with you in person every session. 1 month is ₹249.',
+            a: `This is online coaching in the app: a plan written for you, check-ins, and coach chat. It is not a trainer standing with you in person every session. 1 month is ${one.payLabel}.`,
           }
         }
         if (item.q === 'What happens after I pay?') {
@@ -427,7 +448,7 @@ export function OfferLanding({
     : FAQ
 
   return (
-    <div className={durationOffer ? 'lxo lxo-duration' : 'lxo'} ref={rootRef}>
+    <div className={['lxo', durationOffer ? 'lxo-duration' : '', adPath === PREVIEW5_AD_PATH ? 'lxo-sale' : ''].filter(Boolean).join(' ')} ref={rootRef}>
       {adPath === PREVIEW2_AD_PATH ? (
         <PreviewAdCapture
           path={PREVIEW2_AD_PATH}
@@ -471,6 +492,7 @@ export function OfferLanding({
             ))}
           </div>
           <div className="lxo-hero-copy">
+            {adPath === PREVIEW5_AD_PATH ? <SaleEndsTimer tone="dark" /> : null}
             <p className="lxo-kicker">Online coaching · Piyush &amp; Rakshit&apos;s method</p>
             <h1 key={goal.slug}>{goal.title}</h1>
             <p className="lxo-sub">
@@ -490,7 +512,7 @@ export function OfferLanding({
                   onClick={() => pickPlan(item.slug)}
                 >
                   <span>{item.label}</span>
-                  <strong>{getCoachingPlan(item.slug)?.displayPrice}</strong>
+                  <strong>{durationOffer ? payFor(item.slug) : getCoachingPlan(item.slug)?.displayPrice}</strong>
                 </button>
               ))}
             </div>
@@ -501,7 +523,7 @@ export function OfferLanding({
               <p className="lxo-meta">
                 <span className="lxo-live">Plan within {INSTANT_PLAN_WINDOW_LABEL} of onboarding</span>
                 <span>
-                  {goal.length} · {perDay(goal)}
+                  {goal.length} · {durationOffer ? `under ₹${sale.quote(goal.slug)!.perDay} a day` : perDay(goal)}
                 </span>
               </p>
             </div>
@@ -539,7 +561,7 @@ export function OfferLanding({
           </ol>
           <div className="lxo-inline-cta lxo-rise">
             <PrimaryCta plan={goal.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding} onPay={openPay}>
-              Start now for {plan.displayPrice}
+              Start now for {payFor(goal.slug)}
             </PrimaryCta>
           </div>
         </section>
@@ -570,6 +592,7 @@ export function OfferLanding({
           <div className="lxo-plans">
             {goals.map((item) => {
               const details = getCoachingPlan(item.slug)!
+              const priced = durationOffer ? sale.quote(item.slug) : null
               const cardPoints = durationOffer
                 ? durationOfferCardPoints(details.durationMonths)
                 : pointsFor(item.slug)
@@ -591,10 +614,11 @@ export function OfferLanding({
                     <h3>{durationOffer ? durationOfferCardTitle(details.durationMonths) : details.name}</h3>
                   </div>
                   <p className="lxo-plan-price">
-                    {details.displayPrice}
+                    {priced?.applied ? <s>{priced.listLabel}</s> : null}
+                    {priced ? priced.payLabel : details.displayPrice}
                     <span>
-                      {durationOffer
-                        ? durationOfferCardPriceNote(details.amountPaise, details.durationMonths)
+                      {priced
+                        ? durationOfferCardPriceNote(priced.payPaise, details.durationMonths)
                         : `${item.monthly} · ${perDay(item)}`}
                     </span>
                   </p>
@@ -607,7 +631,7 @@ export function OfferLanding({
                     ))}
                   </ul>
                   <PrimaryCta plan={item.slug} className="lxo-btn" source={ctaSource} landingPath={ctaLanding} onPay={openPay}>
-                    Start for {details.displayPrice}
+                    Start for {priced ? priced.payLabel : details.displayPrice}
                   </PrimaryCta>
                 </article>
               )
