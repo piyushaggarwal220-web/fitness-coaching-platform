@@ -549,7 +549,7 @@ export async function claimPurchaseWithPassword(
   const { data: existingProfile } = userId
     ? await admin
         .from('profiles')
-        .select('role, onboarding_complete, subscription_expires_at, name, phone')
+        .select('role, onboarding_complete, subscription_expires_at, name, phone, gender')
         .eq('id', userId)
         .maybeSingle()
     : { data: null }
@@ -649,7 +649,11 @@ export async function claimPurchaseWithPassword(
   const claimedAddonIds = Array.isArray((purchase as Purchase & { checkout_addon_ids?: string[] }).checkout_addon_ids)
     ? ((purchase as Purchase & { checkout_addon_ids?: string[] }).checkout_addon_ids as string[])
     : []
-  if (purchase.supplement_addon || claimedAddonIds.includes('testo_boost')) {
+  if (
+    purchase.supplement_addon ||
+    claimedAddonIds.includes('testo_boost') ||
+    (plan.slug === 'offer_3_months' && existingProfile?.gender === 'male')
+  ) {
     profilePayload.supplement_protocol_entitled = true
   }
   if (claimedAddonIds.includes('anxiety_removal')) {

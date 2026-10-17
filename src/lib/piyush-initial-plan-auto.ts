@@ -294,7 +294,26 @@ export async function runPiyushInitialPlanForClient(
     .maybeSingle()
 
   let job = (existingJob as InitialPlanGenerationJob | null) ?? null
-  let journeyCreated = false
+  const coaching = await latestCoachingPurchase(admin, clientId)
+  const planSlug = coaching?.planSlug ?? null
+  if (
+    planSlug === 'offer_3_months' &&
+    typed.gender === 'male' &&
+    (profile as { supplement_protocol_entitled?: boolean | null }).supplement_protocol_entitled !== true
+  ) {
+    const { error: entitleError } = await admin
+      .from('profiles')
+      .update({ supplement_protocol_entitled: true, updated_at: new Date().toISOString() })
+      .eq('id', clientId)
+    if (entitleError) {
+      return {
+        clientId,
+        name,
+        status: 'failed',
+        detail: `testosterone entitlement: ${entitleError.message}`,
+      }
+    }
+  }
 
   if (job?.status === 'ready' && job.draft_plan_id) {
     const delivered = await deliverPiyushInitialPlan(admin, {
@@ -339,11 +358,14 @@ export async function runPiyushInitialPlanForClient(
     }
   }
 
-  const journey = await ensureAiJourneyPlan(admin, typed)
-  if (journey.error) {
-    return { clientId, name, status: 'failed', detail: `journey: ${journey.error}` }
+  let journeyCreated = false
+  if (planSlug !== 'offer_1_month') {
+    const journey = await ensureAiJourneyPlan(admin, typed)
+    if (journey.error) {
+      return { clientId, name, status: 'failed', detail: `journey: ${journey.error}` }
+    }
+    journeyCreated = journey.created
   }
-  journeyCreated = journey.created
 
   if (job.status === 'ready' && job.draft_plan_id) {
     const delivered = await deliverPiyushInitialPlan(admin, {

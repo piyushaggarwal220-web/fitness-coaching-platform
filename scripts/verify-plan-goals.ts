@@ -167,6 +167,20 @@ assert(
   getGoalByValue('hourglass_physique')?.tier === '12_months' &&
     getGoalByValue('hourglass_physique')?.genders?.includes('female') === true
 )
+assert(
+  'hourglass locked on the 1-month duration offer',
+  validateSelectedPlanGoals(['fat_loss', 'hourglass_physique'], 'offer_1_month', {
+    gender: 'female',
+    bodyType: 'lose_fat_fast',
+  }) !== null
+)
+assert(
+  'hourglass allowed on the 3-month duration offer for women',
+  validateSelectedPlanGoals(['fat_loss', 'hourglass_physique'], 'offer_3_months', {
+    gender: 'female',
+    bodyType: 'lose_fat_fast',
+  }) === null
+)
 
 if (failed > 0) {
   console.error(`\n${failed} assertion(s) failed`)

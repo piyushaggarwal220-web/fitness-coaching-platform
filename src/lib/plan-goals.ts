@@ -277,7 +277,7 @@ export function goalMatchesBodyType(
 
 export function planTierRank(slug: string | null | undefined): number {
   if (!slug) return -1
-  // Preview duration plans are the same product. Every goal is unlocked.
+  // Duration offers unlock the full goal catalog. Hourglass is the 3-month exception, below.
   if (slug === 'offer_1_month' || slug === 'offer_3_months') return planTierRank('12_months')
   // Retired 1-month purchases map to the current starter tier for goal unlock.
   if (slug === '1_month') return planTierRank('3_months')
@@ -312,6 +312,8 @@ export function isGoalUnlockedForPlan(
   goal: PlanGoalOption | string,
   planSlug: string | null | undefined
 ): boolean {
+  const value = typeof goal === 'string' ? goal : goal.value
+  if (value === 'hourglass_physique' && planSlug === 'offer_1_month') return false
   const tier = typeof goal === 'string' ? ALL_PLAN_GOAL_OPTIONS.find((g) => g.value === goal)?.tier : goal.tier
   if (!tier) return false
   // Customised digital plans: starter goals only — never show coaching upgrades.

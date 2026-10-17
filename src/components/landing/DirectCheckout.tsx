@@ -217,6 +217,9 @@ export function DirectCheckout({
         <p className={styles.price}>{plan.displayPrice}</p>
         <p className={styles.note}>
           {plan.displayPrice} once. This is not a monthly charge. {FIRST_PLAN_TARGET}
+          {plan.slug === 'offer_3_months'
+            ? ' Includes a testosterone protocol for men and hourglass for women.'
+            : ''}
         </p>
         <label>
           Full name

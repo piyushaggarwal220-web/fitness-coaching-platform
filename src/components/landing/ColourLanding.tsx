@@ -16,7 +16,13 @@ import {
   PREVIEW6_AD_PATH,
   PREVIEW6_DROPOFF_SECTIONS,
 } from '@/lib/analytics/ad-landing'
-import { DURATION_OFFER_POINTS, DURATION_OFFER_RECEIVE } from '@/lib/payments/duration-offer-points'
+import {
+  DURATION_OFFER_EXTRA,
+  DURATION_OFFER_POINTS,
+  DURATION_OFFER_RECEIVE,
+  durationOfferCardPoints,
+  durationOfferCardTitle,
+} from '@/lib/payments/duration-offer-points'
 import { COACHING_PLANS, getCoachingPlan, type CoachingPlanSlug } from '@/lib/payments/plans'
 
 const LANDING = PREVIEW3_AD_PATH
@@ -102,27 +108,25 @@ const PLANS: PlanCard[] = [
   },
 ]
 
-const FULL_POINTS = [...DURATION_OFFER_POINTS]
-
 const DURATION_PLANS: PlanCard[] = [
   {
     slug: 'offer_1_month',
-    chip: '1 month · full access',
+    chip: '1 month',
     length: '1 month',
     monthly: '₹249 · about ₹8 a day',
     tone: 'fat',
-    points: FULL_POINTS,
+    points: durationOfferCardPoints(1).map((point) => (point.note ? `${point.text} — ${point.note}` : point.text)),
     cta: 'Start for ₹249',
   },
   {
     slug: 'offer_3_months',
-    chip: '3 months · full access',
+    chip: '3 months',
     length: '3 months',
     monthly: '₹166 a month · about ₹6 a day',
     tone: 'athletic',
     tag: 'Best value',
-    note: 'The same plan as 1 month.',
-    points: FULL_POINTS,
+    note: DURATION_OFFER_EXTRA,
+    points: durationOfferCardPoints(3).map((point) => (point.note ? `${point.text} — ${point.note}` : point.text)),
     cta: 'Start for ₹499',
   },
 ]
@@ -230,7 +234,7 @@ function planPrice(slug: PlanCard['slug']) {
 }
 
 function planName(plan: PlanCard, durationOffer: boolean) {
-  if (durationOffer) return getCoachingPlan(plan.slug)?.name ?? plan.chip
+  if (durationOffer) return durationOfferCardTitle(getCoachingPlan(plan.slug)?.durationMonths ?? 1)
   if (plan.tone === 'mid') return 'Fat loss + muscle'
   return COACHING_PLANS[plan.slug as CoachingPlanSlug].name
 }
@@ -341,7 +345,7 @@ export function ColourLanding({
             </div>
             <p className="lx3-lede">
               {durationOffer
-                ? 'Diet chart, diet plan, workout plan, plus sleep, cardio, and supplement guidance. 1 month is ₹249. 3 months is ₹499.'
+                ? `Diet chart, diet plan, workout plan, plus sleep, cardio, and supplement guidance. ${DURATION_OFFER_EXTRA} 1 month is ₹249. 3 months is ₹499.`
                 : <>Coach-made workout and diet around your goals, from ₹599. Check-ins are mid-week and weekly. <strong>Fat loss is rewritten every 14 days.</strong> The 6- and 12-month plans are rewritten every week.</>}
             </p>
             <ul className="lx3-trust">
@@ -349,7 +353,7 @@ export function ColourLanding({
                 <>
                   <li>₹249 for 1 month</li>
                   <li>₹499 for 3 months</li>
-                  <li>Same plan on both</li>
+                  <li>3 months adds two extras</li>
                 </>
               ) : (
                 <>
@@ -400,7 +404,7 @@ export function ColourLanding({
         <h2 id="lx3-plans-title">Simple plans. Real coaching.</h2>
         <p className="lx3-plans-lede">
           {durationOffer
-            ? 'Both lengths include the same list. The only difference is time.'
+            ? 'Both lengths include the same coaching. 3 months adds a testosterone protocol for men and hourglass for women.'
             : <>Check-ins are mid-week and weekly on every plan. <strong>Fat loss</strong> is rewritten every 14 days. The 6- and 12-month plans are rewritten every week.</>}
         </p>
         <div className="lx3-stack">
@@ -491,7 +495,7 @@ export function ColourLanding({
               <strong>Receive your plan</strong>
               <p>
                 {durationOffer
-                  ? 'First plan in 24–48 hours: diet chart, diet plan, workout plan, and guidance for sleep, cardio, and supplements. If the first plan does not arrive, you get a refund.'
+                  ? 'First plan in 24–48 hours: diet chart, diet plan, workout plan, and guidance for sleep, cardio, and supplements. 3 months also includes a testosterone protocol for men and hourglass for women. If the first plan does not arrive, you get a refund.'
                   : 'First workout and diet in 24–48 hours. Check-ins are mid-week and weekly. Fat loss is rewritten every 14 days. The 6- and 12-month plans are rewritten every week. If the first plan does not arrive, you get a refund.'}
               </p>
             </div>
@@ -513,7 +517,7 @@ export function ColourLanding({
             fromLabel={durationOffer ? 'See plans — ₹249 or ₹499' : undefined}
             coachingPoints={
               durationOffer
-                ? [...DURATION_OFFER_POINTS]
+                ? [...DURATION_OFFER_POINTS, DURATION_OFFER_EXTRA]
                 : undefined
             }
           />
@@ -540,10 +544,10 @@ export function ColourLanding({
 
       <section className="lx3-close" id="close" aria-label="Choose your plan and start">
         <p className="lx3-eyebrow lx3-eyebrow-orange">Ready to start</p>
-        <h2>{durationOffer ? 'Same plan. Pick the length.' : 'Start with your goal. We build everything around it.'}</h2>
+        <h2>{durationOffer ? 'The starter, or the finisher.' : 'Start with your goal. We build everything around it.'}</h2>
         <p>
           {durationOffer
-            ? <>The product does not change. <strong>1 month</strong> is <strong>₹249</strong>. <strong>3 months</strong> is <strong>₹499</strong>. Diet chart, diet plan, workout plan, sleep, cardio, and supplement guidance are included on both.</>
+            ? <>The coaching stays. <strong>1 month</strong> is <strong>₹249</strong>. <strong>3 months</strong> is <strong>₹499</strong>. {DURATION_OFFER_EXTRA}</>
             : <>Goal first. Time is the runway. <strong>Fat loss</strong> is 90 days · <strong>₹599</strong>, rewritten every 14 days. <strong>Fat loss + muscle gain</strong> is 6 months · <strong>₹999</strong>, rewritten every week. <strong>Athletic body</strong> is 12 months · <strong>₹1,699</strong> — fat loss, muscle, and stamina, rewritten every week. Check-ins are mid-week and weekly on every plan.</>}
         </p>
         <a className="lx3-jump" href="#plans">
@@ -577,7 +581,7 @@ export function ColourLanding({
       <div className={`lx3-sticky${sticky ? ' is-on' : ''}`}>
         <div>
           <strong>{durationOffer ? '3 months' : 'Athletic body'}</strong>
-          <span>{durationOffer ? 'Full access · ₹499 · best value' : '12 months · ₹1,699 · lowest monthly cost'}</span>
+          <span>{durationOffer ? '₹499 · best value' : '12 months · ₹1,699 · lowest monthly cost'}</span>
         </div>
         <PlanLink plan={featured} className="lx3-sticky-cta" source={source} landing={landing} onPay={openPay}>
           {durationOffer ? 'Start for ₹499' : 'Get Athletic body'}

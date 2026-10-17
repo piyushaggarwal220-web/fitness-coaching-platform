@@ -3,7 +3,15 @@
 import { useState } from 'react'
 import { coaches } from '@/lib/content'
 import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
-import { DURATION_OFFER_POINTS, DURATION_OFFER_RECEIVE } from '@/lib/payments/duration-offer-points'
+import {
+  DURATION_OFFER_EXTRA,
+  DURATION_OFFER_POINTS,
+  DURATION_OFFER_RECEIVE,
+  durationOfferCardPoints,
+  durationOfferCardPriceNote,
+  durationOfferCardTag,
+  durationOfferCardTitle,
+} from '@/lib/payments/duration-offer-points'
 import { PLAN_INCLUSIONS } from '@/lib/payments/plan-pages'
 import {
   DURATION_OFFER_PLANS,
@@ -37,7 +45,7 @@ const HERO_OPTIONS: {
     slug: 'offer_3_months',
     label: 'Finisher',
     title: ['The finisher.', 'Three months.'],
-    lead: 'The starter stays. The finisher adds the time, and a few extras.',
+    lead: 'The starter stays. 3 months adds a testosterone protocol for men, and hourglass for women.',
     duration: '3 months',
     image: '/images/lurvox/campaign/hero-muscle.webp',
     alt: 'Man in a heavy squat in a private studio',
@@ -394,6 +402,7 @@ export function System() {
           <li key={item}>{item}</li>
         ))}
       </ul>
+      <p className="lx-lead">{DURATION_OFFER_EXTRA}</p>
       <div className="lx-stage">
         {current.images.length > 1 ? (
           <div className="lx-stage-split">
@@ -639,44 +648,27 @@ export function Method() {
   )
 }
 
-const MONTH_CARD_POINTS: { text: string; note?: string; gold?: boolean }[] = [
-  { text: 'Diet, workout, sleep, and cardio' },
-  { text: 'Wednesday and Sunday check-ins', note: 'Twice a week, on the platform' },
-  { text: 'Coach chat' },
-  { text: 'Diet tracker' },
-  { text: 'Workout tracker' },
-]
-
-const THREE_MONTH_CARD_POINTS: { text: string; note?: string; gold?: boolean }[] = [
-  { text: 'Everything in the starter' },
-  { text: 'Testosterone boosting protocol', note: 'Free for men', gold: true },
-  { text: 'Hourglass figure', note: 'For females', gold: true },
-  { text: 'Journey plan' },
-]
-
 export function Pricing({ onPay }: { onPay?: (plan: string) => void }) {
   return (
     <section className="lx-pricing" id="pricing">
       <p className="lx-eyebrow">Plans</p>
       <h2>The starter, or the finisher.</h2>
-      <p className="lx-shared">The finisher keeps the starter, then goes further.</p>
+      <p className="lx-shared">The finisher keeps the starter. {DURATION_OFFER_EXTRA}</p>
       <div className="lx-plans">
         {DURATION_PLAN_LIST.map((plan) => {
-          const points = plan.durationMonths === 1 ? MONTH_CARD_POINTS : THREE_MONTH_CARD_POINTS
+          const points = durationOfferCardPoints(plan.durationMonths)
           return (
           <article key={plan.slug} className={plan.best ? 'is-best' : undefined}>
             <p className="lx-kicker">
               <span className="lx-length">{plan.durationMonths === 1 ? '1 month' : '3 months'}</span>
-              {plan.best ? <span className="lx-tag">Best value</span> : <span className="lx-tag">Full access</span>}
+              {durationOfferCardTag(plan.durationMonths) ? (
+                <span className="lx-tag">{durationOfferCardTag(plan.durationMonths)}</span>
+              ) : null}
             </p>
-            <h3>{plan.durationMonths === 1 ? 'The starter' : 'The finisher'}</h3>
+            <h3>{durationOfferCardTitle(plan.durationMonths)}</h3>
             <p className="lx-plan-price">
               {plan.displayPrice}
-              <em>
-                {plan.durationMonths === 1
-                  ? 'for 1 month'
-                  : `for 3 months · ₹${Math.round(plan.amountPaise / 100 / plan.durationMonths)} a month`}
-              </em>
+              <em>{durationOfferCardPriceNote(plan.amountPaise, plan.durationMonths)}</em>
             </p>
             <ul className="lx-points">
               {points.map((point) => (

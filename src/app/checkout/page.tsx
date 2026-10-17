@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { BRAND_NAME } from '@/lib/brand';
-import { DURATION_OFFER_POINTS } from '@/lib/payments/duration-offer-points';
+import { DURATION_OFFER_EXTRA, DURATION_OFFER_POINTS } from '@/lib/payments/duration-offer-points';
 import { planDurationLabel, planGoalName } from '@/lib/payments/plan-pages';
 import {
  COACHING_PLAN_LIST,
@@ -974,7 +974,7 @@ function CheckoutForm() {
  <p style={dig(styles.subtitle, 'subtitle')}>
  {checkoutScreen === 1
  ? isDurationOfferSlug(plan.slug)
- ? 'Same plan on both lengths. 1 month is ₹249. 3 months is ₹499.'
+ ? `${DURATION_OFFER_EXTRA} 1 month is ₹249. 3 months is ₹499.`
  : 'Answer a few basics so we can customize your coaching.'
  : 'Enter your details, then continue to checkout.'}
  </p>

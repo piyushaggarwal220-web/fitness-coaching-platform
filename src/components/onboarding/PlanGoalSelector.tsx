@@ -94,7 +94,7 @@ export function PlanGoalSelector({
     : PLAN_GOAL_TIER_ORDER.some((tier) => physiqueGoalsByTier[tier].length > 0)
 
   const toggle = (goal: PlanGoalOption) => {
-    const unlocked = isGoalUnlockedForPlan(goal, isDigital ? planSlug : currentTier)
+    const unlocked = isGoalUnlockedForPlan(goal, planSlug)
     if (!unlocked) {
       if (isDigital) return
       setUpgradeTarget(goal)
@@ -316,7 +316,7 @@ export function PlanGoalSelector({
                         renderGoalChip({
                           goal,
                           selected: values.includes(goal.value),
-                          locked: !unlocked,
+                          locked: !isGoalUnlockedForPlan(goal, planSlug),
                           blockedByMax: !values.includes(goal.value) && atMax,
                           onToggle: () => toggle(goal),
                         })

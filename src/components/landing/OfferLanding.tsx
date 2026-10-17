@@ -2,8 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
-import { DURATION_OFFER_POINTS, DURATION_OFFER_RECEIVE } from '@/lib/payments/duration-offer-points'
-import { getCoachingPlan, isDurationOfferSlug, type CoachingPlanSlug } from '@/lib/payments/plans'
+import {
+  DURATION_OFFER_EXTRA,
+  DURATION_OFFER_RECEIVE,
+  durationOfferCardPoints,
+  durationOfferCardPriceNote,
+  durationOfferCardTag,
+  durationOfferCardTitle,
+} from '@/lib/payments/duration-offer-points'
+import { getCoachingPlan, type CoachingPlanSlug } from '@/lib/payments/plans'
 import { FIRST_PLAN_TARGET } from '@/lib/payments/plan-pages'
 import { PreviewAdCapture } from '@/components/studio/PreviewAdCapture'
 import {
@@ -80,8 +87,8 @@ const GOALS: Goal[] = [
 const DURATION_GOALS: Goal[] = [
   {
     slug: 'offer_1_month',
-    label: '1 month',
-    title: 'One month of the full plan.',
+    label: 'Starter',
+    title: 'The starter. One month.',
     length: '1 month',
     days: 30,
     monthly: '₹249 a month',
@@ -92,8 +99,8 @@ const DURATION_GOALS: Goal[] = [
   },
   {
     slug: 'offer_3_months',
-    label: '3 months',
-    title: 'Three months of the same plan.',
+    label: 'Finisher',
+    title: 'The finisher. Three months.',
     length: '3 months',
     days: 90,
     monthly: '₹166 a month',
@@ -137,7 +144,7 @@ const DAILY = [
   },
 ]
 
-const PLAN_POINTS: Record<CoachingPlanSlug, { text: string; gold?: boolean }[]> = {
+const PLAN_POINTS: Record<CoachingPlanSlug, { text: string; note?: string; gold?: boolean }[]> = {
   '3_months': [
     { text: 'Workout for your level, at a gym or at home' },
     { text: 'Diet built around the food you already eat' },
@@ -158,8 +165,6 @@ const PLAN_POINTS: Record<CoachingPlanSlug, { text: string; gold?: boolean }[]> 
     { text: 'Updated every week' },
   ],
 }
-
-const FULL_PLAN_POINTS: { text: string; gold?: boolean }[] = DURATION_OFFER_POINTS.map((text) => ({ text }))
 
 const START_STEPS = [
   { when: 'Payment', title: 'Payment is confirmed.' },
@@ -207,7 +212,6 @@ function perDay(goal: Goal) {
 }
 
 function pointsFor(slug: string) {
-  if (isDurationOfferSlug(slug)) return FULL_PLAN_POINTS
   return PLAN_POINTS[slug as CoachingPlanSlug]
 }
 
@@ -403,7 +407,7 @@ export function OfferLanding({
         if (item.q === 'What does coaching cost?') {
           return {
             ...item,
-            a: '1 month is ₹249, about ₹8 a day. 3 months is ₹499, about ₹6 a day. Both include the same plan.',
+            a: `1 month is ₹249, about ₹8 a day. 3 months is ₹499, about ₹6 a day. ${DURATION_OFFER_EXTRA}`,
           }
         }
         if (item.q === 'Why are the rates this low?') {
@@ -471,7 +475,7 @@ export function OfferLanding({
             <h1 key={goal.slug}>{goal.title}</h1>
             <p className="lxo-sub">
               {durationOffer
-                ? 'Diet chart, diet plan, workout plan, plus sleep, cardio, and supplement guidance. Only the length changes.'
+                ? `The same coaching. ${DURATION_OFFER_EXTRA}`
                 : `A workout and diet written for you. In your phone within ${INSTANT_PLAN_WINDOW_LABEL} of finishing onboarding.`}
             </p>
             <div className="lxo-goals" role="tablist" aria-label={durationOffer ? 'Choose how long' : 'Choose your goal'}>
@@ -562,10 +566,13 @@ export function OfferLanding({
         </section>
 
         <section className="lxo-pricing" id="pricing">
-          <h2 className="lxo-rise">{durationOffer ? 'Same plan. Two lengths.' : 'Pick your plan.'}</h2>
+          <h2 className="lxo-rise">{durationOffer ? 'The starter, or the finisher.' : 'Pick your plan.'}</h2>
           <div className="lxo-plans">
             {goals.map((item) => {
               const details = getCoachingPlan(item.slug)!
+              const cardPoints = durationOffer
+                ? durationOfferCardPoints(details.durationMonths)
+                : pointsFor(item.slug)
               return (
                 <article
                   key={item.slug}
@@ -575,22 +582,27 @@ export function OfferLanding({
                   <div className="lxo-plan-top">
                     <p>
                       {item.length}
-                      {item.slug === '6_months' ? <em>Weekly rewrites</em> : null}
-                      {item.slug === '12_months' ? <em>Lowest monthly</em> : null}
-                      {item.slug === 'offer_3_months' ? <em>Best value</em> : null}
+                      {durationOffer && durationOfferCardTag(details.durationMonths) ? (
+                        <em>{durationOfferCardTag(details.durationMonths)}</em>
+                      ) : null}
+                      {!durationOffer && item.slug === '6_months' ? <em>Weekly rewrites</em> : null}
+                      {!durationOffer && item.slug === '12_months' ? <em>Lowest monthly</em> : null}
                     </p>
-                    <h3>{details.name}</h3>
+                    <h3>{durationOffer ? durationOfferCardTitle(details.durationMonths) : details.name}</h3>
                   </div>
                   <p className="lxo-plan-price">
                     {details.displayPrice}
                     <span>
-                      {item.monthly} · {perDay(item)}
+                      {durationOffer
+                        ? durationOfferCardPriceNote(details.amountPaise, details.durationMonths)
+                        : `${item.monthly} · ${perDay(item)}`}
                     </span>
                   </p>
                   <ul>
-                    {pointsFor(item.slug).map((point) => (
+                    {cardPoints.map((point) => (
                       <li key={point.text} className={point.gold ? 'is-gold' : undefined}>
                         {point.text}
+                        {point.note ? <em>{point.note}</em> : null}
                       </li>
                     ))}
                   </ul>
