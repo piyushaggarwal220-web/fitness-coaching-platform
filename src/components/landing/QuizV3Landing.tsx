@@ -99,7 +99,7 @@ export function QuizV3Landing() {
 function QuizV3View() {
   const [payPlan, setPayPlan] = useState<string | null>(null)
   const featured = COACHING_PLANS['6_months']
-  const featuredPrice = priceLabel(featured.slug)
+  const featuredPrice = priceLabel('6_months')
 
   return (
     <div className={styles.page}>
