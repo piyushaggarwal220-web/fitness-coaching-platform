@@ -1,0 +1,621 @@
+{% doc %}
+  Floating quiz on the current page. Old plan questions, a result, then coach details, tomorrow's time, and confirmation. The page stays put behind a blur.
+{% enddoc %}
+
+<div id="lx-home-quiz">
+  <div class="lxq-overlay" data-lxq-overlay hidden>
+    <div class="lxq-blur" data-lxq-close></div>
+    <div class="lxq-panel" role="dialog" aria-modal="true" aria-labelledby="lxq-title">
+      <button type="button" class="lxq-x" data-lxq-close aria-label="Close">×</button>
+
+      <section data-lxq-view="quiz">
+        <p class="lxq-kicker">Quiz</p>
+        <h2 id="lxq-title" class="lxq-title">Find your plan</h2>
+        <div class="lxq-bar"><span data-lxq-bar></span></div>
+        <p class="lxq-step" data-lxq-step>Takes only 30–45 seconds</p>
+        <h3 class="lxq-q" data-lxq-q></h3>
+        <div class="lxq-options" data-lxq-options></div>
+        <button type="button" class="lxq-back" data-lxq-back hidden>Back</button>
+      </section>
+
+      <section data-lxq-view="result" hidden>
+        <div class="lxq-result">
+          <p class="lxq-kicker">Your plan</p>
+          <p class="lxq-result-term" data-lxq-per></p>
+          <h2 class="lxq-result-name" data-lxq-plan></h2>
+          <p class="lxq-result-price" data-lxq-price></p>
+          <p class="lxq-result-why" data-lxq-why></p>
+          <div class="lxq-actions">
+            <a class="lxq-btn" data-lxq-checkout href="https://app.lurvox.in/plans/3-months?landing=/preview7">Proceed to checkout</a>
+            <button type="button" class="lxq-btn" data-lxq-book>Book a 10 mins call with a coach</button>
+          </div>
+          <button type="button" class="lxq-back" data-lxq-restart>Retake quiz</button>
+        </div>
+      </section>
+
+      <section data-lxq-view="details" hidden>
+        <p class="lxq-kicker">Before the call</p>
+        <h2 class="lxq-title">Your details</h2>
+        <form data-lxq-details>
+          <label>Name<input name="name" required autocomplete="name" placeholder="Your name"></label>
+          <div class="lxq-row">
+            <label>Age<input name="age" type="number" required min="16" max="80" inputmode="numeric" placeholder="Age"></label>
+            <label>Height (cm)<input name="height" type="number" required min="100" max="250" inputmode="numeric" placeholder="cm"></label>
+            <label>Weight (kg)<input name="weight" type="number" required min="30" max="250" inputmode="decimal" placeholder="kg"></label>
+          </div>
+          <label>Mobile number<input name="phone" type="tel" required autocomplete="tel" placeholder="10-digit mobile"></label>
+          <label>Email ID<input name="email" type="email" required autocomplete="email" placeholder="you@email.com"></label>
+          <label>State of India
+            <select name="state" required>
+              <option value="">Select your state</option>
+            </select>
+          </label>
+          <label>Plan
+            <select name="plan" required>
+              <option value="">Choose a plan</option>
+              <option value="Fat loss · 90 days · ₹1,999">Fat loss · 90 days · ₹1,999</option>
+              <option value="Fat loss + muscle gain · 6 months · ₹3,499">Fat loss + muscle gain · 6 months · ₹3,499</option>
+              <option value="Athletic body · 12 months · ₹5,999">Athletic body · 12 months · ₹5,999</option>
+            </select>
+          </label>
+          <p class="lxq-status" data-lxq-status></p>
+          <button type="submit" class="lxq-btn lxq-btn--primary">Continue</button>
+        </form>
+      </section>
+
+      <section data-lxq-view="slot" hidden>
+        <p class="lxq-kicker">Tomorrow</p>
+        <h2 class="lxq-title">Choose a time</h2>
+        <p class="lxq-why" data-lxq-day></p>
+        <div class="lxq-slots" data-lxq-slots></div>
+        <p class="lxq-status" data-lxq-slot-status></p>
+        <button type="button" class="lxq-btn lxq-btn--primary" data-lxq-confirm hidden>I agree and book my 10 mins call</button>
+      </section>
+
+      <section data-lxq-view="done" hidden>
+        <p class="lxq-kicker">Confirmed</p>
+        <h2 class="lxq-title">Call booked</h2>
+        <p class="lxq-why" data-lxq-done></p>
+        <button type="button" class="lxq-btn lxq-btn--primary" data-lxq-home>Go back to home page</button>
+      </section>
+    </div>
+  </div>
+</div>
+
+<style>
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+  #lx-home-quiz { font-family: inherit; }
+  #lx-home-quiz .lxq-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483001;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+  }
+  #lx-home-quiz .lxq-overlay[hidden] { display: none; }
+  #lx-home-quiz .lxq-blur {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  #lx-home-quiz .lxq-panel {
+    position: relative;
+    width: min(560px, 100%);
+    max-height: min(88vh, 820px);
+    overflow: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    background: #141414;
+    color: #f5f5f5;
+    border-radius: 20px;
+    padding: 22px 18px 18px;
+    box-shadow: 0 24px 80px rgba(0,0,0,.45);
+  }
+  #lx-home-quiz .lxq-x {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  #lx-home-quiz .lxq-kicker {
+    margin: 0 0 6px;
+    color: #ff6200;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+  #lx-home-quiz .lxq-title { margin: 0 0 8px; font-size: 28px; letter-spacing: -0.03em; }
+  #lx-home-quiz .lxq-q { margin: 12px 0; font-size: 22px; letter-spacing: -0.03em; }
+  #lx-home-quiz .lxq-why, #lx-home-quiz .lxq-price { color: rgba(245,245,245,.7); }
+  #lx-home-quiz .lxq-step {
+    margin: 10px 0 0;
+    color: #ffb089;
+    font-size: 13px;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+  }
+  #lx-home-quiz .lxq-bar { height: 4px; background: rgba(255,255,255,.12); border-radius: 99px; overflow: hidden; }
+  #lx-home-quiz .lxq-bar span { display: block; height: 100%; width: 0; background: #ff6200; }
+  #lx-home-quiz .lxq-options { display: grid; gap: 8px; margin-top: 12px; }
+  #lx-home-quiz .lxq-options button, #lx-home-quiz .lxq-pick {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: #1a1a1a;
+    color: #fff;
+    font: inherit;
+    cursor: pointer;
+  }
+  #lx-home-quiz .lxq-options button.is-on {
+    border-color: #ff6200;
+    box-shadow: 0 0 0 2px rgba(255,98,0,.35);
+  }
+  #lx-home-quiz .lxq-slots {
+    display: grid;
+    gap: 8px;
+    margin-top: 18px;
+    max-height: min(48vh, 430px);
+    overflow: auto;
+    padding-right: 2px;
+  }
+  #lx-home-quiz .lxq-slot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-height: 58px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.1);
+    background: linear-gradient(180deg, #1c1c1c, #161616);
+    color: #fff;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  #lx-home-quiz .lxq-slot__time {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  #lx-home-quiz .lxq-slot__tag {
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(245,245,245,.45);
+  }
+  #lx-home-quiz .lxq-slot.is-on {
+    border-color: #ff6200;
+    background: #24160f;
+  }
+  #lx-home-quiz .lxq-slot.is-on .lxq-slot__tag { color: #ffb089; }
+  #lx-home-quiz .lxq-slot.is-booked {
+    opacity: 0.42;
+    cursor: not-allowed;
+    background: #121212;
+  }
+  #lx-home-quiz .lxq-slot.is-booked .lxq-slot__time { text-decoration: line-through; }
+  #lx-home-quiz .lxq-slot.is-booked .lxq-slot__tag { color: #d7b5a0; }
+  #lx-home-quiz .lxq-actions, #lx-home-quiz form { display: grid; gap: 10px; margin-top: 14px; }
+  #lx-home-quiz label { display: grid; gap: 6px; font-size: 13px; color: rgba(245,245,245,.7); }
+  #lx-home-quiz input, #lx-home-quiz select {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 46px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: #1a1a1a;
+    color: #fff;
+    font: inherit;
+    font-size: 16px;
+    padding: 10px 12px;
+  }
+  #lx-home-quiz .lxq-row { display: grid; gap: 8px; }
+  @media (min-width: 640px) {
+    #lx-home-quiz .lxq-row { grid-template-columns: 1fr 1fr 1fr; }
+  }
+  #lx-home-quiz fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
+  #lx-home-quiz legend { font-size: 13px; color: rgba(245,245,245,.7); }
+  #lx-home-quiz .lxq-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    border-radius: 999px;
+    border: 0;
+    text-decoration: none;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  #lx-home-quiz .lxq-btn[hidden] { display: none; }
+  #lx-home-quiz .lxq-btn--primary { background: #ff6200; color: #140900; }
+  #lx-home-quiz [data-lxq-confirm] { width: 100%; margin-top: 16px; }
+  #lx-home-quiz .lxq-btn--ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.2); }
+  #lx-home-quiz .lxq-back { margin-top: 10px; background: none; border: 0; color: rgba(245,245,245,.7); cursor: pointer; }
+  #lx-home-quiz .lxq-agree { display: flex; gap: 10px; align-items: flex-start; color: #fff; margin: 12px 0; }
+  #lx-home-quiz .lxq-agree input { width: 18px; height: 18px; min-height: 0; }
+  #lx-home-quiz .lxq-status { min-height: 1.2em; color: #ffb089; margin: 0; }
+  #lx-home-quiz .lxq-result {
+    padding: 8px 4px 4px;
+    text-align: center;
+  }
+  #lx-home-quiz .lxq-result-term {
+    margin: 0 0 8px;
+    color: #ffb089;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  #lx-home-quiz .lxq-result-name {
+    margin: 0;
+    font-size: clamp(34px, 6vw, 48px);
+    line-height: 1.05;
+    letter-spacing: -0.045em;
+    font-weight: 750;
+  }
+  #lx-home-quiz .lxq-result-price {
+    margin: 14px 0 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  #lx-home-quiz .lxq-result-why {
+    margin: 14px auto 0;
+    max-width: 36ch;
+    color: rgba(245,245,245,.68);
+    line-height: 1.5;
+  }
+  #lx-home-quiz .lxq-result .lxq-actions { margin-top: 26px; }
+  #lx-home-quiz .lxq-result .lxq-actions .lxq-btn {
+    width: 100%;
+    background: #242424;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.32);
+    box-shadow: none;
+    padding: 14px 18px;
+    line-height: 1.25;
+    text-align: center;
+  }
+</style>
+
+<script>
+  (function () {
+    var root = document.getElementById('lx-home-quiz');
+    if (!root) return;
+    var steps = [
+      { key: 'q1', q: 'What do you want to feel first?', options: [
+        { id: 'a', label: 'More energy when I move', plan: '12_months' },
+        { id: 'b', label: 'My clothes fit better', plan: '3_months' },
+        { id: 'c', label: 'I look a bit firmer', plan: '6_months' }
+      ]},
+      { key: 'q2', q: 'What kind of workout sounds okay?', options: [
+        { id: 'a', label: 'A few times every week', plan: '6_months' },
+        { id: 'b', label: 'Hard sessions, with rest days', plan: '12_months' },
+        { id: 'c', label: 'Short and simple', plan: '3_months' }
+      ]},
+      { key: 'q3', q: 'How do you want to eat?', options: [
+        { id: 'a', label: 'Simple food, a little less', plan: '3_months' },
+        { id: 'b', label: 'Enough food to train well', plan: '12_months' },
+        { id: 'c', label: 'Eat well and still get leaner', plan: '6_months' }
+      ]},
+      { key: 'q4', q: 'When it feels hard, what helps?', options: [
+        { id: 'a', label: 'Someone checks in on me', plan: '12_months' },
+        { id: 'b', label: 'The plan can change with me', plan: '6_months' },
+        { id: 'c', label: 'I can see the finish', plan: '3_months' }
+      ]},
+      { key: 'q5', q: 'What kind of help do you like?', options: [
+        { id: 'a', label: 'A message when I share updates', plan: '6_months' },
+        { id: 'b', label: 'Clear steps, then I do it', plan: '3_months' },
+        { id: 'c', label: 'A real chat, not only texts', plan: '12_months' }
+      ]},
+      { key: 'q6', q: 'What change matters most?', options: [
+        { id: 'a', label: 'More shape in the mirror', plan: '6_months' },
+        { id: 'b', label: 'Lean, and still strong', plan: '12_months' },
+        { id: 'c', label: 'A smaller waist', plan: '3_months' }
+      ]},
+      { key: 'q7', q: 'How much time do you have?', options: [
+        { id: 'a', label: 'I can make time for proper sessions', plan: '12_months' },
+        { id: 'b', label: 'Only a little time', plan: '3_months' },
+        { id: 'c', label: 'I am busy, but a plan can fit', plan: '6_months' }
+      ]},
+      { key: 'q8', q: 'What usually stops you?', options: [
+        { id: 'a', label: 'I guess, and nothing changes', plan: '6_months' },
+        { id: 'b', label: 'I stop when no one checks', plan: '12_months' },
+        { id: 'c', label: 'I quit if it takes too long', plan: '3_months' }
+      ]},
+      { key: 'q9', q: 'After a hard week, you want', options: [
+        { id: 'a', label: 'To look a little tighter', plan: '3_months' },
+        { id: 'b', label: 'To feel ready to go again', plan: '12_months' },
+        { id: 'c', label: 'To feel stronger, not just smaller', plan: '6_months' }
+      ]},
+      { key: 'q10', q: 'Which sounds more like you?', options: [
+        { id: 'a', label: 'I want to keep going when it is hard', plan: '12_months' },
+        { id: 'b', label: 'I want my waist to change', plan: '3_months' },
+        { id: 'c', label: 'I want to look like I train', plan: '6_months' }
+      ]}
+    ];
+    var plans = {
+      '3_months': { label: 'Fat loss', price: '₹1,999', per: '90 days', path: '3-months' },
+      '6_months': { label: 'Fat loss + muscle gain', price: '₹3,499', per: '6 months', path: '6-months' },
+      '12_months': { label: 'Athletic body', price: '₹5,999', per: '12 months', path: '12-months' }
+    };
+    var slots = [
+      { value: '11:30 am–12:30 pm IST', label: '11:30 am – 12:30 pm', booked: true },
+      { value: '', label: '12:30 – 1:30 pm', booked: true },
+      { value: '', label: '1:30 – 2:30 pm', booked: true },
+      { value: '', label: '2:30 – 3:30 pm', booked: true },
+      { value: '', label: '3:30 – 4:30 pm', booked: true },
+      { value: '', label: '4:30 – 5:00 pm', booked: true },
+      { value: '5–6 pm IST', label: '5:00 – 6:00 pm', booked: false },
+      { value: '6–7 pm IST', label: '6:00 – 7:00 pm', booked: false },
+      { value: '7–8 pm IST', label: '7:00 – 8:00 pm', booked: false },
+      { value: '8–9 pm IST', label: '8:00 – 9:00 pm', booked: false }
+    ];
+    var states = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'];
+    var answers = {};
+    var stepIndex = 0;
+    var planKey = '6_months';
+    var pickedSlot = '';
+    var details = null;
+    var stateSelect = root.querySelector('select[name="state"]');
+    states.forEach(function (name) {
+      var opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      stateSelect.appendChild(opt);
+    });
+
+    function tomorrowText() {
+      var when = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      return when.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'long' });
+    }
+
+    var whyCopy = {
+      '3_months': 'Ninety days, focused on fat loss. A clear plan, then you are done.',
+      '6_months': 'Six months to lose fat and build muscle at the same time.',
+      '12_months': 'A full year for fat loss, muscle, and stamina, with a weekly coach call.'
+    };
+
+    function recommend() {
+      var tally = { '3_months': 0, '6_months': 0, '12_months': 0 };
+      var order = ['3_months', '6_months', '12_months'];
+      steps.forEach(function (step) {
+        var picked = answers[step.key];
+        if (picked && tally[picked.plan] != null) tally[picked.plan] += 1;
+      });
+      var best = 0;
+      order.forEach(function (key) { if (tally[key] > best) best = tally[key]; });
+      var tied = order.filter(function (key) { return tally[key] === best; });
+      var key = tied[0];
+      if (tied.length > 1) {
+        steps.some(function (step) {
+          var picked = answers[step.key];
+          if (picked && tied.indexOf(picked.plan) !== -1) {
+            key = picked.plan;
+            return true;
+          }
+          return false;
+        });
+      }
+      return { planKey: key, why: whyCopy[key] };
+    }
+
+    function view(name) {
+      Array.prototype.forEach.call(root.querySelectorAll('[data-lxq-view]'), function (el) {
+        el.hidden = el.getAttribute('data-lxq-view') !== name;
+      });
+      var panel = root.querySelector('.lxq-panel');
+      if (panel) panel.scrollTop = 0;
+    }
+
+    function renderStep() {
+      var step = steps[stepIndex];
+      root.querySelector('[data-lxq-step]').textContent = 'Takes only 30–45 seconds';
+      root.querySelector('[data-lxq-bar]').style.width = ((stepIndex + 1) / steps.length) * 100 + '%';
+      root.querySelector('[data-lxq-q]').textContent = step.q;
+      var box = root.querySelector('[data-lxq-options]');
+      box.innerHTML = '';
+      root.querySelector('[data-lxq-back]').hidden = stepIndex === 0;
+      step.options.forEach(function (opt) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = opt.label;
+        btn.addEventListener('click', function () {
+          answers[step.key] = opt;
+          window.setTimeout(function () {
+            if (stepIndex >= steps.length - 1) showResult();
+            else { stepIndex += 1; renderStep(); }
+          }, 120);
+        });
+        box.appendChild(btn);
+      });
+    }
+
+    function showResult() {
+      var rec = recommend();
+      planKey = rec.planKey;
+      var plan = plans[planKey];
+      root.querySelector('[data-lxq-plan]').textContent = plan.label;
+      root.querySelector('[data-lxq-per]').textContent = plan.per;
+      root.querySelector('[data-lxq-price]').textContent = plan.price;
+      root.querySelector('[data-lxq-why]').textContent = rec.why;
+      root.querySelector('[data-lxq-checkout]').href = 'https://app.lurvox.in/plans/' + plan.path + '?landing=/preview7';
+      var planSelect = root.querySelector('select[name="plan"]');
+      if (planSelect) planSelect.value = '';
+      view('result');
+    }
+
+    function openQuiz() {
+      root.querySelector('[data-lxq-overlay]').hidden = false;
+      document.documentElement.style.overflow = 'hidden';
+      view('quiz');
+      renderStep();
+    }
+
+    function closeQuiz() {
+      root.querySelector('[data-lxq-overlay]').hidden = true;
+      document.documentElement.style.overflow = '';
+    }
+
+    function goHome() {
+      closeQuiz();
+      if (location.pathname !== '/') location.assign('/');
+    }
+
+    Array.prototype.forEach.call(root.querySelectorAll('[data-lxq-close]'), function (el) {
+      el.addEventListener('click', closeQuiz);
+    });
+    root.querySelector('[data-lxq-back]').addEventListener('click', function () {
+      if (stepIndex <= 0) return;
+      stepIndex -= 1;
+      renderStep();
+    });
+    root.querySelector('[data-lxq-restart]').addEventListener('click', function () {
+      answers = {};
+      stepIndex = 0;
+      view('quiz');
+      renderStep();
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-lxq-home]'), function (el) {
+      el.addEventListener('click', goHome);
+    });
+    root.querySelector('[data-lxq-book]').addEventListener('click', function () {
+      view('details');
+    });
+    root.querySelector('[data-lxq-details]').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var form = event.currentTarget;
+      if (!form.plan.value) {
+        root.querySelector('[data-lxq-status]').textContent = 'Please choose a plan.';
+        return;
+      }
+      root.querySelector('[data-lxq-status]').textContent = '';
+      details = {
+        name: form.name.value.trim(),
+        age: form.age.value.trim(),
+        height: form.height.value.trim(),
+        weight: form.weight.value.trim(),
+        phone: form.phone.value.trim(),
+        email: form.email.value.trim(),
+        state: form.state.value,
+        plan: form.plan.value
+      };
+      pickedSlot = '';
+      var confirmBtn = root.querySelector('[data-lxq-confirm]');
+      confirmBtn.hidden = true;
+      root.querySelector('[data-lxq-slot-status]').textContent = '';
+      var day = tomorrowText();
+      root.querySelector('[data-lxq-day]').textContent = 'India time, ' + day + '.';
+      var box = root.querySelector('[data-lxq-slots]');
+      box.innerHTML = '';
+      slots.forEach(function (slot) {
+        var booked = slot.booked;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'lxq-slot' + (booked ? ' is-booked' : '');
+        btn.disabled = booked;
+        btn.innerHTML = '<span class="lxq-slot__time">' + slot.label + '</span><span class="lxq-slot__tag">' + (booked ? 'Booked out' : 'Open') + '</span>';
+        if (!booked) {
+          btn.addEventListener('click', function () {
+            pickedSlot = slot.value;
+            Array.prototype.forEach.call(box.children, function (el) {
+              el.classList.remove('is-on');
+              if (!el.disabled && el.querySelector('.lxq-slot__tag')) el.querySelector('.lxq-slot__tag').textContent = 'Open';
+            });
+            btn.classList.add('is-on');
+            btn.querySelector('.lxq-slot__tag').textContent = 'Selected';
+            confirmBtn.hidden = false;
+          });
+        }
+        box.appendChild(btn);
+      });
+      view('slot');
+    });
+    root.querySelector('[data-lxq-confirm]').addEventListener('click', function () {
+      var status = root.querySelector('[data-lxq-slot-status]');
+      if (!details) { view('details'); return; }
+      if (!pickedSlot) { status.textContent = 'Please pick a time for tomorrow.'; return; }
+      status.textContent = 'Booking…';
+      var day = tomorrowText();
+      var message = [
+        'Name: ' + details.name,
+        'Age: ' + details.age,
+        'Height: ' + details.height + ' cm',
+        'Weight: ' + details.weight + ' kg',
+        'Mobile: ' + details.phone,
+        'Email: ' + details.email,
+        'State: ' + details.state,
+        'Plan: ' + details.plan,
+        'Call day: ' + day,
+        'Agreed: I agree and book my 10 mins call. I will be on time and respect the coach’s time.'
+      ].join('\n');
+      fetch('https://app.lurvox.in/api/public/talk-to-a-coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: details.name,
+          email: details.email,
+          phone: details.phone,
+          message: message,
+          preferredTime: pickedSlot,
+          respectCoachTime: true
+        })
+      }).then(function (res) {
+        return res.json().catch(function () { return null; }).then(function (data) {
+          return { ok: res.ok && data && data.ok, error: data && data.error };
+        });
+      }).then(function (result) {
+        if (!result.ok) {
+          status.textContent = result.error || 'Could not book the call. Please try again.';
+          return;
+        }
+        root.querySelector('[data-lxq-done]').textContent = 'A coach will call you on ' + day + ', ' + pickedSlot.replace(' IST', '') + '.';
+        view('done');
+      }).catch(function () {
+        status.textContent = 'Network error. Please try again.';
+      });
+    });
+
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest && event.target.closest('a');
+      if (!link) return;
+      var href = link.getAttribute('href') || '';
+      if (href.indexOf('/pages/choose-your-plan') === -1 && href.indexOf('/pages/talk-to-a-coach') === -1 && href.indexOf('/pages/book-a-free-call') === -1) return;
+      event.preventDefault();
+      openQuiz();
+    });
+
+    window.LurvoxHomeQuiz = {
+      open: openQuiz,
+      book: function (key) {
+        if (plans[key]) {
+          planKey = key;
+          var radio = root.querySelector('input[data-key="' + key + '"]');
+          if (radio) radio.checked = true;
+        }
+        root.querySelector('[data-lxq-overlay]').hidden = false;
+        document.documentElement.style.overflow = 'hidden';
+        view('details');
+      }
+    };
+  })();
+</script>
