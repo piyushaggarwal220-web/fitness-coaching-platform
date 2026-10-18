@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { PREVIEW7_AD_PATH } from '@/lib/analytics/ad-landing'
 import {
   affiliateDiscountPaise,
   getAffiliateCode,
@@ -15,6 +16,7 @@ import {
   PREVIEW_SALE_CODE,
   previewSaleDiscountPaise,
 } from '@/lib/payments/preview-sale-code'
+import { preview7AmountPaise } from '@/lib/payments/preview7-prices'
 import {
   computePromoDiscountPaise,
   getActivePromoCode,
@@ -347,13 +349,16 @@ export async function resolveCheckoutPricing(input: {
   email?: string | null
   discountCode?: string | null
   enforceEligibility?: boolean
+  landingPath?: string | null
 }): Promise<ResolveDiscountResult> {
   const plan = getPurchasablePlan(input.planSlug)
   if (!plan) {
     return { ok: false, error: 'Invalid plan selected', status: 400 }
   }
 
-  const listAmountPaise = plan.amountPaise
+  const preview7List =
+    input.landingPath === PREVIEW7_AD_PATH ? preview7AmountPaise(plan.slug) : null
+  const listAmountPaise = preview7List ?? plan.amountPaise
   const code = normalizeDiscountCode(input.discountCode)
 
   if (isRetiredPublicDiscountCode(code)) {
@@ -626,6 +631,26 @@ function expectedPlanAmountPaiseFromOrderNotes(
   const listFromNotes = notes?.list_amount_paise ? Number(notes.list_amount_paise) : NaN
   const discountPaise = notes?.discount_paise ? Number(notes.discount_paise) : 0
   const code = normalizeDiscountCode(notes?.discount_code)
+
+  const preview7List = preview7AmountPaise(plan.slug)
+  if (
+    preview7List &&
+    Number.isFinite(charged) &&
+    charged > 0 &&
+    Number.isFinite(listFromNotes) &&
+    listFromNotes === preview7List
+  ) {
+    if (!code && charged === preview7List) return charged
+    if (
+      code &&
+      Number.isFinite(discountPaise) &&
+      discountPaise > 0 &&
+      charged === preview7List - discountPaise &&
+      charged > 0
+    ) {
+      return charged
+    }
+  }
 
   if (Number.isFinite(charged) && charged > 0) {
     const listAmount = Number.isFinite(listFromNotes) && listFromNotes > 0 ? listFromNotes : plan.amountPaise

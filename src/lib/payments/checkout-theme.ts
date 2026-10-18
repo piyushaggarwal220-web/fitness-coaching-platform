@@ -4,6 +4,7 @@ import {
   PREVIEW3_AD_PATH,
   PREVIEW5_AD_PATH,
   PREVIEW6_AD_PATH,
+  PREVIEW7_AD_PATH,
   PREVIEW_AD_PATH,
   type PreviewAdPath,
 } from '@/lib/analytics/ad-landing'
@@ -360,6 +361,45 @@ export function checkoutThemeForLanding(
       badgeBg: 'rgba(139, 92, 246, 0.18)',
       badgeBorder: '1px solid rgba(167, 139, 250, 0.45)',
       badgeColor: '#a78bfa',
+    })
+  }
+
+  if (path === PREVIEW7_AD_PATH) {
+    return themeFrom({
+      page: '#100b08',
+      pageImage:
+        'radial-gradient(circle at 18% -20%, rgba(255, 98, 0, 0.35), transparent 52%)',
+      ink: '#ffffff',
+      muted: 'rgba(255, 255, 255, 0.72)',
+      dim: 'rgba(255, 255, 255, 0.5)',
+      card: '#17100c',
+      wash: '#100b08',
+      line: 'rgba(255, 98, 0, 0.35)',
+      accent: '#ff6200',
+      accentText: '#140900',
+      button: '#ff6200',
+      buttonText: '#140900',
+      buttonImage: 'linear-gradient(180deg, #ff7a1a 0%, #ff6200 100%)',
+      buttonShadow: '0 10px 28px rgba(255, 98, 0, 0.32)',
+      dot: 'rgba(255, 98, 0, 0.4)',
+      colorScheme: 'dark',
+      fontFamily: manrope,
+      titleFamily: manrope,
+      titleSize: 32,
+      titleWeight: 800,
+      titleTracking: '-0.02em',
+      titleLine: 1.05,
+      bodySize: 16,
+      labelSize: 14,
+      buttonSize: 16,
+      buttonWeight: 800,
+      buttonRadius: 14,
+      buttonHeight: 52,
+      brandSize: 14,
+      brandTracking: '0.12em',
+      badgeBg: 'rgba(255, 98, 0, 0.18)',
+      badgeBorder: '1px solid rgba(255, 98, 0, 0.45)',
+      badgeColor: '#ffb088',
     })
   }
 

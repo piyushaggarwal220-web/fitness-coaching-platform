@@ -16,6 +16,9 @@ export const PREVIEW5_AD_PATH = '/preview5'
 /** Mixed-colour landing with the 1 month / 3 month full-access offer. */
 export const PREVIEW6_AD_PATH = '/preview6'
 
+/** Orange quiz-v3 coaching landing. Catalog prices, separate ad path. */
+export const PREVIEW7_AD_PATH = '/preview7'
+
 export type PreviewAdPath =
   | typeof PREVIEW_AD_PATH
   | typeof PREVIEW2_AD_PATH
@@ -23,6 +26,7 @@ export type PreviewAdPath =
   | typeof PREVIEW4_AD_PATH
   | typeof PREVIEW5_AD_PATH
   | typeof PREVIEW6_AD_PATH
+  | typeof PREVIEW7_AD_PATH
 
 export const PREVIEW_DROPOFF_SECTIONS = [
   { id: 'hero', key: 'p1_hero', index: 0, label: 'Hero' },
@@ -95,6 +99,17 @@ export const PREVIEW6_DROPOFF_SECTIONS = [
   { id: 'quiz', key: 'p6_quiz', index: 7, label: 'Fitness quiz' },
 ] as const
 
+/** Sections on the orange quiz-v3 preview. Keys stay off the other landings. */
+export const PREVIEW7_DROPOFF_SECTIONS = [
+  { id: 'top', key: 'p7_hero', index: 0, label: 'Hero' },
+  { id: 'plans', key: 'p7_plans', index: 1, label: 'Plans' },
+  { id: 'truth', key: 'p7_truth', index: 2, label: 'Truth check' },
+  { id: 'steps', key: 'p7_steps', index: 3, label: 'How it works' },
+  { id: 'faq', key: 'p7_faq', index: 4, label: 'Questions' },
+  { id: 'close', key: 'p7_close', index: 5, label: 'Closing offer' },
+  { id: 'quiz', key: 'p7_quiz', index: 6, label: 'Fitness quiz' },
+] as const
+
 /** Only a known preview ad page may set the purchase source URL. Anything else stays on /checkout. */
 export function previewAdLandingPath(value: unknown): PreviewAdPath | null {
   if (value === PREVIEW_AD_PATH || value === '/studio') return PREVIEW_AD_PATH
@@ -103,16 +118,18 @@ export function previewAdLandingPath(value: unknown): PreviewAdPath | null {
   if (value === PREVIEW4_AD_PATH) return PREVIEW4_AD_PATH
   if (value === PREVIEW5_AD_PATH) return PREVIEW5_AD_PATH
   if (value === PREVIEW6_AD_PATH) return PREVIEW6_AD_PATH
+  if (value === PREVIEW7_AD_PATH) return PREVIEW7_AD_PATH
   return null
 }
 
 export function previewAdFunnelSource(
   path: PreviewAdPath
-): 'preview1' | 'preview2' | 'preview3' | 'preview4' | 'preview5' | 'preview6' {
+): 'preview1' | 'preview2' | 'preview3' | 'preview4' | 'preview5' | 'preview6' | 'preview7' {
   if (path === PREVIEW2_AD_PATH) return 'preview2'
   if (path === PREVIEW3_AD_PATH) return 'preview3'
   if (path === PREVIEW4_AD_PATH) return 'preview4'
   if (path === PREVIEW5_AD_PATH) return 'preview5'
   if (path === PREVIEW6_AD_PATH) return 'preview6'
+  if (path === PREVIEW7_AD_PATH) return 'preview7'
   return 'preview1'
 }

@@ -167,6 +167,34 @@ const previewFull = expectedAmountPaiseFromOrderNotes(previewOne, {
 assert.equal(previewFull, previewOne.amountPaise)
 pass('LURVOX60 is 60% off preview 1-month and 3-month prices only when the code is on the order')
 
+const preview7Notes = expectedAmountPaiseFromOrderNotes(COACHING_PLANS['3_months'], {
+  amount_paise: '199900',
+  list_amount_paise: '199900',
+})
+assert.equal(preview7Notes, 199900)
+assert.equal(
+  expectedAmountPaiseFromOrderNotes(COACHING_PLANS['6_months'], {
+    amount_paise: '349900',
+    list_amount_paise: '349900',
+  }),
+  349900
+)
+assert.equal(
+  expectedAmountPaiseFromOrderNotes(COACHING_PLANS['12_months'], {
+    amount_paise: '599900',
+    list_amount_paise: '599900',
+  }),
+  599900
+)
+assert.equal(
+  expectedAmountPaiseFromOrderNotes(COACHING_PLANS['3_months'], {
+    amount_paise: '59900',
+    list_amount_paise: '59900',
+  }),
+  59900
+)
+pass('preview 7 draft prices verify at ₹1,999 / ₹3,499 / ₹5,999 and catalog orders stay at catalog')
+
 const lukeMigration = readFileSync(
   resolve('supabase/migrations/20260809180000_luke_affiliate_promo.sql'),
   'utf8'

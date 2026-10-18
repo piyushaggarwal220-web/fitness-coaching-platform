@@ -6,7 +6,9 @@ import { metaBrowserIdsForRequest, persistMetaClickIdsFromLocation, readMetaBrow
 import { queueMetaPurchase } from '@/lib/analytics/meta-pixel'
 import { FIRST_PLAN_TARGET } from '@/lib/payments/plan-pages'
 import { getCoachingPlan, isDurationOfferSlug } from '@/lib/payments/plans'
+import { PREVIEW7_AD_PATH } from '@/lib/analytics/ad-landing'
 import { PREVIEW_SALE_CODE } from '@/lib/payments/preview-sale-code'
+import { formatPreview7Inr, preview7AmountPaise } from '@/lib/payments/preview7-prices'
 import { usePreviewSale } from './PreviewSaleCode'
 import styles from './DirectCheckout.module.css'
 
@@ -62,14 +64,17 @@ export function DirectCheckout({
   planSlug: string | null
   landingPath: string
   source: string
-  tone: 'beige' | 'purple' | 'colour'
+  tone: 'beige' | 'purple' | 'colour' | 'orange'
   onClose: () => void
 }) {
   const plan = planSlug ? getCoachingPlan(planSlug) : null
   const sale = usePreviewSale()
   const offer = plan && isDurationOfferSlug(plan.slug) ? sale.quote(plan.slug) : null
-  const payLabel = offer?.payLabel ?? plan?.displayPrice ?? ''
-  const payPaise = offer?.payPaise ?? plan?.amountPaise ?? 0
+  const preview7Paise = landingPath === PREVIEW7_AD_PATH ? preview7AmountPaise(plan?.slug) : null
+  const payLabel =
+    offer?.payLabel ??
+    (preview7Paise != null ? formatPreview7Inr(preview7Paise) : plan?.displayPrice ?? '')
+  const payPaise = offer?.payPaise ?? preview7Paise ?? plan?.amountPaise ?? 0
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -189,7 +194,7 @@ export function DirectCheckout({
 
       await loadRazorpay()
       if (!window.Razorpay) throw new Error('Razorpay checkout failed to load.')
-      const accent = tone === 'purple' ? '#7c3aed' : tone === 'colour' ? '#f59e0b' : '#1e4d3d'
+      const accent = tone === 'purple' ? '#7c3aed' : tone === 'colour' ? '#f59e0b' : tone === 'orange' ? '#ff6200' : '#1e4d3d'
       const checkout = new window.Razorpay({
         key: orderData.keyId,
         amount: orderData.amount,

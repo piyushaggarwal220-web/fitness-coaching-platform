@@ -118,6 +118,18 @@
 .colour .error { color: #fda4af; }
 .colour a { color: #fde68a; }
 
+.orange .card { background: #17100c; color: #fff; border: 1px solid rgba(255, 98, 0, 0.45); }
+.orange .kicker { color: #ffb088; }
+.orange .note, .orange label { color: rgba(255, 255, 255, 0.72); }
+.orange input:not([type='checkbox']) { background: #100b08; border: 1px solid rgba(255, 98, 0, 0.35); color: #fff; }
+.orange .code { background: #ff6200; color: #140900; }
+.orange .code:disabled { background: rgba(255, 98, 0, 0.18); color: #ffb088; }
+.orange .pay { background: linear-gradient(180deg, #ff7a1a 0%, #ff6200 100%); color: #140900; }
+.orange .back,
+.orange .close { color: #ffb088; }
+.orange .error { color: #fda4af; }
+.orange a { color: #ffb088; }
+
 @media (min-width: 720px) {
   .sheet { align-items: center; }
   .card { border-radius: 22px; padding: 24px; }

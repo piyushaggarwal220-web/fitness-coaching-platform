@@ -73,12 +73,14 @@ export async function POST(request: Request) {
   const acknowledgement = createPolicyAcknowledgement(request)
   const admin = createAdminClient()
 
+  const landingPath = previewAdLandingPath(body.landingPath)
   const pricingResult = await resolveCheckoutPricing({
     admin,
     planSlug: plan.slug,
     email: body.email!,
     discountCode: body.discountCode,
     enforceEligibility: true,
+    landingPath,
   })
   if (!pricingResult.ok) {
     return NextResponse.json(
@@ -90,7 +92,6 @@ export async function POST(request: Request) {
   const addonIds: string[] = []
   const totalPaise = checkoutTotalPaise(pricing, [])
   const discountNotes = checkoutDiscountNotes(pricing)
-  const landingPath = previewAdLandingPath(body.landingPath)
 
   if (shouldBypassPayment()) {
     const orderId = `test_order_${Date.now()}`
