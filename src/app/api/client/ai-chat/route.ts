@@ -48,6 +48,10 @@ import {
   type ProfileChangeProposal,
 } from '@/lib/ai/ai-coach-profile-change'
 import { memberFacingCoachFirstName } from '@/lib/coach-delivery-policy'
+import {
+  AI_COACH_VISIBLE_MESSAGES,
+  chronologicalChatWindow,
+} from '@/lib/ai/ai-coach-history'
 import { assertInstantFeatureAccess } from '@/lib/instant-feature-guard'
 import { getPlanChangeQuota } from '@/lib/plan-change-requests'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -205,16 +209,20 @@ export async function GET() {
   if (denied) return denied
 
   const admin = createAdminClient()
-  const [{ data: rows }, earlier, coachFirstName] = await Promise.all([
+  const [{ data: rows, error: historyError }, earlier, coachFirstName] = await Promise.all([
     admin
       .from('ai_coach_messages')
       .select('id, role, content, created_at')
       .eq('client_id', auth.user.id)
-      .order('created_at', { ascending: true })
-      .limit(80),
+      .order('created_at', { ascending: false })
+      .limit(AI_COACH_VISIBLE_MESSAGES),
     earlierCoachThread(admin, auth.user.id),
     coachNameForClient(admin, profile),
   ])
+
+  if (historyError) {
+    return NextResponse.json({ error: 'Could not load chat' }, { status: 500 })
+  }
 
   const messages = [
     ...earlier.map((turn, index) => ({
@@ -223,7 +231,7 @@ export async function GET() {
       content: turn.content,
       created_at: null,
     })),
-    ...(rows ?? []),
+    ...chronologicalChatWindow(rows ?? []),
   ]
 
   const memory = await loadCoachMemory(admin, auth.user.id)

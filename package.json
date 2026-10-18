@@ -39,6 +39,7 @@
     "verify:weekly-checkin-chat": "tsx scripts/verify-weekly-checkin-chat-policy.ts",
     "verify:chat-access": "tsx scripts/verify-chat-access-regression.ts",
     "verify:coach-chat-memory": "tsx scripts/verify-coach-chat-memory.ts",
+    "verify:ai-coach-chat-history": "tsx scripts/verify-ai-coach-chat-history.ts",
     "verify:initial-plan-generation": "tsx scripts/verify-initial-plan-generation.ts",
     "verify:generate-plan-retries": "tsx scripts/verify-generate-plan-retries.ts",
     "verify:password-reset-reauth": "tsx scripts/verify-password-reset-reauth.ts",

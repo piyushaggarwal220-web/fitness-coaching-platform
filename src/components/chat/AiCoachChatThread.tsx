@@ -16,7 +16,9 @@ import {
 } from '@/lib/chat-reply-pause'
 import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import { markSmartCoachRead } from '@/lib/smart-coach-unread'
+import { aiCoachImageStoragePath } from '@/lib/ai/ai-coach-photo-path'
 import { CHAT_LANGUAGES, parseChatLanguage, type ChatLanguage } from '@/lib/ai/coach-chat-language'
+import { convertHeicFileToJpeg, isHeicLike } from '@/lib/photo'
 
 type Msg = { id?: string; role: 'user' | 'assistant'; content: string; created_at?: string }
 
@@ -175,8 +177,26 @@ export function AiCoachChatThread() {
           setSending(false)
           return
         }
-        const path = `${user.id}/ai-chat/${Date.now()}_${imagePreview.file.name}`
-        const { error: uploadError } = await supabase.storage.from('chat-images').upload(path, imagePreview.file)
+        let photoFile = imagePreview.file
+        if (photoFile.size > 12_000_000) {
+          setDraft(text)
+          setError('That photo is too large. Choose a smaller one.')
+          return
+        }
+        if (isHeicLike(photoFile)) {
+          try {
+            photoFile = await convertHeicFileToJpeg(photoFile)
+          } catch {
+            setDraft(text)
+            setError('That iPhone photo could not be prepared. Choose a JPEG or PNG.')
+            return
+          }
+        }
+        const path = aiCoachImageStoragePath(user.id, photoFile.name)
+        const { error: uploadError } = await supabase.storage.from('chat-images').upload(path, photoFile, {
+          contentType: photoFile.type || 'image/jpeg',
+          upsert: false,
+        })
         if (uploadError) {
           setDraft(text)
           setError('Something went wrong sending that photo. Try again.')
