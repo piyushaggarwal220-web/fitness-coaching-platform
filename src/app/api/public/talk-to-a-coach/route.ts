@@ -16,7 +16,16 @@ type TalkToCoachBody = {
   preferredTime?: string
 }
 
+const COACH_CALL_TIME_SLOTS = new Set([
+  '11:30–12:30 pm IST',
+  '5–6 pm IST',
+  '6–7 pm IST',
+  '7–8 pm IST',
+  '8–9 pm IST',
+])
+
 const LEGACY_PREFERRED_TIME_OPTIONS = new Set([
+  ...COACH_CALL_TIME_SLOTS,
   'Morning (9am–12pm)',
   'Afternoon (12pm–5pm)',
   'Evening (5pm–9pm)',

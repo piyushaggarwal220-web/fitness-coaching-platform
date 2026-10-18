@@ -16,11 +16,20 @@ const GOAL_OPTIONS = (['3_months', '6_months', '12_months'] as const).map((slug)
 }))
 
 const CONSULT_BOOKED_KEY = 'lurvox_consult_booked'
+const QUIZ_URL = 'https://www.lurvox.in/pages/choose-your-plan?next=coach'
+const TIME_SLOTS = [
+  '11:30–12:30 pm IST',
+  '5–6 pm IST',
+  '6–7 pm IST',
+  '7–8 pm IST',
+  '8–9 pm IST',
+] as const
 
 export default function TalkToCoachPage() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [goalSlug, setGoalSlug] = useState<LongCoachingPlanSlug | ''>('')
+  const [slot, setSlot] = useState<(typeof TIME_SLOTS)[number] | ''>('')
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -42,6 +51,10 @@ export default function TalkToCoachPage() {
       setError('Please pick your goal.')
       return
     }
+    if (!slot) {
+      setError('Please pick a time slot.')
+      return
+    }
 
     setLoading(true)
     setError('')
@@ -49,6 +62,7 @@ export default function TalkToCoachPage() {
 
     const copy = PLAN_PAGE_COPY[goalSlug]
     const message = [
+      `Preferred call time: ${slot}`,
       `Goal: ${copy.goalName} (${copy.durationLabel})`,
       notes.trim() ? `\nNotes: ${notes.trim()}` : '',
     ]
@@ -59,7 +73,7 @@ export default function TalkToCoachPage() {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, message }),
+        body: JSON.stringify({ name, phone, message, preferredTime: slot }),
       })
       const payload = (await res.json().catch(() => null)) as {
         ok?: boolean
@@ -85,6 +99,7 @@ export default function TalkToCoachPage() {
       setName('')
       setPhone('')
       setGoalSlug('')
+      setSlot('')
       setNotes('')
     } catch {
       setError('Network error. Please check your connection and try again.')
@@ -101,7 +116,7 @@ export default function TalkToCoachPage() {
         <p style={{ margin: '0 0 24px', textAlign: 'center', color: colors.textSecondary, lineHeight: 1.5 }}>
           {booked
             ? 'We have your request. A coach will call you back soon. No need to submit again.'
-            : <>Free consultation — pick your goal and we&apos;ll help you decide if LURVOX is the right fit.</>}
+            : <>To talk to a coach, answer the quiz first. Then pick an India time (IST).</>}
         </p>
 
         {error && <p style={authStyles.error}>{error}</p>}
@@ -195,7 +210,43 @@ export default function TalkToCoachPage() {
               placeholder="Injuries, schedule, questions…"
             />
           </div>
-          <button type="submit" disabled={loading || !goalSlug} style={authStyles.button}>
+          <div style={authStyles.inputGroup}>
+            <span style={authStyles.label}>Time slot</span>
+            <p style={{ margin: '0 0 8px', fontSize: 12, color: colors.textSecondary }}>
+              India time (IST).
+            </p>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {TIME_SLOTS.map((option) => {
+                const selected = slot === option
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setSlot(option)}
+                    style={{
+                      minHeight: 48,
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      border: selected ? `1px solid ${colors.accent}` : `1px solid ${colors.borderSubtle}`,
+                      background: selected ? colors.accentMuted : colors.bgElevated,
+                      color: colors.textPrimary,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontWeight: 750,
+                    }}
+                  >
+                    {option}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <p style={{ margin: '0 0 8px', fontSize: 13, textAlign: 'center' }}>
+            <a href={QUIZ_URL} style={{ color: colors.accent, fontWeight: 700 }}>
+              To talk to a coach, answer the quiz first
+            </a>
+          </p>
+          <button type="submit" disabled={loading || !goalSlug || !slot} style={authStyles.button}>
             {loading ? 'Sending…' : 'Send message'}
           </button>
         </form>
