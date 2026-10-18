@@ -2,7 +2,9 @@ import assert from 'node:assert/strict'
 import {
   buildCoachMemoryUpdatePrompt,
   clipCoachMemory,
+  COACH_COMPACT_MAX_TURNS,
   readClientMood,
+  selectTurnsToCompact,
   shouldAskBeforeAdvising,
 } from '../src/lib/ai/coach-chat-memory'
 import { coachReplyRequest } from '../src/lib/ai/coach-chat-persona'
@@ -50,7 +52,15 @@ const memory = buildCoachMemoryUpdatePrompt({
   turns: 'Client: it twisted on Monday\nCoach: Got it. We will keep pressing light.',
 })
 assert.match(memory.userPrompt, /Left wrist pain/)
-assert.match(memory.systemPrompt, /Do not append a diary/)
-assert.ok(clipCoachMemory('x'.repeat(1200)).length <= 901)
+assert.match(memory.userPrompt, /it twisted on Monday/)
+assert.match(memory.systemPrompt, /proceedings/)
+assert.equal(selectTurnsToCompact(Array.from({ length: 11 }, (_, i) => i)).length, 0)
+assert.equal(selectTurnsToCompact(Array.from({ length: 12 }, (_, i) => i)).length, 12)
+assert.equal(
+  selectTurnsToCompact(Array.from({ length: 50 }, (_, i) => i)).length,
+  COACH_COMPACT_MAX_TURNS
+)
+assert.equal(clipCoachMemory('keep this'), 'keep this')
+assert.ok(clipCoachMemory('x'.repeat(5000)).length <= 4001)
 
 console.log('coach chat memory checks passed')

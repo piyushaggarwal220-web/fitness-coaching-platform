@@ -12,7 +12,10 @@ import {
 import {
   buildCoachMemoryUpdatePrompt,
   clipCoachMemory,
+  COACH_COMPACT_MAX_TURNS,
+  COACH_LIVE_TURNS,
   readClientMood,
+  selectTurnsToCompact,
 } from '@/lib/ai/coach-chat-memory'
 import {
   chatLanguageDirective,
@@ -61,7 +64,6 @@ export const maxDuration = 120
 
 type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
-const MAX_HISTORY = 16
 const MAX_MESSAGE_LEN = 1200
 
 async function coachNameForClient(
@@ -106,16 +108,17 @@ async function earlierCoachThread(
 async function loadCoachMemory(
   admin: ReturnType<typeof createAdminClient>,
   clientId: string
-): Promise<{ summary: string; replyLanguage: ChatLanguage }> {
+): Promise<{ summary: string; replyLanguage: ChatLanguage; summarizedThrough: string | null }> {
   const { data, error } = await admin
     .from('ai_coach_memory')
-    .select('summary, reply_language')
+    .select('summary, reply_language, summarized_through')
     .eq('client_id', clientId)
     .maybeSingle()
-  if (error || !data) return { summary: '', replyLanguage: 'hinglish' }
+  if (error || !data) return { summary: '', replyLanguage: 'hinglish', summarizedThrough: null }
   return {
     summary: data.summary?.trim() ?? '',
     replyLanguage: parseChatLanguage(data.reply_language) ?? 'hinglish',
+    summarizedThrough: data.summarized_through ?? null,
   }
 }
 
@@ -144,49 +147,68 @@ async function saveReplyLanguage(
   })
 }
 
-async function olderChatForFirstMemory(
-  admin: ReturnType<typeof createAdminClient>,
-  clientId: string
-): Promise<string> {
-  const { data } = await admin
-    .from('ai_coach_messages')
-    .select('role, content')
-    .eq('client_id', clientId)
-    .order('created_at', { ascending: false })
-    .range(MAX_HISTORY, MAX_HISTORY + 40)
-  const rows = [...(data ?? [])].reverse()
-  return rows
-    .map((row) => `${row.role === 'user' ? 'Client' : 'Coach'}: ${chatTextForModel(row.content)}`)
-    .join('\n')
-    .slice(0, 4000)
-}
-
-async function saveCoachMemory(
+async function compactCoachProceedings(
   admin: ReturnType<typeof createAdminClient>,
   clientId: string,
-  input: { previous: string; turns: string; mood: string }
+  input: { previous: string; summarizedThrough: string | null; mood: string }
 ): Promise<void> {
-  const older = input.previous ? '' : await olderChatForFirstMemory(admin, clientId)
-  const prompt = buildCoachMemoryUpdatePrompt({
-    previous: input.previous,
-    turns: input.turns,
-    older,
-  })
-  const result = await generateOpenAIResponse({
-    systemPrompt: prompt.systemPrompt,
-    userPrompt: prompt.userPrompt,
-    model: MODELS.GPT_LUNA,
-    maxTokens: 350,
-    temperature: 0.3,
-  })
-  const summary = clipCoachMemory(result.text)
-  if (!summary) return
-  await admin.from('ai_coach_memory').upsert({
-    client_id: clientId,
-    summary,
-    mood: input.mood,
-    updated_at: new Date().toISOString(),
-  })
+  const { data: liveRows, error: liveError } = await admin
+    .from('ai_coach_messages')
+    .select('created_at')
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: false })
+    .limit(COACH_LIVE_TURNS)
+  if (liveError || !liveRows || liveRows.length < COACH_LIVE_TURNS) return
+
+  const liveCutoff = liveRows[liveRows.length - 1]?.created_at
+  if (!liveCutoff) return
+
+  let previous = input.previous
+  let summarizedThrough = input.summarizedThrough
+  // A long backlog folds forward a chunk at a time. Stop once the gap is small.
+  for (let pass = 0; pass < 6; pass += 1) {
+    let pendingQuery = admin
+      .from('ai_coach_messages')
+      .select('role, content, created_at')
+      .eq('client_id', clientId)
+      .lt('created_at', liveCutoff)
+      .order('created_at', { ascending: true })
+      .limit(COACH_COMPACT_MAX_TURNS)
+    if (summarizedThrough) pendingQuery = pendingQuery.gt('created_at', summarizedThrough)
+
+    const { data: pendingRows, error: pendingError } = await pendingQuery
+    if (pendingError || !pendingRows?.length) return
+
+    const turns = selectTurnsToCompact(pendingRows)
+    if (turns.length === 0) return
+    const through = turns[turns.length - 1]?.created_at
+    if (!through) return
+
+    const older = turns
+      .map((row) => `${row.role === 'user' ? 'Client' : 'Coach'}: ${chatTextForModel(row.content)}`)
+      .join('\n')
+      .slice(0, 12000)
+    const prompt = buildCoachMemoryUpdatePrompt({ previous, turns: older })
+    const result = await generateOpenAIResponse({
+      systemPrompt: prompt.systemPrompt,
+      userPrompt: prompt.userPrompt,
+      model: MODELS.GPT_LUNA,
+      maxTokens: 900,
+      temperature: 0.2,
+    })
+    const summary = clipCoachMemory(result.text)
+    if (!summary) return
+    const { error: saveError } = await admin.from('ai_coach_memory').upsert({
+      client_id: clientId,
+      summary,
+      mood: input.mood,
+      summarized_through: through,
+      updated_at: new Date().toISOString(),
+    })
+    if (saveError) return
+    previous = summary
+    summarizedThrough = through
+  }
 }
 
 export async function GET() {
@@ -343,7 +365,7 @@ export async function POST(request: Request) {
     .select('role, content')
     .eq('client_id', auth.user.id)
     .order('created_at', { ascending: false })
-    .limit(MAX_HISTORY)
+    .limit(COACH_LIVE_TURNS)
 
   const history = ([...(historyRows ?? [])].reverse() as ChatTurn[]).filter(
     (row) => row.role === 'user' || row.role === 'assistant'
@@ -414,13 +436,13 @@ export async function POST(request: Request) {
       )
     }
     try {
-      await saveCoachMemory(admin, auth.user.id, {
+      await compactCoachProceedings(admin, auth.user.id, {
         previous: memory.summary,
-        turns: [`Client: ${latestClientText}`, `Coach: ${content}`].join('\n'),
+        summarizedThrough: memory.summarizedThrough,
         mood: mood.mood,
       })
     } catch {
-      // Reply already saved.
+      // Reply already saved. The next reply compacts this gap.
     }
     return NextResponse.json({ message: assistantRow, coachFirstName })
   }

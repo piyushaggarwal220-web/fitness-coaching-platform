@@ -57,32 +57,47 @@ export function shouldAskBeforeAdvising(text: string): boolean {
   return true
 }
 
+/** Raw turns kept in full for the next reply. Older turns get summarised. */
+export const COACH_LIVE_TURNS = 16
+/** Compact once this many turns have fallen out of the live window. */
+export const COACH_COMPACT_AFTER = 12
+/** How many aged-out turns one summary pass may fold in. */
+export const COACH_COMPACT_MAX_TURNS = 40
+export const COACH_MEMORY_MAX_CHARS = 4000
+
 export function clipCoachMemory(text: string): string {
   const cleaned = text.replace(/^["'`]+|["'`]+$/g, '').replace(/\s+\n/g, '\n').trim()
-  if (cleaned.length <= 900) return cleaned
-  return `${cleaned.slice(0, 900).trimEnd()}…`
+  if (cleaned.length <= COACH_MEMORY_MAX_CHARS) return cleaned
+  return `${cleaned.slice(0, COACH_MEMORY_MAX_CHARS).trimEnd()}…`
 }
 
-/** Rewrite the private memory after each reply. Facts stay; chatter drops. */
+/**
+ * Oldest-first turns that are already outside the live window and not yet
+ * summarised. A short gap waits. A full gap is summarised, then the next gap.
+ */
+export function selectTurnsToCompact<T>(pendingOldestFirst: readonly T[]): T[] {
+  if (pendingOldestFirst.length < COACH_COMPACT_AFTER) return []
+  return pendingOldestFirst.slice(0, COACH_COMPACT_MAX_TURNS)
+}
+
+/** Fold aged-out turns into the running proceedings summary. */
 export function buildCoachMemoryUpdatePrompt(input: {
   previous: string
   turns: string
   older?: string
 }): { systemPrompt: string; userPrompt: string } {
+  const olderTurns = input.older?.trim() || input.turns.trim()
   return {
     systemPrompt: [
-      'You keep a private memory for one fitness client so a later chat still knows them.',
-      'Rewrite the memory. Do not append a diary.',
-      'Keep only facts that change the next reply: injuries and which details are still unknown, foods they avoid, schedule limits, what they already answered, open questions, and how they like to be talked to.',
-      'Drop greetings, repeated advice, prices, and anything you were not told.',
-      'Plain sentences. Under 900 characters. No bullet list.',
+      'You keep a running summary of one fitness client\'s coach chat.',
+      'Merge the previous summary with the older turns. Keep the proceedings.',
+      'Keep what they asked, what was decided, injuries and which details are still unknown, foods they avoid, schedule limits, plan edits they confirmed or refused, and questions still open.',
+      'Drop greetings and repeated small talk. Do not invent anything that was not in the summary or the turns.',
+      'Plain sentences. Under 4000 characters.',
     ].join(' '),
     userPrompt: [
-      `Previous memory:\n${input.previous.trim() || '(none)'}`,
-      input.older?.trim() ? `Older chat not in the memory yet:\n${input.older.trim()}` : '',
-      `New exchange:\n${input.turns.trim() || '(none)'}`,
-    ]
-      .filter(Boolean)
-      .join('\n\n'),
+      `Previous summary:\n${input.previous.trim() || '(none)'}`,
+      `Older turns to fold in:\n${olderTurns || '(none)'}`,
+    ].join('\n\n'),
   }
 }
