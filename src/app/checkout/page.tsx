@@ -26,7 +26,8 @@ import {
  readMetaBrowserIds,
 } from '@/lib/analytics/meta-attribution';
 import { trackFunnelStep } from '@/lib/analytics/funnel';
-import { PREVIEW_AD_PATH, previewAdFunnelSource, previewAdLandingPath } from '@/lib/analytics/ad-landing';
+import { PREVIEW7_AD_PATH, PREVIEW_AD_PATH, previewAdFunnelSource, previewAdLandingPath } from '@/lib/analytics/ad-landing';
+import { preview7PricedPlan } from '@/lib/payments/preview7-prices';
 import { checkoutThemeForLanding } from '@/lib/payments/checkout-theme';
 import {
  formatInrFromPaise,
@@ -117,7 +118,10 @@ function CheckoutForm() {
  const initialPlan = rawPlan === '1_week_trial' ? '3_months' : rawPlan;
  const codeFromUrlRaw = (searchParams.get('code') ?? '').trim().toUpperCase();
  const codeFromUrl = isRetiredPublicDiscountCode(codeFromUrlRaw) ? '' : codeFromUrlRaw;
- const plan = getPurchasablePlan(initialPlan) ?? getPurchasablePlan('3_months')!;
+ const plan = preview7PricedPlan(
+ getPurchasablePlan(initialPlan) ?? getPurchasablePlan('3_months')!,
+ adLandingPath,
+ );
 
  const [name, setName] = useState('');
  const [email, setEmail] = useState('');
@@ -161,11 +165,11 @@ function CheckoutForm() {
  const testMode = isPaymentBypassClient();
  const isTrialCheckout = plan.isTrial === true;
  const isDigitalCheckout = plan.isDigital === true || isDigitalPlanSlug(plan.slug);
- const planPickerList = isDigitalCheckout
+ const planPickerList = (isDigitalCheckout
  ? DIGITAL_PLAN_LIST
  : isDurationOfferSlug(plan.slug)
  ? DURATION_PLAN_LIST
- : COACHING_PLAN_LIST;
+ : COACHING_PLAN_LIST).map((item) => preview7PricedPlan(item, adLandingPath));
  const planPayablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
  const payablePaise = planPayablePaise;
  const payableDisplay = formatInrFromPaise(payablePaise);
@@ -308,6 +312,7 @@ function CheckoutForm() {
  code,
  planSlug: plan.slug,
  email: email.trim() || undefined,
+ ...(adLandingPath ? { landingPath: adLandingPath } : {}),
  }),
  });
  const data = await res.json();
@@ -515,7 +520,7 @@ function CheckoutForm() {
 
  useEffect(() => {
  if (testMode) return;
- const sale = firstTimerSalePaise(plan.slug);
+ const sale = adLandingPath === PREVIEW7_AD_PATH ? null : firstTimerSalePaise(plan.slug);
  trackFunnelStep('checkout_view', {
  plan: plan.slug,
  plan_name: plan.name,
@@ -797,7 +802,7 @@ function CheckoutForm() {
  checkoutVerificationId = savedId;
  }
 
- const sale = firstTimerSalePaise(plan.slug);
+ const sale = adLandingPath === PREVIEW7_AD_PATH ? null : firstTimerSalePaise(plan.slug);
  trackFunnelStep('pay_click', {
  plan: plan.slug,
  plan_name: plan.name,

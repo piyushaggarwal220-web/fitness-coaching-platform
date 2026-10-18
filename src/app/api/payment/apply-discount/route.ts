@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { previewAdLandingPath } from '@/lib/analytics/ad-landing'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validateRedemptionCode } from '@/lib/redemption-codes'
 import {
@@ -11,6 +12,7 @@ type Body = {
   planSlug?: string
   email?: string
   code?: string
+  landingPath?: string
 }
 
 /**
@@ -52,6 +54,7 @@ export async function POST(request: Request) {
     planSlug: body.planSlug ?? '3_months',
     email,
     discountCode: code,
+    landingPath: previewAdLandingPath(body.landingPath),
     // Preview can apply without email; eligibility is enforced at create-order.
     enforceEligibility: hasEmail,
   })

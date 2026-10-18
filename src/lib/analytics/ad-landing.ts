@@ -16,7 +16,7 @@ export const PREVIEW5_AD_PATH = '/preview5'
 /** Mixed-colour landing with the 1 month / 3 month full-access offer. */
 export const PREVIEW6_AD_PATH = '/preview6'
 
-/** Orange quiz-v3 coaching landing. Catalog prices, separate ad path. */
+/** Ad entry for the live quiz-v3 Shopify theme. Checkout from that theme uses its prices. */
 export const PREVIEW7_AD_PATH = '/preview7'
 
 export type PreviewAdPath =
