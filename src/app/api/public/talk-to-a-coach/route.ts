@@ -17,6 +17,7 @@ type TalkToCoachBody = {
 }
 
 const COACH_CALL_TIME_SLOTS = new Set([
+  '11:30 am–12:30 pm IST',
   '11:30–12:30 pm IST',
   '5–6 pm IST',
   '6–7 pm IST',
@@ -112,6 +113,7 @@ export async function POST(request: Request) {
   }
 
   const name = body.name?.trim() ?? ''
+  const email = body.email?.trim() ?? ''
   const phone = body.phone?.trim() ?? ''
   const message = body.message?.trim() ?? ''
   const explicitPreferredTime =
@@ -175,7 +177,7 @@ export async function POST(request: Request) {
     : message
   const { error: insertError } = await admin.from('talk_to_coach_submissions').insert({
     name,
-    email: null,
+    email: email.includes('@') ? email : null,
     phone,
     message: storedMessage,
     fingerprint,
