@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { normalizePhoneForWhatsApp } from '@/lib/phone'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendDirectEmail } from '@/lib/notifications/email-provider'
+import {
+  buildClientCallConfirmation,
+  isClientEmail,
+} from '@/lib/talk-to-coach-confirmation'
 
 const ALLOWED_ORIGINS = new Set(['https://www.lurvox.in', 'https://lurvox.in'])
 const MAX_SUBMISSIONS = 2
@@ -197,12 +201,36 @@ export async function POST(request: Request) {
     message,
     preferredTime: explicitPreferredTime,
   })
-  const emailed = await sendDirectEmail({
-    to: NOTIFY_TO,
-    subject: notify.subject,
-    text: notify.text,
-    html: notify.html,
-  })
+  const clientEmail = isClientEmail(email) ? email : null
+  const confirmation = clientEmail
+    ? buildClientCallConfirmation({
+        name,
+        preferredTime: explicitPreferredTime,
+        message,
+      })
+    : null
+  const [clientEmailed, emailed] = await Promise.all([
+    confirmation && clientEmail
+      ? sendDirectEmail({
+          to: clientEmail,
+          replyTo: NOTIFY_TO,
+          subject: confirmation.subject,
+          text: confirmation.text,
+          html: confirmation.html,
+        })
+      : Promise.resolve(null),
+    sendDirectEmail({
+      to: NOTIFY_TO,
+      subject: notify.subject,
+      text: notify.text,
+      html: notify.html,
+    }),
+  ])
+  if (clientEmailed && !clientEmailed.ok) {
+    console.error('[talk-to-a-coach] client confirmation email failed:', clientEmailed.error)
+  } else if (clientEmailed?.skipped) {
+    console.warn('[talk-to-a-coach] client confirmation email skipped: email provider not configured')
+  }
   if (!emailed.ok) {
     console.error('[talk-to-a-coach] notify email failed:', emailed.error)
   } else if (emailed.skipped) {
