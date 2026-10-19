@@ -26,12 +26,16 @@ import {
 import { ownVoicePath, transcribeChatVoice } from '@/lib/ai/transcribe-chat-voice'
 import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
 import {
+  blocksPlanChangeLock,
+  dropStaleYesPrompt,
   extractPlanChangeProposal,
   isPlanChangeCancel,
   isPlanChangeConfirm,
   loadPendingPlanChange,
   lockAndProcessPlanChangeFromChat,
+  pendingPlanChangeDirective,
   planChangeChatInstruction,
+  replacesPendingPlanChange,
   savePendingPlanChange,
   stripPlanChangeTrailer,
   wantsPlanChangeAppliedNow,
@@ -539,11 +543,9 @@ export async function POST(request: Request) {
         '',
         planChangeChatInstruction(quota.remainingToday),
         profileChangeChatInstruction(),
-        pendingChange
-          ? `There is already a pending plan edit waiting for YES/NO:\nScope: ${pendingChange.scope}\n${pendingChange.requestText}`
-          : '',
+        pendingChange ? pendingPlanChangeDirective(pendingChange) : '',
         pendingProfile
-          ? `There is already a pending profile update waiting for YES/NO:\n${pendingProfile.summary}`
+          ? `An earlier profile update is not saved yet:\n${pendingProfile.summary}\nIf their latest message is a diet or workout change, ignore this profile update and handle the plan. Do not ask YES or NO for it.`
           : '',
         '',
         'Write the next coach reply only.',
@@ -558,7 +560,11 @@ export async function POST(request: Request) {
     const raw = result.text.replace(/[\u2010-\u2015\u2212-]/g, ' ')
     const profileStripped = stripProfileChangeTrailer(raw)
     const stripped = stripPlanChangeTrailer(profileStripped.visible)
-    replyText = guardAssistantCoachReply(stripped.visible, { clientText: latestClientText }) || replyText
+    replyText =
+      dropStaleYesPrompt(
+        latestClientText,
+        guardAssistantCoachReply(stripped.visible, { clientText: latestClientText })
+      ) || replyText
     const fromText = extractProfileChangeFromText(latestClientText, latestPhotoPath())
     const profileProposal = profileStripped.propose
       ? withPhoto(profileStripped.propose)
@@ -584,9 +590,11 @@ export async function POST(request: Request) {
         replyText = withProfileConfirmCue(replyText)
       }
     }
-    if (stripped.propose && !dated) {
+    if (stripped.propose && !dated && !blocksPlanChangeLock(stripped.visible)) {
       await savePendingPlanChange(admin, auth.user.id, stripped.propose)
       replyText = withConfirmCue(replyText, quota.remainingToday)
+    } else if (pendingChange && replacesPendingPlanChange(latestClientText)) {
+      await savePendingPlanChange(admin, auth.user.id, null)
     }
   } catch {
     replyText =

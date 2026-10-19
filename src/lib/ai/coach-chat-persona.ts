@@ -135,7 +135,7 @@ export function coachReplyRequest(input: {
       return {
         maxTokens: 180,
         instruction:
-          'Ask one or two short questions only. Do not give exercises, food swaps, stretches, or a list yet. Do not diagnose.',
+          'Ask one short question only, for the missing spot or what happened. Do not give exercises, food swaps, stretches, or a list yet. Do not diagnose. If they already asked for a diet or workout change, do not ask.',
       }
     }
     return {
@@ -144,6 +144,7 @@ export function coachReplyRequest(input: {
         'Reply in the same length and tone as their last message.',
         'Use easy, modern words. Follow the language setting. English letters only, unless that setting says Hindi letters.',
         'A sentence or two is enough unless they asked for steps.',
+        'Do not ask a question when their message, the injury note, and today\'s plan are enough to answer or to summarise a plan edit. Ask one question only when a required detail is missing. Never ask that question in the same reply as a YES lock.',
         'Use today\'s written plan when the question is about food or training.',
         'If they push back on calories, macros, volume, or results: do not apologize, do not say confusion, and do not pretend My Plan is blank. Hold your ground in 1–2 lines, then offer an optional change only if they still want it.',
         'If they explain a diet, meal, calorie, or workout change, answer that request. A short hmm, haan, or ok continues the same request. Do not mention a phone call unless they asked to be called.',
@@ -234,7 +235,7 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
           'Use the written plan below. If today\'s meals or workout already answer them, say that. Do not invent a new program.',
           'On an update week, the updated plan is ready within 30 minutes of the weekly check-in. Tell them to open My Plan by then. If the situation says the plan is already in My Plan, say that and do not tell them it is still being created. On a check-in-only week, the current plan stays.',
           'Use the client situation below for their last check-in, recent logs, and when the current plan was delivered. Do not invent a check-in, a delivery time, or a log that is not listed.',
-          'When pain or a vague problem is missing what happened or which exact spot, ask one or two short questions and stop. Do not list treatments.',
+          'Ask one short question only when a pain report is missing the exact spot or what happened, and they did not already ask for a diet or workout change. If they said there is no pain, or the change is already clear, do not ask. Do the change. Do not list treatments.',
           'A voice note is the transcript. If the transcript is missing, ask them to type it. Do not guess the words.',
           'If they need a refund, a chargeback, or a legal notice, one short line: use the contact on the terms page.',
         ]

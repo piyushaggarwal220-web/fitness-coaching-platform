@@ -18,6 +18,13 @@ assert.equal(
 )
 assert.equal(shouldAskBeforeAdvising('what should I eat today'), false)
 assert.equal(shouldAskBeforeAdvising('help'), true)
+assert.equal(shouldAskBeforeAdvising('Hard workout chahiye'), false)
+assert.equal(
+  shouldAskBeforeAdvising(
+    'Seated m mje maja nahi aara workout m Abi pain nhi h to normal workout kar do'
+  ),
+  false
+)
 
 const missingVoice = chatTextForModel(encodeChatVoice('user/ai-chat/1.webm', ''))
 assert.match(missingVoice, /no transcript/i)
@@ -41,7 +48,7 @@ const ask = coachReplyRequest({
   mode: 'ai_thread',
 })
 assert.ok(ask.maxTokens < 300)
-assert.match(ask.instruction, /questions/i)
+assert.match(ask.instruction, /one short question/i)
 assert.doesNotMatch(ask.instruction, /Piyush|Rakshit/)
 
 const human = coachReplyRequest({ clientText: 'what is for dinner', firstReply: true })

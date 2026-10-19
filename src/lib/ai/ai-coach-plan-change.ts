@@ -3,9 +3,13 @@ import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
 import {
   type PendingPlanChange,
-  planChangeChatInstruction,
+  blocksPlanChangeLock,
+  dropStaleYesPrompt,
   isPlanChangeCancel,
   isPlanChangeConfirm,
+  pendingPlanChangeDirective,
+  planChangeChatInstruction,
+  replacesPendingPlanChange,
   stripPlanChangeTrailer,
   wantsPlanChangeAppliedNow,
   withConfirmCue,
@@ -26,9 +30,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export type { PendingPlanChange }
 export {
+  blocksPlanChangeLock,
+  dropStaleYesPrompt,
   isPlanChangeCancel,
   isPlanChangeConfirm,
+  pendingPlanChangeDirective,
   planChangeChatInstruction,
+  replacesPendingPlanChange,
   stripPlanChangeTrailer,
   wantsPlanChangeAppliedNow,
   withConfirmCue,

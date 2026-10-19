@@ -1,3 +1,5 @@
+import { isSpecificPlanEditRequest } from '@/lib/ai/ai-coach-plan-change-pure'
+
 export type ClientChatMood = 'frustrated' | 'worried' | 'casual' | 'brief' | 'warm' | 'plain'
 
 const FRUSTRATED =
@@ -13,6 +15,8 @@ const DETAIL =
   /\b(left|right|wrist|elbow|shoulder|knee|ankle|back|neck|finger|thumb|palm|forearm|hip|shin|since|yesterday|fell|twisted|while|when i|after i)\b/i
 const VAGUE =
   /^(help|what should i do|i need help|not sure|confused|any advice|kya karu|what now|idk|i don'?t know)\b/i
+const NEGATED_SYMPTOM =
+  /\b(?:no|not|without|nahi|nahin|nhi|nai|koi|don'?t|do not)\s+(?:have\s+|more\s+|any\s+|much\s+)?(?:pain|paining|hurt|hurts|hurting|ache|aching|sore|injury)\b|\b(?:pain|paining|hurt|hurts|hurting|ache|aching|sore|injury)\s+(?:bhi\s+)?(?:nahi|nahin|nhi|nai|not|no)\b/i
 
 const TONE: Record<ClientChatMood, string> = {
   frustrated:
@@ -51,8 +55,9 @@ export function shouldAskBeforeAdvising(text: string): boolean {
   const trimmed = text.trim()
   if (!trimmed) return false
   if (/no transcript/i.test(trimmed)) return true
+  if (isSpecificPlanEditRequest(trimmed)) return false
   if (VAGUE.test(trimmed)) return true
-  if (!SYMPTOM.test(trimmed)) return false
+  if (!SYMPTOM.test(trimmed) || NEGATED_SYMPTOM.test(trimmed)) return false
   if (DETAIL.test(trimmed) && trimmed.length > 40) return false
   return true
 }
