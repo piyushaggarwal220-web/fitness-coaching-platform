@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { BRAND_NAME } from '@/lib/brand';
-import { DURATION_OFFER_EXTRA, DURATION_OFFER_POINTS } from '@/lib/payments/duration-offer-points';
 import { planDurationLabel, planGoalName } from '@/lib/payments/plan-pages';
 import {
  COACHING_PLAN_LIST,
@@ -49,9 +48,7 @@ import {
  formatCountdownHms,
  getSaleCountdownRemainingMs,
 } from '@/lib/sale-countdown';
-import { CheckoutBasicsStep, type CheckoutBasicsFormState } from '@/components/checkout/CheckoutBasicsStep';
-import { CheckoutMoreInfoStep } from '@/components/checkout/CheckoutMoreInfoStep';
-import { validateCheckoutBasicsFields } from '@/lib/payments/checkout-intake-basics-shared';
+import { type CheckoutBasicsFormState } from '@/components/checkout/CheckoutBasicsStep';
 import { isPublicDemoEmail } from '@/lib/public-demo';
 import { leavePublicDemoSession } from '@/lib/public-demo-session';
 
@@ -71,9 +68,6 @@ const studioFont = Inter({
 const PAYMENT_SUCCESS_KEY = 'lurvox_checkout_success_redirect';
 const CHECKOUT_DRAFT_KEY = 'lurvox_checkout_draft_v1';
 type CheckoutScreen = 1 | 2 | 3;
-
-/** Flip to false to put the "more about you" screen back between basics and payment. */
-const SKIP_CHECKOUT_MORE_INFO = false;
 
 type AppliedDiscountPreview = {
  code: string;
@@ -146,9 +140,8 @@ function CheckoutForm() {
  const [applyingCode, setApplyingCode] = useState(false);
  const [enrollmentHref, setEnrollmentHref] = useState<string | null>(null);
  const [attemptedPay, setAttemptedPay] = useState(false);
- const [checkoutScreen, setCheckoutScreen] = useState<CheckoutScreen>(1);
+ const [checkoutScreen, setCheckoutScreen] = useState<CheckoutScreen>(3);
  const [basicsComplete, setBasicsComplete] = useState(false);
- const [savingBasics, setSavingBasics] = useState(false);
  const [basics, setBasics] = useState<CheckoutBasicsFormState>({
  age: '',
  gender: '',
@@ -414,11 +407,7 @@ function CheckoutForm() {
  if (draft.verificationId && !verificationId) setVerificationId(draft.verificationId);
  if (draft.basics) setBasics((prev) => ({ ...prev, ...draft.basics }));
  if (draft.basicsComplete) setBasicsComplete(true);
- const savedScreen = Number(draft.checkoutScreen);
- if (Number.isInteger(savedScreen) && savedScreen >= 1) {
- const restored = (savedScreen > 3 ? 3 : savedScreen) as CheckoutScreen;
- setCheckoutScreen(SKIP_CHECKOUT_MORE_INFO && restored === 2 ? 3 : restored);
- }
+ setCheckoutScreen(3);
  } catch {
  // ignore
  }
@@ -642,78 +631,6 @@ function CheckoutForm() {
  }
  };
 
- const saveBasicsAndContinue = async () => {
- setError('');
- setSavingBasics(true);
- try {
- let activeVerificationId = verificationId;
- if (testMode && !activeVerificationId) {
- const res = await fetch('/api/payment/send-otp', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- channel: 'email',
- email,
- phone,
- name,
- }),
- });
- const data = await res.json();
- if (!res.ok) throw new Error(data.error ?? 'Could not start checkout session');
- activeVerificationId = data.verificationId;
- setVerificationId(data.verificationId);
- setEmailVerified(true);
- }
-
- const res = await fetch('/api/payment/checkout-basics', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- verificationId: activeVerificationId,
- email,
- phone,
- name,
- planSlug: plan.slug,
- age: basics.age,
- gender: basics.gender,
- heightCm: basics.heightCm,
- weightKg: basics.weightKg || null,
- dietPreference: basics.dietPreference,
- mainGoal: basics.mainGoal,
- }),
- });
- const data = await res.json();
- if (!res.ok) throw new Error(data.error ?? 'Could not save basics');
- setBasicsComplete(true);
- const nextVerificationId =
- typeof data.verificationId === 'string' && data.verificationId
- ? data.verificationId
- : activeVerificationId;
- if (nextVerificationId) setVerificationId(nextVerificationId);
- return nextVerificationId || 'saved';
- } catch (err) {
- setError(err instanceof Error ? err.message : 'Could not save basics');
- return '';
- } finally {
- setSavingBasics(false);
- }
- };
-
- const continueFromBasics = () => {
- const validated = validateCheckoutBasicsFields(basics);
- if (!validated.ok) {
- setError(validated.error);
- return;
- }
- setError('');
- setCheckoutScreen(SKIP_CHECKOUT_MORE_INFO ? 3 : 2);
- trackFunnelStep('checkout_view', {
- plan: plan.slug,
- screen: SKIP_CHECKOUT_MORE_INFO ? 'details' : 'more_info',
- ...adFunnel,
- });
- };
-
  const continueAfterPayment = (redirectTo: string) => {
  paymentSucceededRef.current = true;
  setPaymentConfirmed(true);
@@ -793,15 +710,7 @@ function CheckoutForm() {
  setLoading(true);
 
  try {
- let checkoutVerificationId = verificationId;
- if (!basicsComplete) {
- const savedId = await saveBasicsAndContinue();
- if (!savedId) {
- setLoading(false);
- return;
- }
- checkoutVerificationId = savedId;
- }
+ const checkoutVerificationId = verificationId;
 
  const sale = adLandingPath === PREVIEW7_AD_PATH ? null : firstTimerSalePaise(plan.slug);
  trackFunnelStep('pay_click', {
@@ -965,90 +874,21 @@ function CheckoutForm() {
  {isDigitalCheckout ? (
  <p style={intakeTheme.eyebrow}>PERSONALISED FITNESS PLANS</p>
  ) : (
- <p style={intakeTheme.eyebrow}>COACHING INTAKE</p>
+ <p style={intakeTheme.eyebrow}>CHECKOUT</p>
  )}
  <h1 style={{ ...styles.title, ...intakeTheme.title }}>
  {isTrialCheckout
  ? 'Start your 7-day trial'
  : isDigitalCheckout
  ? 'Start your customised plan'
- : checkoutScreen === 2
- ? 'After you pay'
- : 'Start your coaching intake'}
+ : 'Pay for your plan'}
  </h1>
- {checkoutScreen === 2 ? null : (
  <p style={dig(styles.subtitle, 'subtitle')}>
- {checkoutScreen === 1
- ? isDurationOfferSlug(plan.slug)
- ? `${DURATION_OFFER_EXTRA} 1 month is ₹249. 3 months is ₹499.`
- : 'Answer a few basics so we can customize your coaching.'
- : 'Enter your details, then continue to checkout.'}
+ All questions are asked after payment.
  </p>
- )}
- {isDurationOfferSlug(plan.slug) && checkoutScreen === 1 ? (
- <ul style={styles.durationPoints}>
- {DURATION_OFFER_POINTS.map((point) => (
- <li key={point} style={{ ...styles.durationPoint, color: intakeTheme.subtitle.color }}>
- <span style={{ ...styles.durationDot, backgroundColor: intakeTheme.eyebrow.color }} />
- {point}
- </li>
- ))}
- </ul>
- ) : null}
-
- <div style={styles.screenDots} aria-label={`Checkout step ${SKIP_CHECKOUT_MORE_INFO ? (checkoutScreen === 1 ? 1 : 2) : checkoutScreen} of ${SKIP_CHECKOUT_MORE_INFO ? 2 : 3}`}>
- {(SKIP_CHECKOUT_MORE_INFO ? ([1, 3] as CheckoutScreen[]) : ([1, 2, 3] as CheckoutScreen[])).map((step) => (
- <span
- key={step}
- style={{
- ...styles.screenDot,
- ...intakeTheme.screenDot,
- ...(checkoutScreen === step ? styles.screenDotActive : null),
- ...(checkoutScreen === step ? intakeTheme.dotActive : null),
- }}
- />
- ))}
- </div>
-
- {checkoutScreen === 1 && (
- <CheckoutBasicsStep
- value={basics}
- onChange={setBasics}
- onBack={() => {
- const planHref = isDigitalCheckout ? '/customised-plan' : marketingBaseUrl;
- window.location.href = planHref;
- }}
- onSubmit={continueFromBasics}
- saving={false}
- error={error}
- styles={styles}
- dig={dig}
- />
- )}
- {checkoutScreen === 2 && !SKIP_CHECKOUT_MORE_INFO && (
- <CheckoutMoreInfoStep
- onBack={() => { setCheckoutScreen(1); setError(''); }}
- onContinue={() => {
- setError('');
- setCheckoutScreen(3);
- trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'details', ...adFunnel });
- }}
- styles={styles}
- dig={dig}
- />
- )}
-
 
  {checkoutScreen === 3 && (
  <>
- <button
- type="button"
- onClick={() => { setCheckoutScreen(SKIP_CHECKOUT_MORE_INFO ? 1 : 2); setError(''); }}
- style={dig(styles.backToDetails, 'backLink')}
- >
- {'<- Back'}
- </button>
-
  {!isTrialCheckout && (
  <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
  {planPickerList.map((item) => {
@@ -1122,7 +962,7 @@ function CheckoutForm() {
  : 'Workout Rs 49 · Diet Rs 89 · both Rs 99'
  : isDurationOfferSlug(plan.slug)
  ? 'Diet chart, diet plan, workout plan, sleep, cardio, and supplement guidance'
- : 'Basics done · next: your contact details'}
+ : null}
  </div>
  </div>
  <div style={styles.orderPriceCol}>
@@ -1136,18 +976,18 @@ function CheckoutForm() {
  </div>
  </section>
 
+ {isTrialCheckout || isDigitalCheckout ? (
  <p style={{ ...styles.leagueNote, color: intakeTheme.paySecureNote.color }}>
  {isTrialCheckout
  ? 'Once per person. Includes coach chat, personal plan, trackers, and check-ins.'
- : isDigitalCheckout
- ? 'After payment, finish the remaining intake questions and receive your plan on the platform.'
- : 'The other questions come only after payment.'}
+ : 'After payment, finish the remaining intake questions and receive your plan on the platform.'}
  </p>
+ ) : null}
 
  {error && <div style={styles.error}>{error}</div>}
 
  <div style={styles.form}>
- <h2 style={dig(styles.sectionLabel, 'sectionLabel')}>Your details</h2>
+ <h2 style={dig(styles.sectionLabel, 'sectionLabel')}>For payment</h2>
 
  <label style={dig(styles.label, 'label')} htmlFor="checkout-name">Full name</label>
  <input
@@ -1191,7 +1031,7 @@ function CheckoutForm() {
  <button
  type="button"
  style={dig(styles.payBtn, 'payBtn')}
- disabled={loading || savingBasics}
+ disabled={loading}
  onClick={() => {
  const missing: string[] = [];
  if (!name.trim()) missing.push('Full name');
@@ -1207,7 +1047,7 @@ function CheckoutForm() {
  void handleSubmit({ preventDefault() {} } as FormEvent);
  }}
  >
- {loading || savingBasics ? 'Starting checkout...' : 'Continue to checkout'}
+ {loading ? 'Starting checkout...' : `Pay ${formatInrFromPaise(planPayablePaise)}`}
  </button>
  <p style={dig(styles.secure, 'secure')}>
  Payment is handled by Razorpay. Purchasing means you accept the{' '}
