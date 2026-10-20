@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { injectPreview7Tracking, preview7PixelId } from '@/lib/landing/preview7-tracking'
-import { preview7StorefrontHtml } from '@/lib/payments/preview7-sale'
+import { preview7LiveHtml } from '@/lib/landing/preview7-html'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,16 +12,12 @@ let cachedHome: { at: number; html: string } | null = null
 /**
  * ABO sales opens this URL. It has to stay on the app and fire the app pixel,
  * the same way preview 4, 5, and 6 do. A redirect to the shop never records a view.
- * The page is the live quiz storefront, with the preview 7 sale and checkout links.
+ * The page is the live quiz storefront, before the sale banner and price changes.
  */
 export async function GET(request: NextRequest) {
   const rendered = await renderPreview(request)
   stampMetaCookies(rendered, request)
   return rendered
-}
-
-function requestOrigin(request: NextRequest) {
-  return request.nextUrl.origin
 }
 
 async function renderPreview(request: NextRequest) {
@@ -37,7 +33,7 @@ async function renderPreview(request: NextRequest) {
   }
   if (!cachedHome) return redirectHome(request)
 
-  const html = injectPreview7Tracking(preview7StorefrontHtml(cachedHome.html, requestOrigin(request)), {
+  const html = injectPreview7Tracking(preview7LiveHtml(cachedHome.html), {
     pixelId: preview7PixelId(),
     supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,

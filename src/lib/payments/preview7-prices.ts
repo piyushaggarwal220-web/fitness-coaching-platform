@@ -2,8 +2,7 @@ import { PREVIEW7_AD_PATH } from '@/lib/analytics/ad-landing'
 import { type CoachingPlanSlug } from '@/lib/payments/plans'
 
 /**
- * What /preview7 charges after DIWALI7O or WINTER7O.
- * The checkout sticker is 70% higher until that code is applied.
+ * What /preview7 charges.
  * The catalog (₹599 / ₹999 / ₹1,699) is unchanged for every other landing.
  */
 export const PREVIEW7_DRAFT_PAISE: Record<CoachingPlanSlug, number> = {
@@ -26,10 +25,20 @@ export function formatPreview7Inr(paise: number): string {
   return `₹${rupees.toLocaleString('en-IN')}`
 }
 
-/** Sticker price on /preview7. 70% above the price the sale code charges, rounded to the nearest ₹10. */
+/**
+ * Old /preview7 sticker from the removed sale. Kept so an order already placed
+ * at that sticker still verifies. New checkouts charge PREVIEW7_DRAFT_PAISE.
+ */
 export function preview7MarkedUpPaise(payPaise: number): number {
   if (!Number.isFinite(payPaise) || payPaise <= 0) return 0
   return Math.round((payPaise * 17) / 10000) * 1000
+}
+
+const PREVIEW7_SALE_CODES = new Set(['DIWALI7O', 'WINTER7O'])
+
+export function isPreview7SaleCode(raw: string | null | undefined): boolean {
+  const code = (raw ?? '').trim().toUpperCase().replace(/\s+/g, '')
+  return PREVIEW7_SALE_CODES.has(code)
 }
 
 export function preview7PricedPlan<T extends { slug: string; amountPaise: number; displayPrice: string }>(
@@ -37,8 +46,7 @@ export function preview7PricedPlan<T extends { slug: string; amountPaise: number
   landingPath: string | null | undefined,
 ): T {
   if (landingPath !== PREVIEW7_AD_PATH) return plan
-  const payPaise = preview7AmountPaise(plan.slug)
-  if (payPaise == null) return plan
-  const paise = preview7MarkedUpPaise(payPaise)
+  const paise = preview7AmountPaise(plan.slug)
+  if (paise == null) return plan
   return { ...plan, amountPaise: paise, displayPrice: formatPreview7Inr(paise) }
 }

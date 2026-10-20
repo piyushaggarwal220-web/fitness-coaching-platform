@@ -16,11 +16,7 @@ import {
   PREVIEW_SALE_CODE,
   previewSaleDiscountPaise,
 } from '@/lib/payments/preview-sale-code'
-import { preview7AmountPaise, preview7MarkedUpPaise } from '@/lib/payments/preview7-prices'
-import {
-  canonicalPreview7SaleCode,
-  isPreview7SaleCode,
-} from '@/lib/payments/preview7-sale'
+import { isPreview7SaleCode, preview7AmountPaise, preview7MarkedUpPaise } from '@/lib/payments/preview7-prices'
 import {
   computePromoDiscountPaise,
   getActivePromoCode,
@@ -362,8 +358,7 @@ export async function resolveCheckoutPricing(input: {
 
   const preview7Pay =
     input.landingPath === PREVIEW7_AD_PATH ? preview7AmountPaise(plan.slug) : null
-  const preview7List = preview7Pay != null ? preview7MarkedUpPaise(preview7Pay) : null
-  const listAmountPaise = preview7List ?? plan.amountPaise
+  const listAmountPaise = preview7Pay ?? plan.amountPaise
   const code = normalizeDiscountCode(input.discountCode)
 
   if (isRetiredPublicDiscountCode(code)) {
@@ -407,29 +402,6 @@ export async function resolveCheckoutPricing(input: {
       ok: false,
       error: 'Enter a valid email before applying a code.',
       status: 400,
-    }
-  }
-
-  // Preview 7 sale codes. The sticker is 70% above today's price. The code charges today's price.
-  if (preview7List != null && preview7Pay != null && isPreview7SaleCode(code)) {
-    const discountPaise = preview7List - preview7Pay
-    if (discountPaise <= 0 || discountPaise >= preview7List) {
-      return { ok: false, error: 'This code is not available for this plan.', status: 400 }
-    }
-    const discount = buildAppliedDiscount({
-      kind: 'discount',
-      code: canonicalPreview7SaleCode(code),
-      discountPaise,
-      listAmountPaise,
-    })
-    return {
-      ok: true,
-      pricing: {
-        plan,
-        listAmountPaise,
-        amountPaise: discount.amountPaise,
-        discount,
-      },
     }
   }
 

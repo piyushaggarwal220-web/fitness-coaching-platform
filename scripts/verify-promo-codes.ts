@@ -26,7 +26,7 @@ import { COACHING_PLANS, DURATION_OFFER_PLANS } from '../src/lib/payments/plans'
 import { isPreviewSaleCode, previewSaleDiscountPaise } from '../src/lib/payments/preview-sale-code'
 import { preview7MarkedUpPaise, preview7PricedPlan } from '../src/lib/payments/preview7-prices'
 import { injectPreview7Tracking } from '../src/lib/landing/preview7-tracking'
-import { applyPreview7Sale, preview7SaleAt, preview7StorefrontHtml, PREVIEW7_SALE_CYCLE_MS, PREVIEW7_SALE_EPOCH_MS } from '../src/lib/payments/preview7-sale'
+import { preview7LiveHtml } from '../src/lib/landing/preview7-html'
 
 function pass(label: string) {
   console.log(`  ✓ ${label}`)
@@ -202,8 +202,8 @@ assert.equal(preview7MarkedUpPaise(199900), 340000)
 assert.equal(preview7MarkedUpPaise(349900), 595000)
 assert.equal(preview7MarkedUpPaise(599900), 1020000)
 const priced = preview7PricedPlan(COACHING_PLANS['3_months'], '/preview7')
-assert.equal(priced.amountPaise, 340000)
-assert.equal(priced.displayPrice, '₹3,400')
+assert.equal(priced.amountPaise, 199900)
+assert.equal(priced.displayPrice, '₹1,999')
 assert.equal(
   expectedAmountPaiseFromOrderNotes(COACHING_PLANS['3_months'], {
     amount_paise: '199900',
@@ -238,54 +238,24 @@ assert.equal(
   }),
   59900
 )
-const diwaliStart = preview7SaleAt(PREVIEW7_SALE_EPOCH_MS)
-assert.equal(diwaliStart.name, 'Diwali sale')
-assert.equal(diwaliStart.code, 'DIWALI7O')
-assert.equal(diwaliStart.remainingMs, PREVIEW7_SALE_CYCLE_MS)
-const winterStart = preview7SaleAt(PREVIEW7_SALE_EPOCH_MS + PREVIEW7_SALE_CYCLE_MS)
-assert.equal(winterStart.name, 'Winter sale')
-assert.equal(winterStart.code, 'WINTER7O')
-assert.equal(winterStart.remainingMs, PREVIEW7_SALE_CYCLE_MS)
-const back = preview7SaleAt(PREVIEW7_SALE_EPOCH_MS + PREVIEW7_SALE_CYCLE_MS * 2)
-assert.equal(back.code, 'DIWALI7O')
-const almostDone = preview7SaleAt(PREVIEW7_SALE_EPOCH_MS + PREVIEW7_SALE_CYCLE_MS - 1)
-assert.equal(almostDone.code, 'DIWALI7O')
-assert.equal(almostDone.remainingMs, 1)
-const themed = applyPreview7Sale(
-  `<fitness-gallery-abc class="hero">
+const normal = preview7LiveHtml(`<head></head><body>
+<aside id="lurvox-offer-strip-home" class="lurvox-offer-strip">WELCOME60 for 60% OFF ENDS SOON</aside>
+<p>12 months. WELCOME60 = 60% off</p>
+<div class="ai-transformation-plan-card-original-price-abc">₹2499</div>
+<div class="ai-transformation-plan-card-price-abc">₹1299</div>
+<div class="ai-transformation-plan-card-monthly-abc">≈ ₹433/month</div>
+<div class="ai-transformation-plan-card-savings-abc">60% OFF · SAVE ₹1,200</div>
 <div class="price">₹1999</div>
-<div>≈ ₹666/month</div>
-<div class="price">₹3499</div>
-<div>≈ ₹583/month</div>
-<div>Save ₹1,495 vs monthly rate</div>
-<div class="price">₹5999</div>
-<div>≈ ₹500/month</div>
-<div>Save ₹3,989 vs monthly rate</div>
-<option value="Fat loss · 90 days · ₹1,999">Fat loss · 90 days · ₹1,999</option>
-<script>
-'3_months': { label: 'Fat loss', price: '₹1,999', per: '90 days', path: '3-months' },
-root.querySelector('[data-lxq-checkout]').href = 'https://app.lurvox.in/plans/' + plan.path + '?landing=/preview7';
-</script>
-<a data-plan-link="https://app.lurvox.in/plans/3-months?landing=/preview7"></a>
-</fitness-gallery-abc>
-</body>`,
-  'http://localhost:3000',
-  PREVIEW7_SALE_EPOCH_MS
-)
-assert.match(themed, /Diwali sale/)
-assert.match(themed, /ends in/)
-assert.match(themed, /DIWALI7O/)
-assert.match(themed, /extra 70% off/)
-assert.match(themed, /₹3,400/)
-assert.match(themed, /₹1,999 with code/)
-assert.match(themed, /₹5,950/)
-assert.match(themed, /₹10,200/)
-assert.match(themed, /₹1,132\/month/)
-assert.equal(themed.includes('₹1999</div>'), false)
-assert.match(themed, /http:\/\/localhost:3000\/plans\/3-months\?landing=\/preview7&code=DIWALI7O/)
-assert.match(themed, /window\.lxP7PlanHref\(plan\.path\)/)
-assert.equal(themed.indexOf('id="lx-p7-sale"') < themed.indexOf('<fitness-gallery-abc'), true)
-const normal = preview7StorefrontHtml('<head></head><body><style>body{background:#111}</style></body>', 'http://localhost:3000', PREVIEW7_SALE_EPOCH_MS)
+</body>`)
+assert.equal(normal.includes('id="lx-p7-sale"'), false)
+assert.equal(normal.includes('Diwali sale'), false)
+assert.equal(normal.includes('DIWALI7O'), false)
+assert.equal(normal.includes('id="lurvox-offer-strip-home"'), false)
+assert.equal(normal.includes('WELCOME60'), false)
+assert.equal(normal.includes('₹1299'), false)
+assert.equal(normal.includes('60% OFF'), false)
+assert.match(normal, /₹2499/)
+assert.match(normal, />₹1999<\/div>/)
 assert.equal(normal.includes('preview7-beige'), false)
 assert.match(normal, /<base href="https:\/\/www\.lurvox\.in\/">/)
 const tracked = injectPreview7Tracking(normal, {
@@ -299,8 +269,7 @@ assert.match(tracked, /Lurvox_view_landing/)
 assert.match(tracked, /lurvox-offer-strip-home/)
 assert.equal(tracked.includes('location.replace'), false)
 assert.equal(tracked.indexOf('id="preview7-tracking"') < tracked.indexOf('<base '), true)
-assert.match(normal, /#ff6200/)
-pass('preview 7 sale raises stickers 70%, keeps today’s price behind DIWALI7O / WINTER7O, and swaps every 8 hours')
+pass('preview 7 shows today’s prices with no sale banner or sale code')
 
 const lukeMigration = readFileSync(
   resolve('supabase/migrations/20260809180000_luke_affiliate_promo.sql'),

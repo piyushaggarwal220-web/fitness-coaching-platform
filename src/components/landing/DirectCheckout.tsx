@@ -9,7 +9,6 @@ import { getCoachingPlan, isDurationOfferSlug } from '@/lib/payments/plans'
 import { PREVIEW7_AD_PATH } from '@/lib/analytics/ad-landing'
 import { PREVIEW_SALE_CODE } from '@/lib/payments/preview-sale-code'
 import { formatPreview7Inr, preview7AmountPaise } from '@/lib/payments/preview7-prices'
-import { preview7SaleAt } from '@/lib/payments/preview7-sale'
 import { usePreviewSale } from './PreviewSaleCode'
 import styles from './DirectCheckout.module.css'
 
@@ -143,11 +142,7 @@ export function DirectCheckout({
           phone: cleanPhone,
           policyAgreementAccepted: true,
           landingPath,
-          discountCode: offer?.applied
-            ? PREVIEW_SALE_CODE
-            : landingPath === PREVIEW7_AD_PATH
-              ? preview7SaleAt().code
-              : undefined,
+          discountCode: offer?.applied ? PREVIEW_SALE_CODE : undefined,
           ...metaBrowserIdsForRequest(),
         }),
       })
