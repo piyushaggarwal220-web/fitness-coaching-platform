@@ -65,6 +65,21 @@ const studioFont = Inter({
  display: 'swap',
 });
 
+const STOREFRONT_PLAN_CARDS: Record<string, { badge: string; footer: string }> = {
+ '3_months': {
+ badge: '90 days',
+ footer: 'Best for: dropping fat fast and getting visibly leaner — real results in 90 days',
+ },
+ '6_months': {
+ badge: 'Most popular',
+ footer: 'Best for: losing fat while building muscle',
+ },
+ '12_months': {
+ badge: 'Complete transformation',
+ footer: 'Best for: building an athletic body — fat loss, muscle, and stamina',
+ },
+};
+
 const PAYMENT_SUCCESS_KEY = 'lurvox_checkout_success_redirect';
 const CHECKOUT_DRAFT_KEY = 'lurvox_checkout_draft_v1';
 type CheckoutScreen = 1 | 2 | 3;
@@ -98,10 +113,6 @@ declare global {
 function CheckoutForm() {
  const searchParams = useSearchParams();
  const adLandingPath = previewAdLandingPath(searchParams.get('landing'));
- const intakeTheme = checkoutThemeForLanding(adLandingPath, {
- manrope: checkoutFont.style.fontFamily,
- inter: studioFont.style.fontFamily,
- });
  const fontClass = adLandingPath === PREVIEW_AD_PATH
  ? `${checkoutFont.className} ${studioFont.className}`
  : checkoutFont.className;
@@ -159,6 +170,12 @@ function CheckoutForm() {
  const testMode = isPaymentBypassClient();
  const isTrialCheckout = plan.isTrial === true;
  const isDigitalCheckout = plan.isDigital === true || isDigitalPlanSlug(plan.slug);
+ const storefrontCheckout =
+ !adLandingPath && !isDigitalCheckout && !isTrialCheckout && !isDurationOfferSlug(plan.slug);
+ const intakeTheme = checkoutThemeForLanding(storefrontCheckout ? PREVIEW7_AD_PATH : adLandingPath, {
+ manrope: checkoutFont.style.fontFamily,
+ inter: studioFont.style.fontFamily,
+ });
  const planPickerList = (isDigitalCheckout
  ? DIGITAL_PLAN_LIST
  : isDurationOfferSlug(plan.slug)
@@ -890,9 +907,13 @@ function CheckoutForm() {
  {checkoutScreen === 3 && (
  <>
  {!isTrialCheckout && (
- <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
+ <div style={storefrontCheckout ? styles.planStack : styles.planPicker} role="tablist" aria-label="Choose plan">
  {planPickerList.map((item) => {
  const selected = item.slug === plan.slug;
+ const monthly =
+ item.durationMonths > 0
+ ? `≈ ₹${Math.round(item.amountPaise / 100 / item.durationMonths).toLocaleString('en-IN')}/month`
+ : '';
  return (
  <Link
  key={item.slug}
@@ -908,12 +929,40 @@ function CheckoutForm() {
  })
  }
  style={{
- ...styles.planChip,
- ...(selected ? styles.planChipSelected : null),
+ ...(storefrontCheckout ? styles.planCard : styles.planChip),
+ ...(selected && !storefrontCheckout ? styles.planChipSelected : null),
  ...intakeTheme.planChip,
- ...(selected ? intakeTheme.planChipSelected : null),
+ ...(selected && !storefrontCheckout ? intakeTheme.planChipSelected : null),
+ ...(storefrontCheckout
+ ? {
+ background: selected
+ ? 'linear-gradient(180deg, rgba(255,98,0,0.16) 0%, rgba(255,255,255,0.04) 100%)'
+ : 'linear-gradient(180deg, rgba(255,98,0,0.08) 0%, rgba(255,255,255,0.03) 100%)',
+ border: selected ? '2px solid #ff6200' : '1px solid rgba(255,255,255,0.14)',
+ color: '#ffffff',
+ }
+ : null),
  }}
  >
+ {storefrontCheckout ? (
+ <>
+ <span style={styles.planCardMain}>
+ <span style={styles.planCardTitleRow}>
+ <span style={{ ...dig(styles.planChipName, 'planChipName'), fontSize: 18 }}>{planGoalName(item.slug)}</span>
+ <span style={styles.planCardBadge}>{STOREFRONT_PLAN_CARDS[item.slug]?.badge}</span>
+ </span>
+ <span style={dig(styles.planChipDuration, 'planChipDuration')}>{planDurationLabel(item.slug)}</span>
+ <span style={styles.planCardFooter}>{STOREFRONT_PLAN_CARDS[item.slug]?.footer}</span>
+ </span>
+ <span style={styles.planCardPriceCol}>
+ <span style={dig(styles.planCardPrice, 'planChipPrice')}>{item.displayPrice}</span>
+ {monthly ? (
+ <span style={dig(styles.planCardMonthly, 'planChipDuration')}>{monthly}</span>
+ ) : null}
+ </span>
+ </>
+ ) : (
+ <>
  <span style={dig(styles.planChipName, 'planChipName')}>
  {isDigitalCheckout ? item.name.replace('Complete Guidance', 'Complete') : planGoalName(item.slug)}
  </span>
@@ -922,15 +971,15 @@ function CheckoutForm() {
  </span>
  <span style={dig(styles.planChipPrice, 'planChipPrice')}>{item.displayPrice}</span>
  {item.popular ? (
- <span style={{ ...styles.planChipBadge, ...intakeTheme.planChipPopular }}>
- Most popular
- </span>
+ <span style={{ ...styles.planChipBadge, ...intakeTheme.planChipPopular }}>Most popular</span>
  ) : null}
  {item.best ? (
  <span style={{ ...styles.planChipBadge, ...styles.planChipBadgeBest, ...intakeTheme.planChipBest }}>
  Best value
  </span>
  ) : null}
+ </>
+ )}
  </Link>
  );
  })}
@@ -1305,6 +1354,79 @@ const styles: Record<string, CSSProperties> = {
     width: '100%',
     maxWidth: '100%',
     boxSizing: 'border-box',
+  },
+  planStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    marginBottom: 16,
+    width: '100%',
+  },
+  planCard: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    padding: '14px 14px',
+    borderRadius: 16,
+    textDecoration: 'none',
+    textAlign: 'left' as const,
+    width: '100%',
+    boxSizing: 'border-box',
+  },
+  planCardSelected: {
+    boxShadow: 'none',
+  },
+  planCardMain: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 4,
+    minWidth: 0,
+  },
+  planCardTitleRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+  },
+  planCardPriceCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 2,
+    flexShrink: 0,
+  },
+  planCardPrice: {
+    fontSize: 22,
+    fontWeight: 800,
+    letterSpacing: '-0.03em',
+    lineHeight: 1,
+  },
+  planCardMonthly: {
+    fontSize: 12,
+    fontWeight: 650,
+    color: 'rgba(255,255,255,0.62)',
+  },
+  planCardBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '3px 8px',
+    borderRadius: 999,
+    backgroundColor: '#ff6200',
+    color: '#1a0900',
+    fontSize: 10,
+    fontWeight: 800,
+    letterSpacing: '0.02em',
+    lineHeight: 1.2,
+  },
+  planCardFooter: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 1.35,
+    color: 'rgba(255,255,255,0.68)',
+    fontWeight: 500,
   },
   planChip: {
     display: 'flex',
