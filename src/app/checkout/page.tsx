@@ -27,7 +27,8 @@ import {
 } from '@/lib/analytics/meta-attribution';
 import { trackFunnelStep } from '@/lib/analytics/funnel';
 import { PREVIEW7_AD_PATH, PREVIEW_AD_PATH, previewAdFunnelSource, previewAdLandingPath } from '@/lib/analytics/ad-landing';
-import { preview7PricedPlan } from '@/lib/payments/preview7-prices';
+import { preview7AmountPaise, preview7PricedPlan } from '@/lib/payments/preview7-prices';
+import { canonicalPreview7SaleCode, isPreview7SaleCode, preview7SaleAt } from '@/lib/payments/preview7-sale';
 import { checkoutThemeForLanding } from '@/lib/payments/checkout-theme';
 import {
  formatInrFromPaise,
@@ -142,6 +143,8 @@ function CheckoutForm() {
  const [referralCode, setReferralCode] = useState(codeFromUrl);
  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountPreview | null>(null);
  const [saleCountdown, setSaleCountdown] = useState('08:00:00');
+ const [preview7SaleLine, setPreview7SaleLine] = useState('Diwali sale ends in 08:00:00');
+ const [preview7SaleCode, setPreview7SaleCode] = useState('DIWALI7O');
  const [applyingCode, setApplyingCode] = useState(false);
  const [enrollmentHref, setEnrollmentHref] = useState<string | null>(null);
  const [attemptedPay, setAttemptedPay] = useState(false);
@@ -239,8 +242,37 @@ function CheckoutForm() {
  return () => window.clearInterval(id);
  }, []);
 
+ useEffect(() => {
+ if (adLandingPath !== PREVIEW7_AD_PATH) return;
+ const tick = () => {
+ const sale = preview7SaleAt();
+ setPreview7SaleLine(`${sale.name} ends in ${formatCountdownHms(sale.remainingMs)}`);
+ setPreview7SaleCode(sale.code);
+ };
+ tick();
+ const id = window.setInterval(tick, 1000);
+ return () => window.clearInterval(id);
+ }, [adLandingPath]);
+
  const buildLocalWelcomeDiscount = (code: string): AppliedDiscountPreview | null => {
  if (isTrialCheckout) return null;
+
+ if (adLandingPath === PREVIEW7_AD_PATH && isPreview7SaleCode(code)) {
+ const payPaise = preview7AmountPaise(plan.slug);
+ if (payPaise == null || payPaise >= plan.amountPaise) return null;
+ const discountPaise = plan.amountPaise - payPaise;
+ const saleCode = canonicalPreview7SaleCode(code);
+ return {
+ code: saleCode,
+ discountPaise,
+ amountPaise: payPaise,
+ listAmountPaise: plan.amountPaise,
+ displayListPrice: plan.displayPrice,
+ displaySalePrice: formatInrFromPaise(payPaise),
+ displayDiscount: formatInrFromPaise(discountPaise),
+ message: `Code ${saleCode} applied. You pay ${formatInrFromPaise(payPaise)}.`,
+ };
+ }
 
  const affiliate = getAffiliateCode(code);
  if (affiliate) {
@@ -1134,6 +1166,38 @@ function CheckoutForm() {
  </div>
  </div>
  </section>
+
+ {adLandingPath === PREVIEW7_AD_PATH && !isTrialCheckout && !isDigitalCheckout ? (
+ <div style={{ marginTop: 12 }}>
+ <p style={{ ...dig(styles.orderPlanMeta, 'orderPlanMeta'), margin: '0 0 8px' }}>
+ {preview7SaleLine}. Code {preview7SaleCode} for extra 70% off.
+ </p>
+ <label style={dig(styles.label, 'label')} htmlFor="checkout-promo">Promo code</label>
+ <div style={styles.codeRow}>
+ <input
+ id="checkout-promo"
+ value={referralCode}
+ onChange={(e) => {
+ setReferralCode(e.target.value.toUpperCase());
+ setError('');
+ }}
+ placeholder={preview7SaleCode}
+ autoCapitalize="characters"
+ spellCheck={false}
+ style={{ ...dig(styles.input, 'input'), flex: '1 1 auto', marginTop: 0 }}
+ />
+ <button
+ type="button"
+ onClick={() => { void applyReferralCode(); }}
+ disabled={applyingCode}
+ style={{ ...dig(styles.payBtn, 'payBtn'), flex: '0 0 auto', width: 'auto', marginTop: 0, padding: '13px 16px' }}
+ >
+ {applyingCode ? 'Checking' : 'Apply'}
+ </button>
+ </div>
+ {appliedDiscount ? <p style={styles.discountApplied}>{appliedDiscount.message}</p> : null}
+ </div>
+ ) : null}
 
  <p style={{ ...styles.leagueNote, color: intakeTheme.paySecureNote.color }}>
  {isTrialCheckout

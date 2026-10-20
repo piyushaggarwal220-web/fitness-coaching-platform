@@ -2,8 +2,8 @@ import { PREVIEW7_AD_PATH } from '@/lib/analytics/ad-landing'
 import { type CoachingPlanSlug } from '@/lib/payments/plans'
 
 /**
- * Prices shown on Shopify theme "Live quiz-v3 2026-08-26 18:09".
- * Checkout uses these only when the order comes from /preview7.
+ * What /preview7 charges after DIWALI7O or WINTER7O.
+ * The checkout sticker is 70% higher until that code is applied.
  * The catalog (₹599 / ₹999 / ₹1,699) is unchanged for every other landing.
  */
 export const PREVIEW7_DRAFT_PAISE: Record<CoachingPlanSlug, number> = {
@@ -26,12 +26,19 @@ export function formatPreview7Inr(paise: number): string {
   return `₹${rupees.toLocaleString('en-IN')}`
 }
 
+/** Sticker price on /preview7. 70% above the price the sale code charges, rounded to the nearest ₹10. */
+export function preview7MarkedUpPaise(payPaise: number): number {
+  if (!Number.isFinite(payPaise) || payPaise <= 0) return 0
+  return Math.round((payPaise * 17) / 10000) * 1000
+}
+
 export function preview7PricedPlan<T extends { slug: string; amountPaise: number; displayPrice: string }>(
   plan: T,
   landingPath: string | null | undefined,
 ): T {
   if (landingPath !== PREVIEW7_AD_PATH) return plan
-  const paise = preview7AmountPaise(plan.slug)
-  if (paise == null) return plan
+  const payPaise = preview7AmountPaise(plan.slug)
+  if (payPaise == null) return plan
+  const paise = preview7MarkedUpPaise(payPaise)
   return { ...plan, amountPaise: paise, displayPrice: formatPreview7Inr(paise) }
 }

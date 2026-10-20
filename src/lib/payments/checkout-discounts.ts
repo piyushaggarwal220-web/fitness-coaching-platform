@@ -16,7 +16,11 @@ import {
   PREVIEW_SALE_CODE,
   previewSaleDiscountPaise,
 } from '@/lib/payments/preview-sale-code'
-import { preview7AmountPaise } from '@/lib/payments/preview7-prices'
+import { preview7AmountPaise, preview7MarkedUpPaise } from '@/lib/payments/preview7-prices'
+import {
+  canonicalPreview7SaleCode,
+  isPreview7SaleCode,
+} from '@/lib/payments/preview7-sale'
 import {
   computePromoDiscountPaise,
   getActivePromoCode,
@@ -356,8 +360,9 @@ export async function resolveCheckoutPricing(input: {
     return { ok: false, error: 'Invalid plan selected', status: 400 }
   }
 
-  const preview7List =
+  const preview7Pay =
     input.landingPath === PREVIEW7_AD_PATH ? preview7AmountPaise(plan.slug) : null
+  const preview7List = preview7Pay != null ? preview7MarkedUpPaise(preview7Pay) : null
   const listAmountPaise = preview7List ?? plan.amountPaise
   const code = normalizeDiscountCode(input.discountCode)
 
@@ -402,6 +407,29 @@ export async function resolveCheckoutPricing(input: {
       ok: false,
       error: 'Enter a valid email before applying a code.',
       status: 400,
+    }
+  }
+
+  // Preview 7 sale codes. The sticker is 70% above today's price. The code charges today's price.
+  if (preview7List != null && preview7Pay != null && isPreview7SaleCode(code)) {
+    const discountPaise = preview7List - preview7Pay
+    if (discountPaise <= 0 || discountPaise >= preview7List) {
+      return { ok: false, error: 'This code is not available for this plan.', status: 400 }
+    }
+    const discount = buildAppliedDiscount({
+      kind: 'discount',
+      code: canonicalPreview7SaleCode(code),
+      discountPaise,
+      listAmountPaise,
+    })
+    return {
+      ok: true,
+      pricing: {
+        plan,
+        listAmountPaise,
+        amountPaise: discount.amountPaise,
+        discount,
+      },
     }
   }
 
@@ -632,25 +660,38 @@ function expectedPlanAmountPaiseFromOrderNotes(
   const discountPaise = notes?.discount_paise ? Number(notes.discount_paise) : 0
   const code = normalizeDiscountCode(notes?.discount_code)
 
-  const preview7List = preview7AmountPaise(plan.slug)
-  if (
-    preview7List &&
-    Number.isFinite(charged) &&
-    charged > 0 &&
-    Number.isFinite(listFromNotes) &&
-    listFromNotes === preview7List
-  ) {
-    if (!code && charged === preview7List) return charged
+  const preview7Noted = (list: number | null, salePay: number | null): number | null => {
+    if (list == null || !Number.isFinite(charged) || charged <= 0) return null
+    if (!Number.isFinite(listFromNotes) || listFromNotes !== list) return null
+    if (!code && charged === list) return charged
+    if (
+      salePay != null &&
+      isPreview7SaleCode(code) &&
+      Number.isFinite(discountPaise) &&
+      discountPaise === list - salePay &&
+      charged === salePay
+    ) {
+      return charged
+    }
     if (
       code &&
+      !isPreview7SaleCode(code) &&
       Number.isFinite(discountPaise) &&
       discountPaise > 0 &&
-      charged === preview7List - discountPaise &&
+      charged === list - discountPaise &&
       charged > 0
     ) {
       return charged
     }
+    return null
   }
+
+  const preview7Pay = preview7AmountPaise(plan.slug)
+  const preview7List = preview7Pay != null ? preview7MarkedUpPaise(preview7Pay) : null
+  const notedPreview7 = preview7Noted(preview7List, preview7Pay)
+  if (notedPreview7 != null) return notedPreview7
+  const legacyPreview7 = preview7Noted(preview7Pay, null)
+  if (legacyPreview7 != null) return legacyPreview7
 
   if (Number.isFinite(charged) && charged > 0) {
     const listAmount = Number.isFinite(listFromNotes) && listFromNotes > 0 ? listFromNotes : plan.amountPaise
