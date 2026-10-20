@@ -2,7 +2,7 @@ export type CoachingPlanSlug = '3_months' | '6_months' | '12_months'
 
 /**
  * Preview offer: one product, two lengths. Both unlock the full coaching catalog.
- * Not part of the live ₹599 / ₹999 / ₹1,699 storefront.
+ * Not part of the live ₹1,999 / ₹3,499 / ₹5,999 storefront.
  */
 export type DurationOfferSlug = 'offer_1_month' | 'offer_3_months'
 
@@ -37,21 +37,21 @@ export type CoachingPlan = {
   sections?: DigitalPlanSections
 }
 
-/** Active coaching plan catalog — amounts match storefront pricing. */
+/** Active coaching plan catalog — amounts match the lurvox.in plan cards. */
 export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
   '3_months': {
     slug: '3_months',
     name: 'Fat loss',
-    displayPrice: '₹599',
-    amountPaise: 59900,
+    displayPrice: '₹1,999',
+    amountPaise: 199900,
     durationMonths: 3,
     saveLabel: 'Fat loss',
   },
   '6_months': {
     slug: '6_months',
     name: 'Fat loss + muscle gain',
-    displayPrice: '₹999',
-    amountPaise: 99900,
+    displayPrice: '₹3,499',
+    amountPaise: 349900,
     durationMonths: 6,
     saveLabel: 'Fat loss + muscle gain',
     popular: true,
@@ -59,12 +59,22 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
   '12_months': {
     slug: '12_months',
     name: 'Athletic body',
-    displayPrice: '₹1,699',
-    amountPaise: 169900,
+    displayPrice: '₹5,999',
+    amountPaise: 599900,
     durationMonths: 12,
     saveLabel: 'Athletic body',
     best: true,
   },
+}
+
+/**
+ * Catalog charged before 20 Oct 2026. Order verification still accepts these
+ * amounts so a payment already created at the old price can complete.
+ */
+export const LEGACY_CATALOG_PAISE: Record<CoachingPlanSlug, number> = {
+  '3_months': 59900,
+  '6_months': 99900,
+  '12_months': 169900,
 }
 
 /**

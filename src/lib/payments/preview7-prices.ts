@@ -3,7 +3,7 @@ import { type CoachingPlanSlug } from '@/lib/payments/plans'
 
 /**
  * What /preview7 charges.
- * The catalog (₹599 / ₹999 / ₹1,699) is unchanged for every other landing.
+ * Same rupees as the catalog. Kept so /preview7 orders keep their own note checks.
  */
 export const PREVIEW7_DRAFT_PAISE: Record<CoachingPlanSlug, number> = {
   '3_months': 199900,

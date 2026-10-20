@@ -188,7 +188,7 @@ const FAQ = [
   },
   {
     q: 'What does coaching cost?',
-    a: 'Fat loss is ₹599 for 90 days, under ₹7 a day. Fat loss and muscle gain is ₹999 for 6 months, under ₹6 a day. The athletic plan is ₹1,699 for the year, under ₹5 a day.',
+    a: 'Fat loss is ₹1,999 for 90 days, about ₹22 a day. Fat loss and muscle gain is ₹3,499 for 6 months, about ₹19 a day. The athletic plan is ₹5,999 for the year, about ₹16 a day.',
   },
   {
     q: 'Is the plan personalised?',
@@ -196,7 +196,7 @@ const FAQ = [
   },
   {
     q: 'Why are the rates this low?',
-    a: 'This is online coaching in the app: a plan written for you, check-ins, and coach chat. It is not a trainer standing with you in person every session. That is why it starts at ₹599.',
+    a: 'This is online coaching in the app: a plan written for you, check-ins, and coach chat. It is not a trainer standing with you in person every session. That is why it starts at ₹1,999.',
   },
   {
     q: 'What happens after I pay?',

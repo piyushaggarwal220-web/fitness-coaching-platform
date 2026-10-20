@@ -133,13 +133,13 @@ pass('WELCOME60 and SUMMER60 are retired; catalog prices are the public offer')
 
 assert.equal(isAffiliateDiscountCode('luke'), true)
 assert.equal(getAffiliateCode('LUKE')?.extraPercentOffSale, 5)
-assert.equal(affiliateSalePaise('LUKE', '3_months'), 56900)
-assert.equal(affiliateSalePaise('LUKE', '6_months'), 94900)
-assert.equal(affiliateSalePaise('LUKE', '12_months'), 161400)
-assert.equal(affiliateDiscountPaise('LUKE', '3_months', 59900), 3000)
-assert.equal(affiliateDiscountPaise('LUKE', '6_months', 99900), 5000)
-assert.equal(affiliateDiscountPaise('LUKE', '12_months', 169900), 8500)
-pass('LUKE affiliate code is catalog price + 5% (₹569 / ₹949 / ₹1,614)')
+assert.equal(affiliateSalePaise('LUKE', '3_months'), 189900)
+assert.equal(affiliateSalePaise('LUKE', '6_months'), 332400)
+assert.equal(affiliateSalePaise('LUKE', '12_months'), 569900)
+assert.equal(affiliateDiscountPaise('LUKE', '3_months', 199900), 10000)
+assert.equal(affiliateDiscountPaise('LUKE', '6_months', 349900), 17500)
+assert.equal(affiliateDiscountPaise('LUKE', '12_months', 599900), 30000)
+pass('LUKE affiliate code is catalog price + 5% (₹1,899 / ₹3,324 / ₹5,699)')
 
 const lukeExpected = expectedAmountPaiseFromOrderNotes(COACHING_PLANS['3_months'], {
   amount_paise: '56900',
@@ -196,7 +196,7 @@ assert.equal(
   }),
   59900
 )
-pass('preview 7 draft prices verify at ₹1,999 / ₹3,499 / ₹5,999 and catalog orders stay at catalog')
+pass('new catalog and preview 7 verify at ₹1,999 / ₹3,499 / ₹5,999; old ₹599 orders still verify')
 
 assert.equal(preview7MarkedUpPaise(199900), 340000)
 assert.equal(preview7MarkedUpPaise(349900), 595000)
@@ -236,7 +236,7 @@ assert.equal(
     discount_paise: '339900',
     discount_code: 'DIWALI7O',
   }),
-  59900
+  199900
 )
 const normal = preview7LiveHtml(`<head></head><body>
 <aside id="lurvox-offer-strip-home" class="lurvox-offer-strip">WELCOME60 for 60% OFF ENDS SOON</aside>

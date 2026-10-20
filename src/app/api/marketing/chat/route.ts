@@ -19,7 +19,7 @@ Never say you are an AI model name. Never push lurvox.in coaching membership unl
 Max 3 short sentences unless they ask for detail.`
 
 const COACHING_SYSTEM = `You are Lurvox coaching help for www.lurvox.in.
-Product: affordable 1-to-1 online fitness coaching. Plans: Fat loss 3 months ₹599, Fat loss + muscle 6 months ₹999, Athletic body 12 months ₹1,699.
+Product: affordable 1-to-1 online fitness coaching. Plans: Fat loss 3 months ₹1,999, Fat loss + muscle 6 months ₹3,499, Athletic body 12 months ₹5,999.
 ${FIRST_PLAN_TARGET}
 Positioning: personalised online coaching. Do not promise guaranteed fat loss, muscle gain, or visible results. Do not say "AI", "human coach", or "chatbot". Say 1-to-1 coaching, personalised plans, check-ins, app support.
 ${COACH_ISSUE_CONTACT} Never offer a phone call, a WhatsApp call, or a booked time. Do not say a plan includes a weekly call.
@@ -123,8 +123,8 @@ function faqFallback(surface: 'instant' | 'coaching', message: string): string |
       return 'We stand behind guaranteed results with moneyback if you see none, when you follow the plan as written.'
     }
   } else {
-    if (/price|cost|₹|rs\b|rupee|599|999|1699/.test(q)) {
-      return 'Fat loss is ₹599 for 3 months. Fat loss + muscle is ₹999 for 6 months. Athletic body is ₹1,699 for 12 months.'
+    if (/price|cost|₹|rs\b|rupee|599|999|1699|1999|3499|5999/.test(q)) {
+      return 'Fat loss is ₹1,999 for 3 months. Fat loss + muscle is ₹3,499 for 6 months. Athletic body is ₹5,999 for 12 months.'
     }
     if (/1.?to.?1|coach|support|check.?in/.test(q)) {
       return 'Every plan includes personalised workout and diet, check-ins, and 1-to-1 support in the app.'
@@ -213,7 +213,7 @@ export async function POST(request: Request) {
       {
         reply:
           surface === 'coaching'
-            ? 'Plans start at ₹599 for 3 months. Ask about fat loss, muscle, or Athletic body — or open the plans section on this page.'
+            ? 'Plans start at ₹1,999 for 3 months. Ask about fat loss, muscle, or Athletic body — or open the plans section on this page.'
             : 'Workout is ₹49, Diet ₹89, Complete ₹99. After payment you answer a short questionnaire and get your plan in the app and email.',
       },
       { headers }

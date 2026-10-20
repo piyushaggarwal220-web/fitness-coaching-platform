@@ -6,8 +6,10 @@ import {
   isAffiliateDiscountCode,
 } from '@/lib/payments/affiliate-codes'
 import {
+  COACHING_PLANS,
   getPurchasablePlan,
   isDurationOfferSlug,
+  LEGACY_CATALOG_PAISE,
   type CoachingPlan,
   type CoachingPlanSlug,
 } from '@/lib/payments/plans'
@@ -27,7 +29,7 @@ import type { PromoCodeKind } from '@/types/database'
 /** Retired public promo — kept only so old links can be rejected cleanly. */
 export const DEFAULT_FIRST_TIMER_DISCOUNT_CODE = 'WELCOME60'
 
-/** SUMMER60 retired after catalog dropped to ₹599/999/1699 — another 60% off would undercut list. */
+/** SUMMER60 retired — catalog prices are already the public offer. */
 const RETIRED_PUBLIC_DISCOUNT_CODES = new Set(['WELCOME60', 'SUMMER60'])
 
 export function isRetiredPublicDiscountCode(raw: string | null | undefined): boolean {
@@ -53,13 +55,13 @@ type FirstTimerPlanSlug = CoachingPlanSlug
 export const FIRST_TIMER_DISCOUNT_PERCENT = 60
 
 /**
- * Legacy WELCOME60 sale targets — aligned with catalog list prices (no standing discount).
+ * WELCOME60 targets, kept equal to the catalog so that code is not a second price.
  * Promo codes can still reduce below these amounts at checkout.
  */
 export const FIRST_TIMER_SALE_PAISE: Record<FirstTimerPlanSlug, number> = {
-  '3_months': 59900,
-  '6_months': 99900,
-  '12_months': 169900,
+  '3_months': COACHING_PLANS['3_months'].amountPaise,
+  '6_months': COACHING_PLANS['6_months'].amountPaise,
+  '12_months': COACHING_PLANS['12_months'].amountPaise,
 }
 
 const FIRST_TIMER_PLAN_SLUGS = new Set<string>(['3_months', '6_months', '12_months'])
@@ -709,6 +711,23 @@ function expectedPlanAmountPaiseFromOrderNotes(
     const expectedDiscount = discountPaiseForPlan(plan.slug, plan.amountPaise) ?? 0
     if (discountPaise === expectedDiscount) {
       return plan.amountPaise - expectedDiscount
+    }
+  }
+
+  const legacyList = LEGACY_CATALOG_PAISE[plan.slug as CoachingPlanSlug]
+  if (legacyList && Number.isFinite(charged) && charged > 0) {
+    const notedList = Number.isFinite(listFromNotes) && listFromNotes > 0 ? listFromNotes : legacyList
+    if (
+      code &&
+      notedList === legacyList &&
+      Number.isFinite(discountPaise) &&
+      discountPaise > 0 &&
+      charged === notedList - discountPaise
+    ) {
+      return charged
+    }
+    if (!code && charged === legacyList && notedList === legacyList) {
+      return charged
     }
   }
 
