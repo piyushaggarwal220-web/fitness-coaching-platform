@@ -294,7 +294,7 @@ export function InstantFitnessQuiz({
           <div className={styles.resultActions}>
             {coaching ? (
               <a href="#plans" className={styles.primaryCta}>
-                {fromLabel ?? 'See plans — from ₹1,999'}
+                {fromLabel ?? 'See plans — from ₹900'}
               </a>
             ) : (
               <Link href="/checkout?plan=digital_complete" className={styles.primaryCta}>

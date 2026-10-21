@@ -52,7 +52,7 @@ const PLANS: PlanCard[] = [
     slug: '3_months',
     chip: 'Fat loss · 3 months',
     length: '90 days',
-    monthly: '3 months · ≈ ₹200/mo',
+    monthly: '3 months · ₹300/mo',
     tone: 'fat',
     points: [
       'Check-in mid-week and every week',
@@ -68,7 +68,7 @@ const PLANS: PlanCard[] = [
     slug: '6_months',
     chip: 'Fat loss + muscle · 6 months',
     length: '6 months',
-    monthly: '≈ ₹167/mo',
+    monthly: '₹250/mo',
     tone: 'mid',
     tag: 'Most popular',
     note: 'Fat loss plus muscle, rewritten every week for 6 months.',
@@ -90,7 +90,7 @@ const PLANS: PlanCard[] = [
     slug: '12_months',
     chip: 'Athletic body · 12 months',
     length: '12 months',
-    monthly: '≈ ₹142/mo · lowest monthly cost',
+    monthly: '≈ ₹192/mo · lowest monthly cost',
     tone: 'athletic',
     tag: 'Best value',
     note: 'Full year of coaching. Fat loss, muscle, and stamina in one plan.',
@@ -365,7 +365,7 @@ function ColourLandingView({
             <p className="lx3-lede">
               {durationOffer
                 ? `Diet chart, diet plan, workout plan, plus sleep, cardio, and supplement guidance. ${DURATION_OFFER_EXTRA} 1 month is ${sale.quote('offer_1_month')!.payLabel}. 3 months is ${sale.quote('offer_3_months')!.payLabel}.`
-                : <>Coach-made workout and diet around your goals, from ₹1,999. Check-ins are mid-week and weekly. <strong>Fat loss is rewritten every 14 days.</strong> The 6- and 12-month plans are rewritten every week.</>}
+                : <>Coach-made workout and diet around your goals, from ₹900. Check-ins are mid-week and weekly. <strong>Fat loss is rewritten every 14 days.</strong> The 6- and 12-month plans are rewritten every week.</>}
             </p>
             <ul className="lx3-trust">
               {durationOffer ? (
@@ -573,10 +573,10 @@ function ColourLandingView({
         <p>
           {durationOffer
             ? <>The coaching stays. <strong>1 month</strong> is <strong>{sale.quote('offer_1_month')!.payLabel}</strong>. <strong>3 months</strong> is <strong>{sale.quote('offer_3_months')!.payLabel}</strong>. {DURATION_OFFER_EXTRA}</>
-            : <>Goal first. Time is the runway. <strong>Fat loss</strong> is 90 days · <strong>₹1,999</strong>, rewritten every 14 days. <strong>Fat loss + muscle gain</strong> is 6 months · <strong>₹3,499</strong>, rewritten every week. <strong>Athletic body</strong> is 12 months · <strong>₹5,999</strong> — fat loss, muscle, and stamina, rewritten every week. Check-ins are mid-week and weekly on every plan.</>}
+            : <>Goal first. Time is the runway. <strong>Fat loss</strong> is 90 days · <strong>₹900</strong>, rewritten every 14 days. <strong>Fat loss + muscle gain</strong> is 6 months · <strong>₹1,500</strong>, rewritten every week. <strong>Athletic body</strong> is 12 months · <strong>₹2,300</strong> — fat loss, muscle, and stamina, rewritten every week. Check-ins are mid-week and weekly on every plan.</>}
         </p>
         <a className="lx3-jump" href="#plans">
-          {durationOffer ? `See plans — ${sale.quote('offer_1_month')!.payLabel} · ${sale.quote('offer_3_months')!.payLabel}` : 'See plans — ₹1,999 · ₹3,499 · ₹5,999'}
+          {durationOffer ? `See plans — ${sale.quote('offer_1_month')!.payLabel} · ${sale.quote('offer_3_months')!.payLabel}` : 'See plans — ₹900 · ₹1,500 · ₹2,300'}
         </a>
         <div className="lx3-stamp-row">
           <Stamp />
@@ -606,7 +606,7 @@ function ColourLandingView({
       <div className={`lx3-sticky${sticky ? ' is-on' : ''}`}>
         <div>
           <strong>{durationOffer ? '3 months' : 'Athletic body'}</strong>
-          <span>{durationOffer ? `${sale.quote('offer_3_months')!.payLabel} · best value` : '12 months · ₹5,999 · lowest monthly cost'}</span>
+          <span>{durationOffer ? `${sale.quote('offer_3_months')!.payLabel} · best value` : '12 months · ₹2,300 · lowest monthly cost'}</span>
         </div>
         <PlanLink plan={featured} className="lx3-sticky-cta" source={source} landing={landing} onPay={openPay}>
           {durationOffer ? `Start for ${sale.quote('offer_3_months')!.payLabel}` : 'Get Athletic body'}

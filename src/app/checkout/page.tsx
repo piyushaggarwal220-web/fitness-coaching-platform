@@ -65,17 +65,23 @@ const studioFont = Inter({
  display: 'swap',
 });
 
-const STOREFRONT_PLAN_CARDS: Record<string, { badge: string; footer: string }> = {
+const STOREFRONT_PLAN_CARDS: Record<string, { badge: string; duration: string; savings: string; footer: string }> = {
  '3_months': {
- badge: '90 days',
+ badge: 'Debloat',
+ duration: '90 DAYS',
+ savings: '',
  footer: 'Best for: dropping fat fast and getting visibly leaner — real results in 90 days',
  },
  '6_months': {
- badge: 'Most popular',
+ badge: '⭐ Most Popular',
+ duration: '6 MONTHS',
+    savings: 'Save ₹300 vs monthly rate',
  footer: 'Best for: losing fat while building muscle',
  },
  '12_months': {
  badge: 'Complete transformation',
+ duration: '12 MONTHS',
+    savings: 'Save ₹1,300 vs monthly rate',
  footer: 'Best for: building an athletic body — fat loss, muscle, and stamina',
  },
 };
@@ -910,10 +916,12 @@ function CheckoutForm() {
  <div style={storefrontCheckout ? styles.planStack : styles.planPicker} role="tablist" aria-label="Choose plan">
  {planPickerList.map((item) => {
  const selected = item.slug === plan.slug;
+ const card = STOREFRONT_PLAN_CARDS[item.slug];
  const monthly =
  item.durationMonths > 0
  ? `≈ ₹${Math.round(item.amountPaise / 100 / item.durationMonths).toLocaleString('en-IN')}/month`
  : '';
+ const cardPrice = `₹${Math.round(item.amountPaise / 100)}`;
  return (
  <Link
  key={item.slug}
@@ -949,16 +957,17 @@ function CheckoutForm() {
  <span style={styles.planCardMain}>
  <span style={styles.planCardTitleRow}>
  <span style={{ ...dig(styles.planChipName, 'planChipName'), fontSize: 18 }}>{planGoalName(item.slug)}</span>
- <span style={styles.planCardBadge}>{STOREFRONT_PLAN_CARDS[item.slug]?.badge}</span>
+ <span style={styles.planCardBadge}>{card?.badge}</span>
  </span>
- <span style={dig(styles.planChipDuration, 'planChipDuration')}>{planDurationLabel(item.slug)}</span>
- <span style={styles.planCardFooter}>{STOREFRONT_PLAN_CARDS[item.slug]?.footer}</span>
+ <span style={dig(styles.planChipDuration, 'planChipDuration')}>{card?.duration || planDurationLabel(item.slug)}</span>
+ <span style={styles.planCardFooter}>{card?.footer}</span>
  </span>
  <span style={styles.planCardPriceCol}>
- <span style={dig(styles.planCardPrice, 'planChipPrice')}>{item.displayPrice}</span>
+ <span style={dig(styles.planCardPrice, 'planChipPrice')}>{cardPrice}</span>
  {monthly ? (
  <span style={dig(styles.planCardMonthly, 'planChipDuration')}>{monthly}</span>
  ) : null}
+ {card?.savings ? <span style={styles.planCardSavings}>{card.savings}</span> : null}
  </span>
  </>
  ) : (
@@ -1403,11 +1412,21 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 800,
     letterSpacing: '-0.03em',
     lineHeight: 1,
+    textShadow: '0 0 12px rgba(255,255,255,0.45)',
   },
   planCardMonthly: {
     fontSize: 12,
     fontWeight: 650,
     color: 'rgba(255,255,255,0.62)',
+  },
+  planCardSavings: {
+    marginTop: 2,
+    maxWidth: 148,
+    fontSize: 11,
+    fontWeight: 650,
+    lineHeight: 1.3,
+    textAlign: 'right',
+    color: 'rgba(255,255,255,0.78)',
   },
   planCardBadge: {
     display: 'inline-flex',

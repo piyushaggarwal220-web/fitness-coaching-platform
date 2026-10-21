@@ -18,7 +18,12 @@ import {
   PREVIEW_SALE_CODE,
   previewSaleDiscountPaise,
 } from '@/lib/payments/preview-sale-code'
-import { isPreview7SaleCode, preview7AmountPaise, preview7MarkedUpPaise } from '@/lib/payments/preview7-prices'
+import {
+  isPreview7SaleCode,
+  PREVIEW7_LEGACY_PAY_PAISE,
+  preview7AmountPaise,
+  preview7MarkedUpPaise,
+} from '@/lib/payments/preview7-prices'
 import {
   computePromoDiscountPaise,
   getActivePromoCode,
@@ -660,12 +665,19 @@ function expectedPlanAmountPaiseFromOrderNotes(
     return null
   }
 
-  const preview7Pay = preview7AmountPaise(plan.slug)
-  const preview7List = preview7Pay != null ? preview7MarkedUpPaise(preview7Pay) : null
-  const notedPreview7 = preview7Noted(preview7List, preview7Pay)
-  if (notedPreview7 != null) return notedPreview7
-  const legacyPreview7 = preview7Noted(preview7Pay, null)
-  if (legacyPreview7 != null) return legacyPreview7
+  const preview7Pays = [
+    preview7AmountPaise(plan.slug),
+    ...(plan.slug in PREVIEW7_LEGACY_PAY_PAISE
+      ? PREVIEW7_LEGACY_PAY_PAISE[plan.slug as CoachingPlanSlug]
+      : []),
+  ]
+  for (const pay of preview7Pays) {
+    if (pay == null) continue
+    const notedSale = preview7Noted(preview7MarkedUpPaise(pay), pay)
+    if (notedSale != null) return notedSale
+    const notedList = preview7Noted(pay, null)
+    if (notedList != null) return notedList
+  }
 
   if (Number.isFinite(charged) && charged > 0) {
     const listAmount = Number.isFinite(listFromNotes) && listFromNotes > 0 ? listFromNotes : plan.amountPaise
@@ -714,20 +726,22 @@ function expectedPlanAmountPaiseFromOrderNotes(
     }
   }
 
-  const legacyList = LEGACY_CATALOG_PAISE[plan.slug as CoachingPlanSlug]
-  if (legacyList && Number.isFinite(charged) && charged > 0) {
-    const notedList = Number.isFinite(listFromNotes) && listFromNotes > 0 ? listFromNotes : legacyList
-    if (
-      code &&
-      notedList === legacyList &&
-      Number.isFinite(discountPaise) &&
-      discountPaise > 0 &&
-      charged === notedList - discountPaise
-    ) {
-      return charged
-    }
-    if (!code && charged === legacyList && notedList === legacyList) {
-      return charged
+  const legacyLists = LEGACY_CATALOG_PAISE[plan.slug as CoachingPlanSlug] ?? []
+  if (Number.isFinite(charged) && charged > 0) {
+    for (const legacyList of legacyLists) {
+      const notedList = Number.isFinite(listFromNotes) && listFromNotes > 0 ? listFromNotes : legacyList
+      if (
+        code &&
+        notedList === legacyList &&
+        Number.isFinite(discountPaise) &&
+        discountPaise > 0 &&
+        charged === notedList - discountPaise
+      ) {
+        return charged
+      }
+      if (!code && charged === legacyList && notedList === legacyList) {
+        return charged
+      }
     }
   }
 

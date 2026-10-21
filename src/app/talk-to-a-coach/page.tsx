@@ -16,7 +16,6 @@ const GOAL_OPTIONS = (['3_months', '6_months', '12_months'] as const).map((slug)
 }))
 
 const CONSULT_BOOKED_KEY = 'lurvox_consult_booked'
-const QUIZ_URL = 'https://www.lurvox.in/pages/choose-your-plan?next=coach'
 const TIME_SLOTS = [
   '11:30–12:30 pm IST',
   '5–6 pm IST',
@@ -116,7 +115,7 @@ export default function TalkToCoachPage() {
         <p style={{ margin: '0 0 24px', textAlign: 'center', color: colors.textSecondary, lineHeight: 1.5 }}>
           {booked
             ? 'We have your request. A coach will call you back soon. No need to submit again.'
-            : <>To talk to a coach, answer the quiz first. Then pick an India time (IST).</>}
+            : <>Pick an India time (IST).</>}
         </p>
 
         {error && <p style={authStyles.error}>{error}</p>}
@@ -241,16 +240,25 @@ export default function TalkToCoachPage() {
               })}
             </div>
           </div>
-          <p style={{ margin: '0 0 8px', fontSize: 13, textAlign: 'center' }}>
-            <a href={QUIZ_URL} style={{ color: colors.accent, fontWeight: 700 }}>
-              To talk to a coach, answer the quiz first
-            </a>
-          </p>
           <button type="submit" disabled={loading || !goalSlug || !slot} style={authStyles.button}>
             {loading ? 'Sending…' : 'Send message'}
           </button>
         </form>
         )}
+
+        <a
+          href="https://www.lurvox.in/"
+          style={{
+            ...authStyles.button,
+            display: 'block',
+            marginTop: 20,
+            textAlign: 'center',
+            textDecoration: 'none',
+            boxSizing: 'border-box',
+          }}
+        >
+          Back to home
+        </a>
 
         <p style={{ marginTop: 24, textAlign: 'center', fontSize: 13, color: colors.textMuted }}>
           Already a client?{' '}

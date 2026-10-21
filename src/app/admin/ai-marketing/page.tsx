@@ -382,7 +382,7 @@ export default function AiMarketingDashboardPage() {
             <h2 style={s.cardTitle}>Marketing funnels (independent economics)</h2>
             <p style={{ fontSize: 14, color: colors.textSecondary }}>
               Each funnel has its own price, target CPA, max CPA, target ROAS, budgets, and
-              audiences. Add more funnels (₹3,499, etc.) without code changes via API or future UI.
+              audiences. Add more funnels (₹1,500, etc.) without code changes via API or future UI.
             </p>
             {(funnels.length ? funnels : ((overview?.funnels as Record<string, unknown>[]) ?? [])).map(
               (f) => (
