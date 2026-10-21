@@ -16,8 +16,14 @@ type TalkToCoachBody = {
   name?: string
   email?: string
   phone?: string
+  gender?: string
   message?: string
   preferredTime?: string
+}
+
+const GENDER_LABELS: Record<string, string> = {
+  female: 'Female',
+  male: 'Male',
 }
 
 const COACH_CALL_TIME_SLOTS = new Set([
@@ -62,11 +68,23 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;')
 }
 
+function normalizeGender(value: string | undefined): string | null {
+  const raw = value?.trim() ?? ''
+  if (!raw) return null
+  return GENDER_LABELS[raw.toLowerCase()] ?? null
+}
+
+function withGenderLine(message: string, gender: string | null): string {
+  if (!gender || /(^|\n)Gender:\s/i.test(message)) return message
+  return `Gender: ${gender}\n${message}`
+}
+
 function buildNotifyEmail(input: {
   name: string
   phone: string
   message: string
   preferredTime: string | null
+  gender: string | null
 }) {
   const subject = `New consultation request — ${input.name}`
   const textLines = [
@@ -75,6 +93,9 @@ function buildNotifyEmail(input: {
     `Name: ${input.name}`,
     `Phone / WhatsApp: ${input.phone}`,
   ]
+  if (input.gender) {
+    textLines.push(`Gender: ${input.gender}`)
+  }
   if (input.preferredTime) {
     textLines.push(`Preferred call time: ${input.preferredTime}`)
   }
@@ -88,6 +109,7 @@ function buildNotifyEmail(input: {
       <table style="border-collapse:collapse;width:100%;max-width:560px">
         <tr><td style="padding:8px 0;font-weight:600;width:140px">Name</td><td style="padding:8px 0">${escapeHtml(input.name)}</td></tr>
         <tr><td style="padding:8px 0;font-weight:600">Phone / WhatsApp</td><td style="padding:8px 0">${escapeHtml(input.phone)}</td></tr>
+        ${input.gender ? `<tr><td style="padding:8px 0;font-weight:600">Gender</td><td style="padding:8px 0">${escapeHtml(input.gender)}</td></tr>` : ''}
         ${input.preferredTime ? `<tr><td style="padding:8px 0;font-weight:600">Preferred call time</td><td style="padding:8px 0">${escapeHtml(input.preferredTime)}</td></tr>` : ''}
       </table>
       <div style="margin-top:16px;padding:14px 16px;background:#f6f6f6;border-radius:10px;white-space:pre-wrap">${escapeHtml(input.message)}</div>
@@ -120,6 +142,8 @@ export async function POST(request: Request) {
   const email = body.email?.trim() ?? ''
   const phone = body.phone?.trim() ?? ''
   const message = body.message?.trim() ?? ''
+  const genderRaw = body.gender?.trim() ?? ''
+  const gender = normalizeGender(genderRaw)
   const explicitPreferredTime =
     body.preferredTime?.trim() && LEGACY_PREFERRED_TIME_OPTIONS.has(body.preferredTime.trim())
       ? body.preferredTime.trim()
@@ -130,6 +154,9 @@ export async function POST(request: Request) {
   }
   if (!phone || phone.replace(/\D/g, '').length < 10) {
     return NextResponse.json({ ok: false, error: 'Please enter a valid phone number.' }, { status: 400, headers })
+  }
+  if (genderRaw && !gender) {
+    return NextResponse.json({ ok: false, error: 'Please pick your gender.' }, { status: 400, headers })
   }
   if (!message || message.length < 10) {
     return NextResponse.json(
@@ -176,9 +203,10 @@ export async function POST(request: Request) {
     )
   }
 
+  const messageWithGender = withGenderLine(message, gender)
   const storedMessage = explicitPreferredTime
-    ? `Preferred call time: ${explicitPreferredTime}\n\n${message}`
-    : message
+    ? `Preferred call time: ${explicitPreferredTime}\n\n${messageWithGender}`
+    : messageWithGender
   const { error: insertError } = await admin.from('talk_to_coach_submissions').insert({
     name,
     email: email.includes('@') ? email : null,
@@ -198,8 +226,9 @@ export async function POST(request: Request) {
   const notify = buildNotifyEmail({
     name,
     phone,
-    message,
+    message: messageWithGender,
     preferredTime: explicitPreferredTime,
+    gender,
   })
   const clientEmail = isClientEmail(email) ? email : null
   const confirmation = clientEmail

@@ -8,6 +8,7 @@ export type ExpectedEnrollmentLead = {
   email: string
   phone: string
   preferredTime: string | null
+  gender: string | null
   goal: string
   submittedAt: string
   expectedDate: string
@@ -62,6 +63,14 @@ function parsePreferredTime(message: string): { preferredTime: string | null; go
     preferredTime: match[1].trim(),
     goal: message.slice(match[0].length).trim(),
   }
+}
+
+function parseGender(goal: string): { gender: string | null; goal: string } {
+  const match = goal.match(/(^|\n)Gender:\s*(Female|Male)\s*(?=\n|$)/i)
+  if (!match) return { gender: null, goal: goal.trim() }
+  const label = match[2].toLowerCase() === 'male' ? 'Male' : 'Female'
+  const nextGoal = goal.replace(match[0], match[1] ?? '').replace(/\n{3,}/g, '\n\n').trim()
+  return { gender: label, goal: nextGoal }
 }
 
 function resolveExpectedDate(
@@ -126,7 +135,8 @@ export async function getExpectedEnrollments(): Promise<ExpectedEnrollmentsPaylo
     if (seenPhones.has(phone)) continue
     seenPhones.add(phone)
 
-    const { preferredTime, goal } = parsePreferredTime(String(row.message ?? ''))
+    const { preferredTime, goal: goalText } = parsePreferredTime(String(row.message ?? ''))
+    const { gender, goal } = parseGender(goalText)
     const submittedAt = String(row.created_at)
     const submittedDate = getCoachingDateKey(new Date(submittedAt))
     const expected = resolveExpectedDate(submittedDate, preferredTime)
@@ -137,6 +147,7 @@ export async function getExpectedEnrollments(): Promise<ExpectedEnrollmentsPaylo
       email: email || '—',
       phone: phoneRaw || phone,
       preferredTime,
+      gender,
       goal: goal || '—',
       submittedAt,
       expectedDate: expected.date,

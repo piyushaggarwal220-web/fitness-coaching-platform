@@ -154,6 +154,7 @@ export default function AdminExpectedEnrollmentsPage() {
                         <tr>
                           <th style={s.th}>Name</th>
                           <th style={s.th}>Phone</th>
+                          <th style={s.th}>Gender</th>
                           <th style={s.th}>Preferred time</th>
                           <th style={s.th}>Goal</th>
                           <th style={s.th}>Submitted</th>
@@ -171,6 +172,7 @@ export default function AdminExpectedEnrollmentsPage() {
                               ) : null}
                             </td>
                             <td style={s.td}>{lead.phone || '—'}</td>
+                            <td style={s.td}>{lead.gender || '—'}</td>
                             <td style={s.td}>{lead.preferredTime || 'Not set'}</td>
                             <td style={s.td}>
                               <div style={{ maxWidth: 280, whiteSpace: 'pre-wrap' }}>{lead.goal}</div>

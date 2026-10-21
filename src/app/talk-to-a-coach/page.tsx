@@ -16,6 +16,7 @@ const GOAL_OPTIONS = (['3_months', '6_months', '12_months'] as const).map((slug)
 }))
 
 const CONSULT_BOOKED_KEY = 'lurvox_consult_booked'
+const GENDER_OPTIONS = ['Female', 'Male'] as const
 const TIME_SLOTS = [
   '11:30–12:30 pm IST',
   '5–6 pm IST',
@@ -27,6 +28,7 @@ const TIME_SLOTS = [
 export default function TalkToCoachPage() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [gender, setGender] = useState<(typeof GENDER_OPTIONS)[number] | ''>('')
   const [goalSlug, setGoalSlug] = useState<LongCoachingPlanSlug | ''>('')
   const [slot, setSlot] = useState<(typeof TIME_SLOTS)[number] | ''>('')
   const [notes, setNotes] = useState('')
@@ -46,6 +48,10 @@ export default function TalkToCoachPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    if (!gender) {
+      setError('Please pick your gender.')
+      return
+    }
     if (!goalSlug) {
       setError('Please pick your goal.')
       return
@@ -62,6 +68,7 @@ export default function TalkToCoachPage() {
     const copy = PLAN_PAGE_COPY[goalSlug]
     const message = [
       `Preferred call time: ${slot}`,
+      `Gender: ${gender}`,
       `Goal: ${copy.goalName} (${copy.durationLabel})`,
       notes.trim() ? `\nNotes: ${notes.trim()}` : '',
     ]
@@ -72,7 +79,7 @@ export default function TalkToCoachPage() {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, message, preferredTime: slot }),
+        body: JSON.stringify({ name, phone, gender, message, preferredTime: slot }),
       })
       const payload = (await res.json().catch(() => null)) as {
         ok?: boolean
@@ -97,6 +104,7 @@ export default function TalkToCoachPage() {
       }
       setName('')
       setPhone('')
+      setGender('')
       setGoalSlug('')
       setSlot('')
       setNotes('')
@@ -164,6 +172,34 @@ export default function TalkToCoachPage() {
               autoComplete="tel"
               placeholder="+91 98765 43210"
             />
+          </div>
+          <div style={authStyles.inputGroup}>
+            <span style={authStyles.label}>Gender</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {GENDER_OPTIONS.map((option) => {
+                const selected = gender === option
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setGender(option)}
+                    style={{
+                      minHeight: 48,
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      border: selected ? `1px solid ${colors.accent}` : `1px solid ${colors.borderSubtle}`,
+                      background: selected ? colors.accentMuted : colors.bgElevated,
+                      color: colors.textPrimary,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontWeight: 750,
+                    }}
+                  >
+                    {option}
+                  </button>
+                )
+              })}
+            </div>
           </div>
           <div style={authStyles.inputGroup}>
             <span style={authStyles.label}>Your goal</span>
@@ -240,7 +276,7 @@ export default function TalkToCoachPage() {
               })}
             </div>
           </div>
-          <button type="submit" disabled={loading || !goalSlug || !slot} style={authStyles.button}>
+          <button type="submit" disabled={loading || !gender || !goalSlug || !slot} style={authStyles.button}>
             {loading ? 'Sending…' : 'Send message'}
           </button>
         </form>
