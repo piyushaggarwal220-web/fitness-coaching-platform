@@ -8,7 +8,7 @@ export const site = {
 } as const
 
 export const nav = {
-  cta: 'Start for ₹900',
+  cta: 'Start for ₹899',
   pricing: 'View plans',
 } as const
 
@@ -18,7 +18,7 @@ export const hero = {
   subheadline: 'Personalized coaching built around your body, goals and lifestyle.',
   priceLabel: 'Starting from',
   duration: '90 days',
-  primaryCta: 'Start for ₹900',
+  primaryCta: 'Start for ₹899',
   secondaryCta: 'View plans',
   coachPhotoAlt: 'LURVOX coaches Piyush Aggarwal and Rakshit Mohla',
 } as const
@@ -151,7 +151,7 @@ export const pricing = {
     'Progress photos and journey',
     'Plan updates every 14 days on 3 months, every week on 6 and 12 months',
   ],
-  cta: 'Start for ₹900',
+  cta: 'Start for ₹899',
 } as const
 
 export const faq = {
@@ -163,7 +163,7 @@ export const faq = {
       a: 'Online fitness coaching. You get a personal workout, a personal diet, check-ins, and coach chat in the app.',
     },
     {
-      q: 'What does ₹900 include?',
+      q: 'What does ₹899 include?',
       a: 'The 3-month Fat loss plan: personal workout and diet, mid-week and weekly check-ins, daily trackers, coach chat, and plan updates every 14 days.',
     },
     {
@@ -188,12 +188,12 @@ export const faq = {
 export const finalCta = {
   headline: 'Start the 90 days.',
   subheadline: 'Online coaching, a personal plan, and a price you can see before you scroll.',
-  cta: 'Start for ₹900',
+  cta: 'Start for ₹899',
 } as const
 
 export const stickyCta = {
-  label: 'Start for ₹900',
-  mobileLabel: 'Start for ₹900',
+  label: 'Start for ₹899',
+  mobileLabel: 'Start for ₹899',
 } as const
 
 export const footer = {

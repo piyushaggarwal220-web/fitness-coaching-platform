@@ -4,13 +4,13 @@ import { loadOfferCoaches } from '@/components/landing/offer-coaches'
 import './preview/landing/offer.css'
 
 export const metadata: Metadata = {
-  title: 'LURVOX: Online Fitness Coaching from ₹900',
+  title: 'LURVOX: Online Fitness Coaching from ₹899',
   description:
-    'Online fitness coaching. A personal workout, diet and coach check-ins. Starting from ₹900 for 90 days.',
+    'Online fitness coaching. A personal workout, diet and coach check-ins. Starting from ₹899 for 90 days.',
   openGraph: {
-    title: 'LURVOX: Online Fitness Coaching from ₹900',
+    title: 'LURVOX: Online Fitness Coaching from ₹899',
     description:
-      'Online fitness coaching. A personal workout, diet and coach check-ins. Starting from ₹900 for 90 days.',
+      'Online fitness coaching. A personal workout, diet and coach check-ins. Starting from ₹899 for 90 days.',
     type: 'website',
     images: [{ url: '/images/lurvox/offer/hero-fat-loss.webp', alt: 'LURVOX coaching' }],
   },

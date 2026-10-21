@@ -24,7 +24,7 @@ export const AFFILIATE_CODES: Record<string, AffiliateCodeConfig> = {
     referrerLabel: 'Luke',
     extraPercentOffSale: 5,
     notes:
-      'Affiliate code for Luke — catalog price (₹900 / ₹1,500 / ₹2,300) plus an extra 5% off. Team is emailed on each successful use.',
+      'Affiliate code for Luke — catalog price (₹899 / ₹1,499 / ₹2,299) plus an extra 5% off. Team is emailed on each successful use.',
   },
 }
 

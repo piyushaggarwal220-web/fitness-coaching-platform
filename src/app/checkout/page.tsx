@@ -75,13 +75,13 @@ const STOREFRONT_PLAN_CARDS: Record<string, { badge: string; duration: string; s
  '6_months': {
  badge: '⭐ Most Popular',
  duration: '6 MONTHS',
-    savings: 'Save ₹300 vs monthly rate',
+    savings: 'Save ₹301 vs monthly rate',
  footer: 'Best for: losing fat while building muscle',
  },
  '12_months': {
  badge: 'Complete transformation',
  duration: '12 MONTHS',
-    savings: 'Save ₹1,300 vs monthly rate',
+    savings: 'Save ₹1,301 vs monthly rate',
  footer: 'Best for: building an athletic body — fat loss, muscle, and stamina',
  },
 };
@@ -921,7 +921,7 @@ function CheckoutForm() {
  item.durationMonths > 0
  ? `≈ ₹${Math.round(item.amountPaise / 100 / item.durationMonths).toLocaleString('en-IN')}/month`
  : '';
- const cardPrice = `₹${Math.round(item.amountPaise / 100)}`;
+ const cardPrice = `₹${Math.round(item.amountPaise / 100).toLocaleString('en-IN')}`;
  return (
  <Link
  key={item.slug}

@@ -6,16 +6,16 @@ import { type CoachingPlanSlug } from '@/lib/payments/plans'
  * Same rupees as the catalog. Kept so /preview7 orders keep their own note checks.
  */
 export const PREVIEW7_DRAFT_PAISE: Record<CoachingPlanSlug, number> = {
-  '3_months': 90000,
-  '6_months': 150000,
-  '12_months': 230000,
+  '3_months': 89900,
+  '6_months': 149900,
+  '12_months': 229900,
 }
 
 /** Previous /preview7 charges. Orders already created at these amounts still verify. */
 export const PREVIEW7_LEGACY_PAY_PAISE: Record<CoachingPlanSlug, readonly number[]> = {
-  '3_months': [199900],
-  '6_months': [349900],
-  '12_months': [599900],
+  '3_months': [90000, 199900],
+  '6_months': [150000, 349900],
+  '12_months': [230000, 599900],
 }
 
 export function preview7AmountPaise(slug: string | null | undefined): number | null {

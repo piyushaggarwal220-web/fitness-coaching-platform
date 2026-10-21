@@ -2,7 +2,7 @@ export type CoachingPlanSlug = '3_months' | '6_months' | '12_months'
 
 /**
  * Preview offer: one product, two lengths. Both unlock the full coaching catalog.
- * Not part of the live ₹900 / ₹1,500 / ₹2,300 storefront.
+ * Not part of the live ₹899 / ₹1,499 / ₹2,299 storefront.
  */
 export type DurationOfferSlug = 'offer_1_month' | 'offer_3_months'
 
@@ -42,16 +42,16 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
   '3_months': {
     slug: '3_months',
     name: 'Fat loss',
-    displayPrice: '₹900',
-    amountPaise: 90000,
+    displayPrice: '₹899',
+    amountPaise: 89900,
     durationMonths: 3,
     saveLabel: 'Fat loss',
   },
   '6_months': {
     slug: '6_months',
     name: 'Fat loss + muscle gain',
-    displayPrice: '₹1,500',
-    amountPaise: 150000,
+    displayPrice: '₹1,499',
+    amountPaise: 149900,
     durationMonths: 6,
     saveLabel: 'Fat loss + muscle gain',
     popular: true,
@@ -59,8 +59,8 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
   '12_months': {
     slug: '12_months',
     name: 'Athletic body',
-    displayPrice: '₹2,300',
-    amountPaise: 230000,
+    displayPrice: '₹2,299',
+    amountPaise: 229900,
     durationMonths: 12,
     saveLabel: 'Athletic body',
     best: true,
@@ -68,15 +68,15 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
 }
 
 /**
- * Catalogs charged before the current ₹900 / ₹1,500 / ₹2,300 prices.
+ * Catalogs charged before the current ₹899 / ₹1,499 / ₹2,299 prices.
  * Order verification still accepts these amounts so a payment already created
- * can complete. Includes ₹1,999 / ₹3,499 / ₹5,999 (from 20 Oct 2026) and the
- * earlier ₹599 / ₹999 / ₹1,699 catalog.
+ * can complete. Includes ₹900 / ₹1,500 / ₹2,300, ₹1,999 / ₹3,499 / ₹5,999,
+ * and the earlier ₹599 / ₹999 / ₹1,699 catalog.
  */
 export const LEGACY_CATALOG_PAISE: Record<CoachingPlanSlug, readonly number[]> = {
-  '3_months': [199900, 59900],
-  '6_months': [349900, 99900],
-  '12_months': [599900, 169900],
+  '3_months': [90000, 199900, 59900],
+  '6_months': [150000, 349900, 99900],
+  '12_months': [230000, 599900, 169900],
 }
 
 /**
