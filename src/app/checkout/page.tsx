@@ -187,6 +187,11 @@ function CheckoutForm() {
  : isDurationOfferSlug(plan.slug)
  ? DURATION_PLAN_LIST
  : COACHING_PLAN_LIST).map((item) => preview7PricedPlan(item, adLandingPath));
+ const coachingLadder =
+ !isDigitalCheckout && !isTrialCheckout && !isDurationOfferSlug(plan.slug);
+ const visiblePlans = coachingLadder
+ ? planPickerList.filter((item) => item.durationMonths >= plan.durationMonths)
+ : planPickerList;
  const planPayablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
  const payablePaise = planPayablePaise;
  const payableDisplay = formatInrFromPaise(payablePaise);
@@ -200,17 +205,28 @@ function CheckoutForm() {
  const previousBackground = document.body.style.backgroundColor
  const previousColor = document.body.style.color
  const previousImage = document.body.style.backgroundImage
+ const previousBodyOverflow = document.body.style.overflow
+ const previousHtmlOverflow = document.documentElement.style.overflow
+ const previousBodyMargin = document.body.style.margin
  const themeMeta = document.querySelector('meta[name="theme-color"]')
  const previousTheme = themeMeta?.getAttribute('content') ?? ''
  const pageColor = String(intakeTheme.page.backgroundColor ?? '')
  document.body.style.backgroundColor = pageColor
  document.body.style.color = String(intakeTheme.page.color ?? '')
  document.body.style.backgroundImage = String(intakeTheme.page.backgroundImage ?? 'none')
+ if (storefrontCheckout) {
+ document.body.style.overflow = 'hidden'
+ document.body.style.margin = '0'
+ document.documentElement.style.overflow = 'hidden'
+ }
  if (themeMeta && pageColor) themeMeta.setAttribute('content', pageColor)
  return () => {
  document.body.style.backgroundColor = previousBackground
  document.body.style.color = previousColor
  document.body.style.backgroundImage = previousImage
+ document.body.style.overflow = previousBodyOverflow
+ document.body.style.margin = previousBodyMargin
+ document.documentElement.style.overflow = previousHtmlOverflow
  if (themeMeta) themeMeta.setAttribute('content', previousTheme)
  }
  }, [
@@ -218,6 +234,7 @@ function CheckoutForm() {
  intakeTheme.page.backgroundColor,
  intakeTheme.page.backgroundImage,
  intakeTheme.page.color,
+ storefrontCheckout,
  ])
 
  useEffect(() => {
@@ -878,15 +895,16 @@ function CheckoutForm() {
  style={{
  ...styles.page,
  ...intakeTheme.page,
+ ...(storefrontCheckout ? styles.pageFit : null),
  }}
  >
  {adLandingPath === PREVIEW_AD_PATH ? (
  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&display=swap" />
  ) : null}
- <div style={{ ...styles.card, ...intakeTheme.card }}>
+ <div style={{ ...styles.card, ...intakeTheme.card, ...(storefrontCheckout ? styles.cardFit : null) }}>
  <Link
  href={isDigitalCheckout ? '/customised-plan' : (adLandingPath ?? marketingBaseUrl)}
- style={dig(styles.backLink, 'backLink')}
+ style={{ ...dig(styles.backLink, 'backLink'), ...(storefrontCheckout ? styles.backLinkFit : null) }}
  >
  {'<- '}{isDigitalCheckout ? 'Back to plans' : adLandingPath ? 'Back' : 'Back to home'}
  </Link>
@@ -897,24 +915,30 @@ function CheckoutForm() {
  {isDigitalCheckout ? (
  <p style={intakeTheme.eyebrow}>PERSONALISED FITNESS PLANS</p>
  ) : (
- <p style={intakeTheme.eyebrow}>CHECKOUT</p>
+ <p style={{ ...intakeTheme.eyebrow, ...(storefrontCheckout ? { margin: '0 auto 4px' } : null) }}>CHECKOUT</p>
  )}
- <h1 style={{ ...styles.title, ...intakeTheme.title }}>
+ <h1 style={{ ...styles.title, ...intakeTheme.title, ...(storefrontCheckout ? styles.titleFit : null) }}>
  {isTrialCheckout
  ? 'Start your 7-day trial'
  : isDigitalCheckout
  ? 'Start your customised plan'
  : 'Pay for your plan'}
  </h1>
- <p style={dig(styles.subtitle, 'subtitle')}>
+ <p style={{ ...dig(styles.subtitle, 'subtitle'), ...(storefrontCheckout ? styles.subtitleFit : null) }}>
  All questions are asked after payment.
  </p>
 
  {checkoutScreen === 3 && (
  <>
  {!isTrialCheckout && (
- <div style={storefrontCheckout ? styles.planStack : styles.planPicker} role="tablist" aria-label="Choose plan">
- {planPickerList.map((item) => {
+ <div
+ style={storefrontCheckout
+ ? { ...styles.planRow, gridTemplateColumns: `repeat(${Math.max(visiblePlans.length, 1)}, minmax(0, 1fr))` }
+ : styles.planPicker}
+ role="tablist"
+ aria-label="Choose plan"
+ >
+ {visiblePlans.map((item) => {
  const selected = item.slug === plan.slug;
  const card = STOREFRONT_PLAN_CARDS[item.slug];
  const monthly =
@@ -937,15 +961,15 @@ function CheckoutForm() {
  })
  }
  style={{
- ...(storefrontCheckout ? styles.planCard : styles.planChip),
+ ...(storefrontCheckout ? styles.planTile : styles.planChip),
  ...(selected && !storefrontCheckout ? styles.planChipSelected : null),
  ...intakeTheme.planChip,
  ...(selected && !storefrontCheckout ? intakeTheme.planChipSelected : null),
  ...(storefrontCheckout
  ? {
  background: selected
- ? 'linear-gradient(180deg, rgba(255,98,0,0.16) 0%, rgba(255,255,255,0.04) 100%)'
- : 'linear-gradient(180deg, rgba(255,98,0,0.08) 0%, rgba(255,255,255,0.03) 100%)',
+ ? 'linear-gradient(180deg, rgba(255,98,0,0.22) 0%, rgba(255,255,255,0.05) 100%)'
+ : 'rgba(255,255,255,0.03)',
  border: selected ? '2px solid #ff6200' : '1px solid rgba(255,255,255,0.14)',
  color: '#ffffff',
  }
@@ -954,21 +978,10 @@ function CheckoutForm() {
  >
  {storefrontCheckout ? (
  <>
- <span style={styles.planCardMain}>
- <span style={styles.planCardTitleRow}>
- <span style={{ ...dig(styles.planChipName, 'planChipName'), fontSize: 18 }}>{planGoalName(item.slug)}</span>
- <span style={styles.planCardBadge}>{card?.badge}</span>
- </span>
- <span style={dig(styles.planChipDuration, 'planChipDuration')}>{card?.duration || planDurationLabel(item.slug)}</span>
- <span style={styles.planCardFooter}>{card?.footer}</span>
- </span>
- <span style={styles.planCardPriceCol}>
- <span style={dig(styles.planCardPrice, 'planChipPrice')}>{cardPrice}</span>
- {monthly ? (
- <span style={dig(styles.planCardMonthly, 'planChipDuration')}>{monthly}</span>
- ) : null}
- {card?.savings ? <span style={styles.planCardSavings}>{card.savings}</span> : null}
- </span>
+ <span style={styles.planTileName}>{planGoalName(item.slug)}</span>
+ <span style={styles.planTileDuration}>{card?.duration || planDurationLabel(item.slug)}</span>
+ <span style={styles.planTilePrice}>{cardPrice}</span>
+ {monthly ? <span style={styles.planTileMonthly}>{monthly}</span> : null}
  </>
  ) : (
  <>
@@ -1001,6 +1014,7 @@ function CheckoutForm() {
  </div>
  )}
 
+ {!storefrontCheckout && (
  <section style={dig(styles.orderSummary, 'orderSummary')}>
  <div style={styles.orderRow}>
  <div>
@@ -1033,6 +1047,7 @@ function CheckoutForm() {
  </div>
  </div>
  </section>
+ )}
 
  {isTrialCheckout || isDigitalCheckout ? (
  <p style={{ ...styles.leagueNote, color: intakeTheme.paySecureNote.color }}>
@@ -1044,20 +1059,20 @@ function CheckoutForm() {
 
  {error && <div style={styles.error}>{error}</div>}
 
- <div style={styles.form}>
- <h2 style={dig(styles.sectionLabel, 'sectionLabel')}>For payment</h2>
+ <div style={{ ...styles.form, ...(storefrontCheckout ? styles.formFit : null) }}>
+ <h2 style={{ ...dig(styles.sectionLabel, 'sectionLabel'), ...(storefrontCheckout ? styles.sectionLabelFit : null) }}>For payment</h2>
 
- <label style={dig(styles.label, 'label')} htmlFor="checkout-name">Full name</label>
+ <label style={{ ...dig(styles.label, 'label'), ...(storefrontCheckout ? styles.labelFit : null) }} htmlFor="checkout-name">Full name</label>
  <input
  id="checkout-name"
  ref={nameRef}
  value={name}
  onChange={(e) => setName(e.target.value)}
  autoComplete="name"
- style={dig(styles.input, 'input')}
+ style={{ ...dig(styles.input, 'input'), ...(storefrontCheckout ? styles.inputFit : null) }}
  />
 
- <label style={dig(styles.label, 'label')} htmlFor="checkout-email">Email</label>
+ <label style={{ ...dig(styles.label, 'label'), ...(storefrontCheckout ? styles.labelFit : null) }} htmlFor="checkout-email">Email</label>
  <input
  id="checkout-email"
  ref={emailRef}
@@ -1068,10 +1083,10 @@ function CheckoutForm() {
  resetVerification();
  }}
  autoComplete="email"
- style={dig(styles.input, 'input')}
+ style={{ ...dig(styles.input, 'input'), ...(storefrontCheckout ? styles.inputFit : null) }}
  />
 
- <label style={dig(styles.label, 'label')} htmlFor="checkout-phone">WhatsApp number</label>
+ <label style={{ ...dig(styles.label, 'label'), ...(storefrontCheckout ? styles.labelFit : null) }} htmlFor="checkout-phone">WhatsApp number</label>
  <input
  id="checkout-phone"
  ref={phoneRef}
@@ -1083,12 +1098,12 @@ function CheckoutForm() {
  }}
  placeholder="+91 98765 43210"
  autoComplete="tel"
- style={dig(styles.input, 'input')}
+ style={{ ...dig(styles.input, 'input'), ...(storefrontCheckout ? styles.inputFit : null) }}
  />
 
  <button
  type="button"
- style={dig(styles.payBtn, 'payBtn')}
+ style={{ ...dig(styles.payBtn, 'payBtn'), ...(storefrontCheckout ? styles.payBtnFit : null) }}
  disabled={loading}
  onClick={() => {
  const missing: string[] = [];
@@ -1107,7 +1122,12 @@ function CheckoutForm() {
  >
  {loading ? 'Starting checkout...' : `Pay ${formatInrFromPaise(planPayablePaise)}`}
  </button>
- <p style={dig(styles.secure, 'secure')}>
+ <p style={{ ...dig(styles.secure, 'secure'), ...(storefrontCheckout ? styles.secureFit : null) }}>
+ {storefrontCheckout
+ ? <>Razorpay handles payment. Purchasing means you accept the{' '}
+ <Link href="/terms" target="_blank" style={dig(styles.inlineLink, 'inlineLink')}>Terms</Link>
+ . Onboarding starts after you pay.</>
+ : <>
  Payment is handled by Razorpay. Purchasing means you accept the{' '}
  <Link href="/terms" target="_blank" style={dig(styles.inlineLink, 'inlineLink')}>
  Terms &amp; Conditions
@@ -1118,6 +1138,7 @@ function CheckoutForm() {
  : isTrialCheckout
  ? 'Right after you pay: set your password, then a short setup with photos. Your plan arrives within 1–2 hours. If you leave to finish payment in another app, come back here. If this page closes, we email those steps.'
  : 'The onboarding form and progress photos come only after payment. Front, side, and back photos are required unless that form marks them optional.'}
+ </>}
  </p>
  </div>
  </>
@@ -1154,6 +1175,61 @@ const styles: Record<string, CSSProperties> = {
     fontFamily: checkoutFont.style.fontFamily,
     padding: `${spacing[5]}px ${spacing[2]}px ${spacing[7]}px`,
     boxSizing: 'border-box',
+  },
+  pageFit: {
+    height: '100dvh',
+    maxHeight: '100dvh',
+    minHeight: 0,
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    padding: '8px 12px',
+  },
+  cardFit: {
+    maxWidth: 560,
+    maxHeight: '100%',
+    margin: '0 auto',
+    padding: '12px 14px 10px',
+    overflow: 'hidden',
+  },
+  backLinkFit: {
+    marginBottom: 4,
+  },
+  titleFit: {
+    margin: '0 0 4px',
+    fontSize: 22,
+    lineHeight: 1.1,
+  },
+  subtitleFit: {
+    margin: '0 0 8px',
+    fontSize: 12,
+    lineHeight: 1.3,
+  },
+  formFit: {
+    gap: 2,
+  },
+  sectionLabelFit: {
+    margin: '0 0 2px',
+  },
+  labelFit: {
+    marginTop: 4,
+    fontSize: 12,
+  },
+  inputFit: {
+    minHeight: 40,
+    padding: '8px 12px',
+  },
+  payBtnFit: {
+    marginTop: 8,
+    minHeight: 44,
+    padding: '10px 14px',
+    fontSize: 16,
+  },
+  secureFit: {
+    marginTop: 6,
+    fontSize: 11,
+    lineHeight: 1.35,
   },
   pageWithSticky: {
     paddingBottom: 120,
@@ -1370,6 +1446,52 @@ const styles: Record<string, CSSProperties> = {
     gap: 10,
     marginBottom: 16,
     width: '100%',
+  },
+  planRow: {
+    display: 'grid',
+    gap: 8,
+    marginBottom: 10,
+    width: '100%',
+  },
+  planTile: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    minHeight: 0,
+    padding: '8px 6px',
+    borderRadius: 12,
+    textDecoration: 'none',
+    textAlign: 'center' as const,
+    boxSizing: 'border-box',
+  },
+  planTileName: {
+    fontSize: 12,
+    fontWeight: 800,
+    letterSpacing: '-0.02em',
+    lineHeight: 1.2,
+    color: '#ffffff',
+  },
+  planTileDuration: {
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase' as const,
+    color: 'rgba(255,255,255,0.55)',
+  },
+  planTilePrice: {
+    marginTop: 2,
+    fontSize: 16,
+    fontWeight: 800,
+    letterSpacing: '-0.03em',
+    lineHeight: 1,
+    color: '#ffffff',
+  },
+  planTileMonthly: {
+    fontSize: 10,
+    fontWeight: 650,
+    color: 'rgba(255,255,255,0.62)',
   },
   planCard: {
     display: 'flex',
