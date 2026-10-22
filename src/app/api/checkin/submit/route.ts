@@ -16,7 +16,11 @@ import {
 import { formatMidWeekCheckinChatMessage } from '@/lib/checkin-chat'
 import { postCheckinToCoachChat } from '@/lib/coach-chat'
 import { computeAutoReplyAt } from '@/lib/checkin-auto-reply-schedule'
-import { coachRequiresManualPlanDelivery, shouldScheduleCheckinAutoReply } from '@/lib/coach-delivery-policy'
+import {
+  coachRequiresManualPlanDelivery,
+  isAutoDeliveryCoach,
+  shouldScheduleCheckinAutoReply,
+} from '@/lib/coach-delivery-policy'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -24,6 +28,7 @@ import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { parseAdherenceDays } from '@/lib/checkin-adherence-days'
 import { normalizeCheckinSplitPreference } from '@/lib/ai/workout-split'
 import { areProgressPhotosOptional } from '@/lib/checkin'
+import { clientHasCoachChat } from '@/lib/coach-service'
 import type { CheckinType } from '@/types/database'
 
 /** Allow long-running weekly draft generation after the response returns. */
@@ -373,7 +378,7 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     const clientName = profile.name || profile.email || 'A client'
-    if (coach?.user_id) {
+    if (coach?.user_id && !isAutoDeliveryCoach(profile.coach_id)) {
       const template = NotificationTemplates.checkinSubmitted(clientName, body.checkinType)
       await sendNotification({
         userId: coach.user_id,
@@ -388,28 +393,30 @@ export async function POST(request: Request) {
 
     // Weekly check-ins must NEVER post into the shared client/coach chat.
     // They always go to the check-in review page + next-week AI draft instead.
-    // Mid-week summaries still post to chat for quick coach visibility.
+    // Mid-week summaries still post to chat unless this client has no chat (Piyush).
     if (body.checkinType === 'mid_week') {
-      const chatMessage = formatMidWeekCheckinChatMessage({
-        coachingWeek: scheduled.coachingWeek,
-        dietAdherence: body.diet_adherence,
-        workoutAdherence: body.workout_adherence,
-        energyLevel: body.energy_level,
-        sleepQuality: body.sleep_quality,
-        stressLevel: body.stress_level,
-        adherenceWins: body.adherence_wins,
-        adherenceStruggles: body.adherence_struggles,
-        painInjuries: body.pain_injuries,
-        questionsForCoach: body.questions_for_coach,
-      })
+      if (clientHasCoachChat({ coach_id: profile.coach_id })) {
+        const chatMessage = formatMidWeekCheckinChatMessage({
+          coachingWeek: scheduled.coachingWeek,
+          dietAdherence: body.diet_adherence,
+          workoutAdherence: body.workout_adherence,
+          energyLevel: body.energy_level,
+          sleepQuality: body.sleep_quality,
+          stressLevel: body.stress_level,
+          adherenceWins: body.adherence_wins,
+          adherenceStruggles: body.adherence_struggles,
+          painInjuries: body.pain_injuries,
+          questionsForCoach: body.questions_for_coach,
+        })
 
-      void postCheckinToCoachChat(supabase, {
-        clientId: user.id,
-        coachId: profile.coach_id,
-        message: chatMessage,
-        checkinId: inserted.id,
-        checkinType: 'mid_week',
-      }).catch((err) => console.error('[checkin-submit] chat post failed:', err))
+        void postCheckinToCoachChat(supabase, {
+          clientId: user.id,
+          coachId: profile.coach_id,
+          message: chatMessage,
+          checkinId: inserted.id,
+          checkinType: 'mid_week',
+        }).catch((err) => console.error('[checkin-submit] chat post failed:', err))
+      }
 
       const billingHold = await openAiBillingHoldUntil()
       if (!billingHold) {

@@ -15,6 +15,7 @@ import { sendNotification } from '@/lib/notifications/dispatcher'
 import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
 import { activatePlan } from '@/lib/plans'
 import { clientCoachNotes, fallbackPublishCoachNotes } from '@/lib/plan-metadata'
+import { coachIdHasClientChat } from '@/lib/coach-service'
 import type { Checkin, CoachCheckinResponse, OnboardingProfile, Plan } from '@/types/database'
 
 export { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply'
@@ -227,15 +228,18 @@ export async function sendCheckinAutoReply(
   await supabase.from('profiles').update({ checkin_awaiting: false }).eq('id', checkin.client_id)
 
   const checkinType = checkin.checkin_type === 'mid_week' ? 'mid_week' : 'weekly'
-  const chatResult = await postCoachCheckinFeedbackToChat({
-    clientId: checkin.client_id,
-    coachId: coach.id,
-    coachUserId: coach.user_id,
-    checkinType,
-    coachingWeek: checkin.coaching_week,
-    feedback: resolved.feedback,
-    actionItems: '',
-  })
+  const canChat = coachIdHasClientChat(coach.id)
+  const chatResult = canChat
+    ? await postCoachCheckinFeedbackToChat({
+        clientId: checkin.client_id,
+        coachId: coach.id,
+        coachUserId: coach.user_id,
+        checkinType,
+        coachingWeek: checkin.coaching_week,
+        feedback: resolved.feedback,
+        actionItems: '',
+      })
+    : { conversationId: null as string | null, error: null as string | null }
 
   if (chatResult.error) {
     console.error('[checkin-auto-reply] chat post failed:', chatResult.error)
@@ -247,7 +251,7 @@ export async function sendCheckinAutoReply(
     type: 'coach_replied',
     title: `${getCheckinTypeDisplayName(checkinType)} feedback`,
     body: snippet || 'Your coach has reviewed your check-in.',
-    actionUrl: chatResult.conversationId ? '/client/chat' : '/journey',
+    actionUrl: chatResult.conversationId ? '/client/chat' : checkinType === 'weekly' ? '/plan' : '/dashboard',
     metadata: {
       checkinId: checkin.id,
       conversationId: chatResult.conversationId,
@@ -406,15 +410,17 @@ async function notifyPlansPublishedWithoutReply(
       continue
     }
 
-    const chatResult = await postCoachCheckinFeedbackToChat({
-      clientId: checkin.client_id,
-      coachId: coach.id,
-      coachUserId: coach.user_id,
-      checkinType: 'weekly',
-      coachingWeek: checkin.coaching_week,
-      feedback: published.feedback,
-      actionItems: '',
-    })
+    const chatResult = coachIdHasClientChat(coach.id)
+      ? await postCoachCheckinFeedbackToChat({
+          clientId: checkin.client_id,
+          coachId: coach.id,
+          coachUserId: coach.user_id,
+          checkinType: 'weekly',
+          coachingWeek: checkin.coaching_week,
+          feedback: published.feedback,
+          actionItems: '',
+        })
+      : { conversationId: null as string | null, error: null as string | null }
     if (chatResult.error) {
       console.error('[checkin-auto-reply] plan notice chat failed:', chatResult.error)
     }

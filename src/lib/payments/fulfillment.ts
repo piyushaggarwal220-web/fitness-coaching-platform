@@ -1,6 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'crypto'
 import { assignCoachToClient } from '@/lib/admin/assign-coach'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
+import { applyPaidCoachRouting } from '@/lib/coach-routing-server'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
 import { findAuthUserIdByEmail } from '@/lib/payments/auth-user'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
@@ -666,19 +667,7 @@ export async function claimPurchaseWithPassword(
     profilePayload.exercise_library_entitled = true
   }
 
-  // New clients get AI coach service. Keep human for existing assignments / preferred coach.
-  const existingCoachService = (existingProfile as { coach_service?: string | null } | null)
-    ?.coach_service
-  const existingCoachId = (existingProfile as { coach_id?: string | null } | null)?.coach_id
-  if (
-    existingCoachService === 'human' ||
-    (existingCoachId && existingCoachService !== 'ai') ||
-    Boolean(purchase.preferred_coach_id)
-  ) {
-    profilePayload.coach_service = 'human'
-  } else {
-    profilePayload.coach_service = 'ai'
-  }
+  // Coach routing (Smart Coach vs Piyush) is applied after the purchase is claimed.
 
   // Instant feature gates: only new digital claims. Coaching purchase clears the gate.
   if (plan.isDigital) {
@@ -726,13 +715,25 @@ export async function claimPurchaseWithPassword(
     }
   }
 
-  const assignResult = purchase.preferred_coach_id
-    ? await (async () => {
-        const { error } = await assignCoachToClient(admin, userId, purchase.preferred_coach_id!)
-        if (error) return { coachId: null as string | null, error }
-        return { coachId: purchase.preferred_coach_id as string, error: null as string | null }
-      })()
-    : await autoAssignCoachToClient(userId, admin)
+  const routing = await applyPaidCoachRouting(admin, userId, [
+    {
+      status: 'captured',
+      amount_paise: purchase.amount_paise,
+      refunded_amount_paise: purchase.refunded_amount_paise ?? 0,
+      subscription_status: purchase.subscription_status ?? 'active',
+      plan_slug: purchase.plan_slug,
+    },
+  ])
+  const assignResult =
+    routing.mode === 'human'
+      ? { coachId: routing.coachId, error: null as string | null }
+      : purchase.preferred_coach_id
+        ? await (async () => {
+            const { error } = await assignCoachToClient(admin, userId, purchase.preferred_coach_id!)
+            if (error) return { coachId: null as string | null, error }
+            return { coachId: purchase.preferred_coach_id as string, error: null as string | null }
+          })()
+        : await autoAssignCoachToClient(userId, admin)
   if (assignResult.coachId) {
     const welcome = NotificationTemplates.welcome()
     await sendNotification({

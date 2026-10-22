@@ -12,6 +12,8 @@ import { mobileStyles } from '@/lib/mobile-styles'
 import { createClient } from '@/lib/supabase/client'
 import { isPublicDemoEmail } from '@/lib/public-demo'
 import { CHAT_AFTER_ENROLLMENT_MESSAGE } from '@/lib/chat-availability'
+import { clientChatPageTitle } from '@/lib/coach-routing'
+import { clientHasCoachChat, PIYUSH_NO_CHAT_MESSAGE, usesAiCoach } from '@/lib/coach-service'
 import type { CoachConversation, OnboardingProfile } from '@/types/database'
 
 const supabase = createClient()
@@ -25,8 +27,10 @@ export default function ClientChatPage() {
   const [reloadKey, setReloadKey] = useState(0)
   const [readOnly, setReadOnly] = useState(false)
   const [chatLocked, setChatLocked] = useState(false)
+  const [chatDisabled, setChatDisabled] = useState(false)
   const [featureLocked, setFeatureLocked] = useState(false)
   const [aiMode, setAiMode] = useState(false)
+  const [chatTitle, setChatTitle] = useState('Chat')
 
   useEffect(() => {
     let active = true
@@ -34,8 +38,10 @@ export default function ClientChatPage() {
       setError('')
       setConversation(null)
       setChatLocked(false)
+      setChatDisabled(false)
       setFeatureLocked(false)
       setAiMode(false)
+      setChatTitle('Chat')
       setConnecting(true)
       setAuthReady(false)
 
@@ -59,7 +65,14 @@ export default function ClientChatPage() {
       const profile = auth.profile as OnboardingProfile
       const demo = isPublicDemoEmail(auth.user.email ?? profile.email)
       setReadOnly(demo)
+      setChatTitle(clientChatPageTitle(profile))
       setAuthReady(true)
+
+      if (!clientHasCoachChat(profile)) {
+        setChatDisabled(true)
+        setConnecting(false)
+        return
+      }
 
       const { data: purchases } = await supabase
         .from('purchases')
@@ -84,7 +97,7 @@ export default function ClientChatPage() {
         return
       }
 
-      if (!demo) {
+      if (!demo && usesAiCoach(profile)) {
         setAiMode(true)
         setConnecting(false)
         return
@@ -142,7 +155,7 @@ export default function ClientChatPage() {
 
   if (!authReady && !error) {
     return (
-      <ClientShell title="Chat" loading hideBottomNav fullHeight>
+      <ClientShell title={chatTitle} loading hideBottomNav fullHeight>
         <span />
       </ClientShell>
     )
@@ -158,13 +171,13 @@ export default function ClientChatPage() {
 
   if (aiMode) {
     return (
-      <ClientShell title="Smart Coach" hideBottomNav fullHeight>
+      <ClientShell title={chatTitle} hideBottomNav fullHeight>
         <AiCoachChatThread />
       </ClientShell>
     )
   }
 
-  if (chatLocked) {
+  if (chatDisabled || chatLocked) {
     return (
       <ClientShell title="Chat">
         <div
@@ -184,14 +197,16 @@ export default function ClientChatPage() {
           <p style={{ margin: 0, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             Coach chat
           </p>
-          <p style={{ margin: '8px 0 0', color: '#1c1915' }}>{CHAT_AFTER_ENROLLMENT_MESSAGE}</p>
+          <p style={{ margin: '8px 0 0', color: '#1c1915' }}>
+            {chatDisabled ? PIYUSH_NO_CHAT_MESSAGE : CHAT_AFTER_ENROLLMENT_MESSAGE}
+          </p>
         </div>
       </ClientShell>
     )
   }
 
   return (
-    <ClientShell title="Chat" hideBottomNav fullHeight>
+    <ClientShell title={chatTitle} hideBottomNav fullHeight>
       {connecting && !conversation && (
         <div
           style={{

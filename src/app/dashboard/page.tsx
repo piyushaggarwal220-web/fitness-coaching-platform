@@ -26,6 +26,8 @@ import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { planGoalName } from '@/lib/payments/plan-pages';
 import { isAutoDeliveryCoach } from '@/lib/coach-delivery-policy';
+import { clientChatNavLabel } from '@/lib/coach-routing';
+import { clientHasCoachChat, usesAiCoach } from '@/lib/coach-service';
 import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window';
 import { isDigitalPlanSlug } from '@/lib/payments/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
@@ -98,9 +100,19 @@ export default function Dashboard() {
   const { locked: instantLocked } = useInstantLockState();
 
   useEffect(() => {
-    if (!user || isPublicDemoEmail(user.email)) return;
+    if (!user || isPublicDemoEmail(user.email) || !clientHasCoachChat(profile)) return;
     const refreshUnread = () => {
-      void countSmartCoachUnread(supabase, user.id).then(setUnreadMessages);
+      if (usesAiCoach(profile)) {
+        void countSmartCoachUnread(supabase, user.id).then(setUnreadMessages);
+        return;
+      }
+      void supabase
+        .from('coach_conversations')
+        .select('unread_by_client')
+        .eq('client_id', user.id)
+        .neq('status', 'closed')
+        .maybeSingle()
+        .then(({ data }) => setUnreadMessages(Number(data?.unread_by_client ?? 0)));
     };
     refreshUnread();
     const timer = window.setInterval(refreshUnread, 20_000);
@@ -109,7 +121,7 @@ export default function Dashboard() {
       window.clearInterval(timer);
       window.removeEventListener(SMART_COACH_READ_EVENT, refreshUnread);
     };
-  }, [user]);
+  }, [user, profile]);
 
   useEffect(() => {
     if (!profile?.checkin_schedule_started_at) return;
@@ -249,7 +261,7 @@ export default function Dashboard() {
         setRecentActivity(activity.slice(0, 5));
 
         if (coachResult.data) setCoach(coachResult.data as Coach);
-        if (isPublicDemoEmail(result.user.email)) {
+        if (isPublicDemoEmail(result.user.email) || !usesAiCoach(profileData)) {
           setUnreadMessages((convResult.data?.unread_by_client as number) ?? 0);
         } else {
           setUnreadMessages(await countSmartCoachUnread(supabase, userId));
@@ -358,7 +370,9 @@ export default function Dashboard() {
   const stickyCheckin = dueCheckin ?? checkinSchedule?.nextCheckin ?? null;
   const stickyCheckinMode = dueCheckin ? 'due' : 'countdown';
   const chatReady =
-    !isPublicDemoEmail(user?.email) && (Boolean(coach) || !instantLocked.ai_chat);
+    clientHasCoachChat(profile) &&
+    !isPublicDemoEmail(user?.email) &&
+    (Boolean(coach) || !instantLocked.ai_chat);
 
   const rawName = (profile?.name || user?.email?.split('@')[0] || 'there').trim()
   // Public demo is "Demo Client" — keep the full label (do not split to "Demo").
@@ -426,7 +440,9 @@ export default function Dashboard() {
     ? {
         label: `${getCheckinTypeDisplayName(upcomingCheckin.type)} · Week ${upcomingCheckin.coachingWeek}`,
         detail: dueCheckin
-          ? 'Due now. Photos and answers go to Smart Coach.'
+          ? clientHasCoachChat(profile)
+            ? `Due now. Photos and answers go to ${clientChatNavLabel(profile)}.`
+            : 'Due now. Submit photos and answers — your plan updates from this check-in.'
           : checkinSchedule?.countdownDetailed
             ? `Opens in ${checkinSchedule.countdownDetailed}`
             : checkinSchedule?.countdownLabel
@@ -549,6 +565,7 @@ export default function Dashboard() {
           currentLine={planCard.currentLine}
           nextLine={planCard.nextLine}
           showChat={chatReady}
+          chatLabel={clientChatNavLabel(profile)}
         />
       )}
 

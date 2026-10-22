@@ -55,6 +55,7 @@ import {
   type ProfileChangeProposal,
 } from '@/lib/ai/ai-coach-profile-change'
 import { memberFacingCoachFirstName } from '@/lib/coach-delivery-policy'
+import { clientHasCoachChat, PIYUSH_NO_CHAT_MESSAGE } from '@/lib/coach-service'
 import {
   AI_COACH_VISIBLE_MESSAGES,
   chronologicalChatWindow,
@@ -230,6 +231,9 @@ export async function GET() {
   if (!profile?.payment_confirmed) {
     return NextResponse.json({ error: 'Membership required' }, { status: 403 })
   }
+  if (!clientHasCoachChat(profile)) {
+    return NextResponse.json({ error: PIYUSH_NO_CHAT_MESSAGE }, { status: 403 })
+  }
 
   const denied = await assertInstantFeatureAccess(auth.user.id, profile, 'ai_chat')
   if (denied) return denied
@@ -301,6 +305,9 @@ export async function POST(request: Request) {
 
   if (!profile?.payment_confirmed) {
     return NextResponse.json({ error: 'Membership required' }, { status: 403 })
+  }
+  if (!clientHasCoachChat(profile)) {
+    return NextResponse.json({ error: PIYUSH_NO_CHAT_MESSAGE }, { status: 403 })
   }
 
   const denied = await assertInstantFeatureAccess(auth.user.id, profile, 'ai_chat')

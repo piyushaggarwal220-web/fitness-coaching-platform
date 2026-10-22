@@ -260,6 +260,16 @@ async function handleCertificate(
   task: WorkQueueTask,
   coachUserId: string
 ): Promise<AutoCoachQueueTaskResult> {
+  if (coachId === PIYUSH_COACH_ID) {
+    await recordCompletion(admin, coachId, task)
+    return {
+      taskId: task.id,
+      type: task.type,
+      clientName: task.clientName,
+      status: 'skipped',
+      detail: 'Piyush clients have no coach chat',
+    }
+  }
   if (!task.clientId) {
     return { taskId: task.id, type: task.type, status: 'failed', detail: 'missing client' }
   }
@@ -404,6 +414,18 @@ export async function processCoachWorkQueue(
       }
 
       if (task.type === 'unread_chat') {
+        if (coachId === PIYUSH_COACH_ID) {
+          await recordCompletion(admin, coachId, task)
+          pushResult(summary, {
+            taskId: task.id,
+            type: task.type,
+            clientName: task.clientName,
+            coachId,
+            status: 'skipped',
+            detail: 'Piyush clients have no coach chat',
+          })
+          continue
+        }
         if (used.chat >= limits.chat) continue
         used.chat += 1
         const conversationId = task.id.replace(/^chat-/, '')

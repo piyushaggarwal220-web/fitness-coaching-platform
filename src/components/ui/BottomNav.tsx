@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Map, ClipboardList, MessageCircle, ListChecks } from 'lucide-react'
 import { clientColors as colors, layout, spacing } from '@/lib/design-tokens'
+import { useClientChatAccess } from '@/hooks/useClientChatLabel'
 import { useInstantLockState } from '@/hooks/useInstantLockState'
 import { unlockHrefForFeature, type InstantFeature } from '@/lib/instant-feature-access'
 
@@ -27,6 +28,7 @@ function hrefForItem(
 export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
   const pathname = usePathname()
   const { loading, locked } = useInstantLockState()
+  const { hasChat } = useClientChatAccess()
 
   return (
     <nav
@@ -53,6 +55,7 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
         const isLocked = Boolean(feature && (loading || locked[feature]))
         // Instant-locked surfaces stay off the nav until unlocked (unlock via dashboard /unlock).
         if (isLocked) return null
+        if (href === '/client/chat' && !hasChat) return null
         const target = hrefForItem(href, feature, locked)
         const active =
           pathname === href || (href !== '/dashboard' && pathname.startsWith(href))

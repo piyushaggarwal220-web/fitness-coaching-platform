@@ -8,9 +8,10 @@ type Props = {
   currentLine: string
   nextLine: string
   showChat: boolean
+  chatLabel?: string
 }
 
-export function PlanUpdateHome({ currentLine, nextLine, showChat }: Props) {
+export function PlanUpdateHome({ currentLine, nextLine, showChat, chatLabel = 'Smart Coach' }: Props) {
   const router = useRouter()
 
   return (
@@ -64,7 +65,7 @@ export function PlanUpdateHome({ currentLine, nextLine, showChat }: Props) {
                 cursor: 'pointer',
               }}
             >
-              Talk to Smart Coach
+              Talk to {chatLabel}
             </button>
           </div>
         )}

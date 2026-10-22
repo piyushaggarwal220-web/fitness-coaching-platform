@@ -4,7 +4,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export async function assignCoachToClient(
   supabase: SupabaseClient,
   clientId: string,
-  coachId: string | null
+  coachId: string | null,
+  options?: { coachService?: 'human' | 'ai' }
 ): Promise<{ error: string | null }> {
   if (coachId) {
     const { data: coach, error: coachError } = await supabase
@@ -17,12 +18,17 @@ export async function assignCoachToClient(
     if (!coach) return { error: 'Coach not found.' }
   }
 
+  const profileUpdate: Record<string, unknown> = {
+    coach_id: coachId,
+    updated_at: new Date().toISOString(),
+  }
+  if (options?.coachService) {
+    profileUpdate.coach_service = options.coachService
+  }
+
   const { error } = await supabase
     .from('profiles')
-    .update({
-      coach_id: coachId,
-      updated_at: new Date().toISOString(),
-    })
+    .update(profileUpdate)
     .eq('id', clientId)
 
   if (error) return { error: error.message }

@@ -18,6 +18,8 @@ import { PUBLIC_DEMO_READ_ONLY_MESSAGE, isPublicDemoEmail } from '@/lib/public-d
 import { mobileStyles } from '@/lib/mobile-styles';
 import { clientColors as colors, spacing } from '@/lib/design-tokens';
 import { SuccessState } from '@/components/motion';
+import { clientChatNavLabel } from '@/lib/coach-routing';
+import { clientHasCoachChat } from '@/lib/coach-service';
 import type { Checkin, MidWeekCheckinFormData, OnboardingProfile } from '@/types/database';
 
 const supabase = createClient();
@@ -126,7 +128,9 @@ export default function MidWeekCheckinPage() {
       if (!parsed.ok) throw new Error(parsed.error)
 
       setSuccess(
-        'Day 3 check-in submitted! Smart Coach replies within 30 minutes. Your plan stays the same until the next weekly update.'
+        clientHasCoachChat(profile)
+          ? `Day 3 check-in submitted! ${clientChatNavLabel(profile)} replies within 30 minutes. Your plan stays the same until the next weekly update.`
+          : 'Day 3 check-in submitted! You’ll get a notification within 30 minutes. Your plan stays the same until the next weekly update.'
       );
       setForm(INITIAL_MID_WEEK_FORM);
       setTimeout(() => router.push('/dashboard'), 1800);

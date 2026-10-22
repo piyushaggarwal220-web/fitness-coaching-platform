@@ -21,6 +21,7 @@ import { PageTransition } from '@/components/motion/PageTransition'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { useChatUnreadCount } from '@/hooks/useSupabaseRealtime'
 import { PublicDemoBanner } from '@/components/ui/PublicDemoBanner'
+import { useClientChatAccess } from '@/hooks/useClientChatLabel'
 import { useInstantLockState } from '@/hooks/useInstantLockState'
 
 type ClientShellProps = {
@@ -56,6 +57,7 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
     return () => window.clearTimeout(timer)
   }, [])
   const unreadChats = useChatUnreadCount('client', unreadReady)
+  const { hasChat, label: chatLabel } = useClientChatAccess()
   const { loading: instantLockLoading, locked } = useInstantLockState()
   const drawerItems = baseDrawerItems.flatMap((item) => {
     if (item.href === '/tracker') {
@@ -67,8 +69,8 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
       return [item]
     }
     if (item.href === '/client/chat') {
-      if (instantLockLoading || locked.ai_chat) return []
-      return [{ ...item, badge: unreadChats }]
+      if (!hasChat || instantLockLoading || locked.ai_chat) return []
+      return [{ ...item, label: chatLabel, badge: unreadChats }]
     }
     return [item]
   })

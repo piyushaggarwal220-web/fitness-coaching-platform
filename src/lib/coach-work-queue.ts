@@ -5,6 +5,7 @@ import {
   coachUsesFifoWorkQueue,
   isAutoDeliveryCoach,
   clientRequiresJourneySetup,
+  PIYUSH_COACH_ID,
   shouldAutoProcessCoachWorkQueue,
 } from '@/lib/coach-delivery-policy'
 import { isTrialClientHiddenFromCoaches } from '@/lib/coach-roster-visibility'
@@ -615,6 +616,7 @@ export async function getCoachWorkQueue(
   }
 
   for (const conv of unreadChats ?? []) {
+    if (coachId === PIYUSH_COACH_ID) break
     if (!clientNameById.has(conv.client_id)) continue
     const name = clientNameById.get(conv.client_id) ?? 'Client'
     tasks.push({

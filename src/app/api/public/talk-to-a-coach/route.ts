@@ -3,6 +3,10 @@ import { normalizePhoneForWhatsApp } from '@/lib/phone'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendDirectEmail } from '@/lib/notifications/email-provider'
 import {
+  EXISTING_PLAN_CALL_BLOCK_MESSAGE,
+  existingPlanBlocksConsultation,
+} from '@/lib/talk-to-coach-existing-plan'
+import {
   buildClientCallConfirmation,
   isClientEmail,
 } from '@/lib/talk-to-coach-confirmation'
@@ -176,6 +180,24 @@ export async function POST(request: Request) {
 
   const fingerprint = buildFingerprint(phone)
   const admin = createAdminClient()
+
+  const planCheck = await existingPlanBlocksConsultation(admin, {
+    phone,
+    email: email.includes('@') ? email : null,
+  })
+  if (!planCheck.ok) {
+    console.error('[talk-to-a-coach] existing plan check failed:', planCheck.error)
+    return NextResponse.json(
+      { ok: false, error: 'Could not process your request. Please try again.' },
+      { status: 500, headers }
+    )
+  }
+  if (planCheck.blocked) {
+    return NextResponse.json(
+      { ok: false, error: EXISTING_PLAN_CALL_BLOCK_MESSAGE, code: 'existing_plan' },
+      { status: 403, headers }
+    )
+  }
 
   const { count, error: countError } = await admin
     .from('talk_to_coach_submissions')

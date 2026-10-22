@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { isPublicDemoEmail } from '@/lib/public-demo'
+import { clientHasCoachChat, usesAiCoach } from '@/lib/coach-service'
 import { countSmartCoachUnread, SMART_COACH_READ_EVENT } from '@/lib/smart-coach-unread'
 
 export type RealtimeChangePayload = {
@@ -204,8 +205,19 @@ export function useChatUnreadCount(viewer: 'client' | 'coach', enabled = true) {
     if (viewer === 'client') {
       const { data: { user } } = await supabaseRef.current.auth.getUser()
       if (user && !isPublicDemoEmail(user.email)) {
-        setCount(await countSmartCoachUnread(supabaseRef.current, ownerId))
-        return
+        const { data: profile } = await supabaseRef.current
+          .from('profiles')
+          .select('coach_id, coach_service')
+          .eq('id', user.id)
+          .maybeSingle()
+        if (!clientHasCoachChat(profile)) {
+          setCount(0)
+          return
+        }
+        if (usesAiCoach(profile)) {
+          setCount(await countSmartCoachUnread(supabaseRef.current, ownerId))
+          return
+        }
       }
     }
     const unreadColumn = viewer === 'client' ? 'unread_by_client' : 'unread_by_coach'
