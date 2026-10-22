@@ -214,7 +214,7 @@ export async function existingPlanBlocksConsultation(
     ...new Set(
       purchases
         .map((purchase) => purchase.user_id)
-        .filter((id): id is string => Boolean(id) && !knownIds.has(id))
+        .filter((id): id is string => typeof id === 'string' && !knownIds.has(id))
     ),
   ]
 
