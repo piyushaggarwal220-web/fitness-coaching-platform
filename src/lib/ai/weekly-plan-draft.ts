@@ -23,6 +23,7 @@ import {
 } from '@/lib/ai/openai-quota-guard'
 import { generatedCardioFormData, generatedDietFormData, generatedSupplementFormData, generatedWorkoutFormData } from '@/lib/ai/plan-format'
 import { buildActionCoachInstructions, mergePlanForms } from '@/lib/coach/ai-actions'
+import { applyLifestyleGuidance } from '@/lib/lifestyle-guidance'
 import { encodePlanMeta, planMatchesCheckin } from '@/lib/plan-metadata'
 import { getNextPlanVersion } from '@/lib/plans'
 import { sendNotification } from '@/lib/notifications/dispatcher'
@@ -229,18 +230,28 @@ async function upsertWeeklyPlanDraft(input: {
   merged: PlanFormData
   metaNotes: string | null
   activePlan: Plan | null
+  profile: OnboardingProfile
 }): Promise<{ id: string; version: number }> {
   const now = new Date().toISOString()
   const existing = await findAiDraftForCheckin(input.admin, input.clientId, input.checkinId)
+  const lifestyle = applyLifestyleGuidance(
+    {
+      cardio_plan: input.merged.cardio_plan,
+      coach_notes: input.metaNotes,
+      nutrition_plan: input.merged.nutrition_plan,
+      workout_plan: input.merged.workout_plan,
+    },
+    input.profile
+  )
 
   const fields = {
     title: input.merged.title,
     phase: input.merged.phase?.trim() || input.activePlan?.phase || null,
     workout_plan: input.merged.workout_plan?.trim() || null,
     nutrition_plan: input.merged.nutrition_plan?.trim() || null,
-    cardio_plan: input.merged.cardio_plan?.trim() || null,
+    cardio_plan: lifestyle.cardio_plan,
     supplement_plan: input.merged.supplement_plan?.trim() || null,
-    coach_notes: input.metaNotes,
+    coach_notes: lifestyle.coach_notes || input.metaNotes,
     updated_at: now,
   }
 
@@ -528,6 +539,16 @@ export async function generateWeeklyPlanDraft(input: {
       coachInstructions: coachNote,
     })
 
+    const lifestyle = applyLifestyleGuidance(
+      {
+        cardio_plan: merged.cardio_plan,
+        coach_notes: clientMessage,
+        nutrition_plan: merged.nutrition_plan,
+        workout_plan: merged.workout_plan,
+      },
+      profileTyped
+    )
+    merged = { ...merged, cardio_plan: lifestyle.cardio_plan }
     const metaNotes = encodePlanMeta(
       {
         checkinId: input.checkinId,
@@ -535,7 +556,7 @@ export async function generateWeeklyPlanDraft(input: {
         generatedBy: 'ai',
         source: `Week ${input.coachingWeek} Check-in`,
       },
-      clientMessage
+      lifestyle.coach_notes
     )
 
     let draft = await upsertWeeklyPlanDraft({
@@ -547,6 +568,7 @@ export async function generateWeeklyPlanDraft(input: {
       merged,
       metaNotes,
       activePlan: active,
+      profile: profileTyped,
     })
 
     // Skip support regenerations when the active plan already has them and the check-in looks stable.
@@ -617,6 +639,7 @@ export async function generateWeeklyPlanDraft(input: {
         merged,
         metaNotes,
         activePlan: active,
+        profile: profileTyped,
       })
     }
 

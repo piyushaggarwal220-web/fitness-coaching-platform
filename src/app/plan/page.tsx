@@ -233,16 +233,16 @@ export default function ClientPlanPage() {
       title: 'Cardio guidance',
       icon: <Footprints size={20} />,
       content: sections.cardio,
-      emptyHint: '',
-      alwaysShow: Boolean(isDigitalPlan && digitalSections === 'both'),
+      emptyHint: isDigitalPlan ? '' : 'Your daily step target is being added.',
+      alwaysShow: !isDigitalPlan || digitalSections === 'both',
     },
     {
       key: 'notes' as const,
       title: 'Sleep and water guidance',
       icon: <ClipboardList size={20} />,
       content: sections.coachNotes,
-      emptyHint: '',
-      alwaysShow: Boolean(isDigitalPlan && sections.coachNotes.trim()),
+      emptyHint: isDigitalPlan ? '' : 'Your sleep and water targets are being added.',
+      alwaysShow: !isDigitalPlan || Boolean(sections.coachNotes.trim()),
     },
   ].filter((item) => item.alwaysShow || item.content.trim().length > 0)
 

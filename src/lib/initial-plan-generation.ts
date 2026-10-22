@@ -18,6 +18,7 @@ import {
 import { getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { resolveVisionMediaType, type VisionSafeMediaType } from '@/lib/photo'
+import { persistLifestyleGuidance } from '@/lib/lifestyle-guidance'
 import { persistAiPlanDraft, updateAiPlanDraft } from '@/lib/plans'
 import { shouldAutoEnqueueInitialPlan, shouldAutoJourneyAndDeliverInitialPlan } from '@/lib/coach-delivery-policy'
 import {
@@ -488,6 +489,15 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
           )
         }
       }
+    }
+
+    const { data: draftForLifestyle } = await admin
+      .from('plans')
+      .select('id, cardio_plan, coach_notes, nutrition_plan, workout_plan')
+      .eq('id', persisted.data.id)
+      .maybeSingle()
+    if (draftForLifestyle) {
+      await persistLifestyleGuidance(admin, persisted.data.id, draftForLifestyle, profile)
     }
 
     const completedAt = new Date().toISOString()

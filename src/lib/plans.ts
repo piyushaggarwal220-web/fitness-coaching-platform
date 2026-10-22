@@ -4,6 +4,7 @@ import { assertCheckinReplyWaitElapsed } from '@/lib/checkin-reply-timing'
 import { getNextCoachingDayStart } from '@/lib/checkin-schedule'
 import { shouldBypassCheckinScheduleServer } from '@/lib/config'
 import { assertClientCanReceivePlanChanges } from '@/lib/entitlements'
+import { applyLifestyleGuidance } from '@/lib/lifestyle-guidance'
 import {
   clientCoachNotes,
   fallbackPublishCoachNotes,
@@ -122,7 +123,7 @@ export async function activatePlan(
 ): Promise<{ error: string | null }> {
   const { data: client, error: clientError } = await supabase
     .from('profiles')
-    .select('onboarding_complete, onboarding_completed_at, terms_accepted_at, coach_id, payment_confirmed, access_source, subscription_expires_at')
+    .select('onboarding_complete, onboarding_completed_at, terms_accepted_at, coach_id, payment_confirmed, access_source, subscription_expires_at, sleep_duration, onboarding_data')
     .eq('id', plan.client_id)
     .maybeSingle()
 
@@ -143,7 +144,7 @@ export async function activatePlan(
 
   const { data: fullPlan, error: planError } = await supabase
     .from('plans')
-    .select('id, title, coach_notes, phase, nutrition_plan')
+    .select('id, title, coach_notes, phase, nutrition_plan, workout_plan, cardio_plan')
     .eq('id', plan.id)
     .maybeSingle()
 
@@ -180,7 +181,16 @@ export async function activatePlan(
   if (publishPrep.error || !publishPrep.notes) {
     return { error: publishPrep.error ?? 'Cannot publish: Coach Notes must include a client-facing message.' }
   }
-  const publishNotes = publishPrep.notes
+  const lifestyle = applyLifestyleGuidance(
+    {
+      cardio_plan: fullPlan.cardio_plan,
+      coach_notes: publishPrep.notes,
+      nutrition_plan: fullPlan.nutrition_plan,
+      workout_plan: fullPlan.workout_plan,
+    },
+    client
+  )
+  const publishNotes = lifestyle.coach_notes
 
   const { count: activeCount, error: activeCountError } = await supabase
     .from('plans')
@@ -245,6 +255,7 @@ export async function activatePlan(
       active: true,
       title: publishedTitle,
       coach_notes: publishNotes,
+      cardio_plan: lifestyle.cardio_plan,
       delivered_at: deliveredAt,
       updated_at: deliveredAt,
     })
