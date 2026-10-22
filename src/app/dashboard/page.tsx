@@ -112,7 +112,9 @@ export default function Dashboard() {
         .eq('client_id', user.id)
         .neq('status', 'closed')
         .maybeSingle()
-        .then(({ data }) => setUnreadMessages(Number(data?.unread_by_client ?? 0)));
+        .then((result: { data: { unread_by_client?: number | null } | null }) =>
+          setUnreadMessages(Number(result.data?.unread_by_client ?? 0))
+        );
     };
     refreshUnread();
     const timer = window.setInterval(refreshUnread, 20_000);
