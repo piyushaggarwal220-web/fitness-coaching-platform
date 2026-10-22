@@ -82,7 +82,7 @@ const STOREFRONT_PLAN_CARDS: Record<string, { badge: string; duration: string; s
  badge: 'Complete transformation',
  duration: '12 MONTHS',
     savings: 'Save ₹1,301 vs monthly rate',
- footer: 'Best for: building an athletic body — fat loss, muscle, and stamina',
+ footer: 'Best for: building an athletic body — fat loss, muscle, and stamina. Testosterone protocol for men, hourglass for women.',
  },
 };
 

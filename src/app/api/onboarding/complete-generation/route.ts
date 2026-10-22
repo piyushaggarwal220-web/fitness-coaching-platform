@@ -4,6 +4,7 @@ import { rejectIfPublicDemoMutation } from '@/lib/public-demo-guard'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { generateSupplementProtocol } from '@/lib/ai/supplement-protocol'
 import { entitledAddonIds } from '@/lib/addon-protocols'
+import { planIncludesTestosteroneBoost } from '@/lib/athletic-body-extras'
 import {
   canRetryInitialGeneration,
   enqueueInitialPlanGeneration,
@@ -121,6 +122,22 @@ export async function POST(request: Request) {
     latestDigitalPurchase(admin, auth.user.id),
     latestCoachingPurchase(admin, auth.user.id),
   ])
+  if (
+    planIncludesTestosteroneBoost(coachingPurchase?.planSlug, completedProfile.gender) &&
+    completedProfile.supplement_protocol_entitled !== true
+  ) {
+    const { data: entitled, error: entitleError } = await admin
+      .from('profiles')
+      .update({ supplement_protocol_entitled: true, updated_at: new Date().toISOString() })
+      .eq('id', auth.user.id)
+      .select('*')
+      .single()
+    if (entitleError) {
+      console.error('[onboarding/complete-generation] testo entitlement failed:', entitleError.message)
+    } else if (entitled) {
+      completedProfile = entitled as OnboardingProfile
+    }
+  }
   const hasDigital = Boolean(digitalPurchase)
   // Instant-only buyers must never enter the coaching auto-journey path.
   const isInstantOnly = hasDigital && !coachingPurchase
@@ -141,6 +158,16 @@ export async function POST(request: Request) {
           )
         })
     )
+    for (const addonId of entitledAddonIds(completedProfile)) {
+      after(() =>
+        generateSupplementProtocol({ clientId: auth.user.id, addonId }).catch((err) => {
+          console.error(
+            `[onboarding/complete-generation] ${addonId} protocol failed:`,
+            err instanceof Error ? err.message : err
+          )
+        })
+      )
+    }
     return NextResponse.json({
       success: true,
       status: 'generating',

@@ -57,10 +57,26 @@ import {
   getPromptCategoryForAction,
   resolveWorkoutEnvironment,
 } from '@/lib/ai/workout-prompt-selection'
+import {
+  HOURGLASS_GUIDANCE_PROMPT,
+  shouldApplyHourglassGuidance,
+} from '@/lib/athletic-body-extras'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
+import { latestCoachingPurchase } from '@/lib/payments/digital-purchase'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { Checkin, OnboardingProfile, Plan } from '@/types/database'
 
 export { invalidatePromptCacheForClient, invalidatePromptCacheAll } from '@/lib/ai/prompt-cache'
+
+async function loadCoachingPlanSlug(clientId: string | undefined): Promise<string | null> {
+  if (!clientId) return null
+  try {
+    const purchase = await latestCoachingPurchase(createAdminClient(), clientId)
+    return purchase?.planSlug ?? null
+  } catch {
+    return null
+  }
+}
 
 export type GeneratedWorkoutPlan = {
   overview: string
@@ -704,9 +720,19 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     ].join(' ')
   })()
 
+  const coachingPlanSlug = await loadCoachingPlanSlug(input.profile.id)
+  const hourglassBoost = shouldApplyHourglassGuidance({
+    planSlug: coachingPlanSlug,
+    gender: input.profile.gender,
+    selectedGoals: input.profile.onboarding_data?.goals?.selectedGoals,
+  })
+    ? HOURGLASS_GUIDANCE_PROMPT
+    : null
+
   const coachInstructionsWithPreference = [
     dietPreferenceBoost,
     trainingDaysBoost,
+    hourglassBoost,
     input.coachInstructions?.trim()
       ? [
           '## COACH DIRECTION (ABSOLUTE — overrides everything else)',

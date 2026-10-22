@@ -15,6 +15,7 @@ import {
   shouldStartInitialGeneration,
   type InitialPlanGenerationJob,
 } from '@/lib/initial-plan-generation'
+import { planIncludesTestosteroneBoost } from '@/lib/athletic-body-extras'
 import { latestCoachingPurchase, latestDigitalPurchase } from '@/lib/payments/digital-purchase'
 import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import { instantPlanWindowOpen } from '@/lib/plan-delivery-window'
@@ -297,8 +298,7 @@ export async function runPiyushInitialPlanForClient(
   const coaching = await latestCoachingPurchase(admin, clientId)
   const planSlug = coaching?.planSlug ?? null
   if (
-    planSlug === 'offer_3_months' &&
-    typed.gender === 'male' &&
+    planIncludesTestosteroneBoost(planSlug, typed.gender) &&
     (profile as { supplement_protocol_entitled?: boolean | null }).supplement_protocol_entitled !== true
   ) {
     const { error: entitleError } = await admin

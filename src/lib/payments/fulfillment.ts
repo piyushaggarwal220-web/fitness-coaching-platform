@@ -5,6 +5,7 @@ import { applyPaidCoachRouting } from '@/lib/coach-routing-server'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
 import { findAuthUserIdByEmail } from '@/lib/payments/auth-user'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
+import { planIncludesTestosteroneBoost } from '@/lib/athletic-body-extras'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasAccessSourceColumn } from '@/lib/db/profile-columns'
 import type { CoachingPlan } from '@/lib/payments/plans'
@@ -653,7 +654,7 @@ export async function claimPurchaseWithPassword(
   if (
     purchase.supplement_addon ||
     claimedAddonIds.includes('testo_boost') ||
-    (plan.slug === 'offer_3_months' && existingProfile?.gender === 'male')
+    planIncludesTestosteroneBoost(plan.slug, existingProfile?.gender)
   ) {
     profilePayload.supplement_protocol_entitled = true
   }

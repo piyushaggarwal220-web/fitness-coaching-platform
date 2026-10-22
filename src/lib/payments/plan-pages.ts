@@ -72,7 +72,7 @@ export const PLAN_PAGE_COPY: Record<
     eyebrow: 'Athletic body',
     goalName: PLAN_PRODUCT_NAME['12_months'],
     durationLabel: '12 months',
-    promise: 'Fat loss, muscle, and stamina for a full year.',
+    promise: 'Fat loss, muscle, and stamina for a full year. Men get a testosterone protocol. Women get hourglass guidance.',
     bestFor: 'athletic body',
     goals: [],
   },
@@ -151,6 +151,12 @@ export const PLAN_COMPARE_ROWS: {
     group: 'Everything with Athletic body',
     label: 'Lowest monthly rate',
     hint: 'Full year accountability.',
+    cells: { ...FROM_12 },
+  },
+  {
+    group: 'Everything with Athletic body',
+    label: 'Testosterone protocol / hourglass',
+    hint: 'Men get the natural testosterone protocol. Women get hourglass guidance in the plan.',
     cells: { ...FROM_12 },
   },
   {
