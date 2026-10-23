@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
@@ -79,6 +79,20 @@ function DualChatSwitcher({
 }
 
 export default function ClientChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <ClientShell title="Chat" loading hideBottomNav fullHeight>
+          <span />
+        </ClientShell>
+      }
+    >
+      <ClientChatPageInner />
+    </Suspense>
+  )
+}
+
+function ClientChatPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const requested = searchParams.get('with')
