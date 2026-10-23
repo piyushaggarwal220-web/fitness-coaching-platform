@@ -6,7 +6,7 @@ import { scheduleWeeklyCallsForAllEligible } from '@/lib/weekly-call-schedule'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-/** Vercel cron: daily 04:00 UTC (09:30 IST) — close any open coach call. Nobody gets a weekly call. */
+/** Vercel cron: daily 04:00 UTC (09:30 IST) — drop calls that are not a 6-month or 12-month Home booking. */
 
 function authorizeCron(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim()

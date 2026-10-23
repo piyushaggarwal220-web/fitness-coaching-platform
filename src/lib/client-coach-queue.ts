@@ -144,6 +144,6 @@ export function buildClientCoachQueueView(input: {
     planDelivered: true,
     items: [],
     yourCall: null,
-    message: 'There is no weekly call. If you have an issue, message the coaches on Instagram.',
+    message: 'Place a call from Home. You can book one coach call each week.',
   }
 }
