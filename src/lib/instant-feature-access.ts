@@ -25,7 +25,7 @@ export const INSTANT_FEATURE_LABEL: Record<InstantFeature, string> = {
 /** Non-membership purchase rows (unlocks / library) — not coaching. */
 export function isPlatformAddonPlanSlug(slug: string | null | undefined): boolean {
   if (!slug) return false
-  return slug.startsWith('unlock_') || slug === 'exercise_library'
+  return slug.startsWith('unlock_') || slug === 'exercise_library' || slug === 'exercise_videos_monthly'
 }
 
 export function isCoachingPlanSlug(slug: string | null | undefined): boolean {

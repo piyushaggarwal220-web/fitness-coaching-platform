@@ -41,7 +41,7 @@ export async function loadClientPaidPurchases(
 }
 
 /**
- * High-payers get Piyush as a human coach and lose Smart Coach.
+ * High-payers get Piyush as a human coach and can also use Smart Coach.
  * Everyone else stays on Smart Coach. Their assigned coach is left as-is.
  */
 export async function applyPaidCoachRouting(

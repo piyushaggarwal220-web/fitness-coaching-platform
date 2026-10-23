@@ -28,7 +28,7 @@ import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { parseAdherenceDays } from '@/lib/checkin-adherence-days'
 import { normalizeCheckinSplitPreference } from '@/lib/ai/workout-split'
 import { areProgressPhotosOptional } from '@/lib/checkin'
-import { clientHasCoachChat } from '@/lib/coach-service'
+import { coachIdHasClientChat } from '@/lib/coach-service'
 import type { CheckinType } from '@/types/database'
 
 /** Allow long-running weekly draft generation after the response returns. */
@@ -395,7 +395,7 @@ export async function POST(request: Request) {
     // They always go to the check-in review page + next-week AI draft instead.
     // Mid-week summaries still post to chat unless this client has no chat (Piyush).
     if (body.checkinType === 'mid_week') {
-      if (clientHasCoachChat({ coach_id: profile.coach_id })) {
+      if (coachIdHasClientChat(profile.coach_id)) {
         const chatMessage = formatMidWeekCheckinChatMessage({
           coachingWeek: scheduled.coachingWeek,
           dietAdherence: body.diet_adherence,

@@ -205,7 +205,7 @@ export default function OnboardingPage() {
         .select('plan_slug, status, created_at')
         .eq('user_id', result.user.id)
         .eq('status', 'captured')
-        .neq('plan_slug', 'exercise_library')
+        .not('plan_slug', 'in', '(exercise_library,exercise_videos_monthly)')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()

@@ -6,33 +6,36 @@ import Script from 'next/script'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Lock, Play, ShieldCheck } from 'lucide-react'
 import { BRAND_NAME } from '@/lib/brand'
-import { profileEntitledForExerciseLibrary } from '@/lib/addon-protocols'
 import { authStyles } from '@/lib/auth-styles'
-import {
-  CHECKOUT_ADDONS,
-  EXERCISE_LIBRARY_ADDON_ID,
-  EXERCISE_LIBRARY_ADDON_PAISE,
-  formatInrFromPaise,
-} from '@/lib/payments/checkout-discounts'
-import { startExerciseLibraryCheckout } from '@/lib/payments/exercise-library-checkout-client'
+import { EXERCISE_VIDEOS_MONTHLY_PAISE, formatInrFromPaise } from '@/lib/payments/checkout-discounts'
+import { startExerciseVideosMonthlyCheckout } from '@/lib/payments/exercise-videos-checkout-client'
 import { createClient } from '@/lib/supabase/client'
 import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import type { OnboardingProfile } from '@/types/database'
 
 const supabase = createClient()
-const priceLabel = formatInrFromPaise(EXERCISE_LIBRARY_ADDON_PAISE)
-const productCopy =
-  CHECKOUT_ADDONS.find((item) => item.id === EXERCISE_LIBRARY_ADDON_ID)?.copy ??
-  'Form videos for every lift in your workout tracker.'
+const priceLabel = formatInrFromPaise(EXERCISE_VIDEOS_MONTHLY_PAISE)
+
+type VideoAccess = {
+  locked?: boolean
+  entitled?: boolean
+  unlimited?: boolean
+  reason?: string
+  trialEndsAt?: string | null
+  accessUntil?: string | null
+  pricePaise?: number
+  error?: string
+}
 
 /**
- * Browser checkout for the exercise form video library.
+ * Browser checkout for monthly exercise form videos.
  * Shareable at /library/unlock — opens Razorpay in the user's browser.
  */
 export default function ExerciseLibraryUnlockPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<OnboardingProfile | null>(null)
+  const [access, setAccess] = useState<VideoAccess | null>(null)
   const [paying, setPaying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [justUnlocked, setJustUnlocked] = useState(false)
@@ -65,19 +68,23 @@ export default function ExerciseLibraryUnlockPage() {
       }
 
       setProfile(row)
+      if (row?.payment_confirmed) {
+        const res = await fetch('/api/payment/addons/exercise-videos', { credentials: 'include' })
+        const json = (await res.json().catch(() => null)) as VideoAccess | null
+        if (res.ok && json) setAccess(json)
+      }
       setLoading(false)
     }
     void load()
   }, [router])
 
-  const entitled =
-    justUnlocked || profileEntitledForExerciseLibrary(profile)
+  const entitled = justUnlocked || access?.entitled === true
 
   const handlePay = async () => {
     setError(null)
     setPaying(true)
     try {
-      const result = await startExerciseLibraryCheckout()
+      const result = await startExerciseVideosMonthlyCheckout()
       if (result.status === 'success' || result.status === 'already_unlocked') {
         setJustUnlocked(true)
         return
@@ -104,10 +111,10 @@ export default function ExerciseLibraryUnlockPage() {
       <div style={authStyles.page}>
         <div style={authStyles.card}>
           <p style={authStyles.logo}>{BRAND_NAME}</p>
-          <h1 style={{ ...authStyles.title, fontSize: 22 }}>Coaching plan required</h1>
+          <h1 style={{ ...authStyles.title, fontSize: 22 }}>Plan required</h1>
           <p style={{ margin: `0 0 ${spacing[4]}px`, fontSize: 15, lineHeight: 1.5, color: colors.textSecondary }}>
-            Exercise form videos unlock after you start a coaching plan. Choose a plan, pay in your browser, then
-            return here to unlock the full library.
+            Exercise form videos unlock after you start a plan. Choose a plan, pay in your browser, then return here
+            if you need the monthly videos.
           </p>
           <Link
             href="/checkout?plan=3_months"
@@ -118,23 +125,31 @@ export default function ExerciseLibraryUnlockPage() {
               textDecoration: 'none',
             }}
           >
-            View coaching plans
+            View plans
           </Link>
         </div>
       </div>
     )
   }
 
-  if (profile.payment_confirmed || entitled) {
+  if (entitled) {
+    const included = access?.unlimited === true || access?.reason === 'unlimited_paid' || access?.reason === 'lifetime_library'
+    const trial = access?.reason === 'trial'
     return (
       <div style={authStyles.page}>
         <div style={authStyles.card}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: spacing[3] }}>
             <CheckCircle2 size={40} color={colors.success} />
           </div>
-          <h1 style={{ ...authStyles.title, fontSize: 22 }}>Form videos are included</h1>
+          <h1 style={{ ...authStyles.title, fontSize: 22 }}>
+            {included ? 'Form videos are included' : trial ? 'Your 2-day video trial is on' : 'Form videos are active'}
+          </h1>
           <p style={{ margin: `0 0 ${spacing[4]}px`, fontSize: 15, lineHeight: 1.5, color: colors.textSecondary, textAlign: 'center' }}>
-            Every coaching plan includes the exercise videos. Open Workout, then tap Watch video on the exercise.
+            {included
+              ? 'Your plan includes exercise videos. Open Workout, then tap Watch video on the exercise.'
+              : trial
+                ? 'Plans under ₹600 include videos for 2 days. After that it is ₹69/month. Open Workout to watch now.'
+                : 'This month of form videos is unlocked. Open Workout, then tap Watch video on the exercise.'}
           </p>
           <Link
             href="/tracker/workout"
@@ -172,9 +187,9 @@ export default function ExerciseLibraryUnlockPage() {
               <Play size={28} color={colors.accent} />
             </div>
           </div>
-          <h1 style={{ ...authStyles.title, fontSize: 22 }}>Exercise form videos</h1>
+          <h1 style={{ ...authStyles.title, fontSize: 22 }}>Continue form videos</h1>
           <p style={{ margin: `0 0 ${spacing[3]}px`, fontSize: 15, lineHeight: 1.55, color: colors.textSecondary, textAlign: 'center' }}>
-            {productCopy}
+            Your 2-day video trial has ended. Keep every lift in your workout tracker for {priceLabel}/month.
           </p>
 
           <ul
@@ -192,7 +207,7 @@ export default function ExerciseLibraryUnlockPage() {
           >
             <li style={{ display: 'flex', gap: 10, fontSize: 14, color: colors.textSecondary }}>
               <Lock size={16} color={colors.accent} style={{ flexShrink: 0, marginTop: 2 }} />
-              One-time {priceLabel} — unlocks every lift in your tracker
+              {priceLabel}/month — form videos for every lift in your tracker
             </li>
             <li style={{ display: 'flex', gap: 10, fontSize: 14, color: colors.textSecondary }}>
               <ShieldCheck size={16} color={colors.accent} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -211,7 +226,7 @@ export default function ExerciseLibraryUnlockPage() {
             }}
           >
             {priceLabel}
-            <span style={{ fontSize: 14, fontWeight: 600, color: colors.textMuted }}> one-time</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: colors.textMuted }}>/month</span>
           </p>
 
           {error ? (
@@ -230,12 +245,8 @@ export default function ExerciseLibraryUnlockPage() {
               cursor: paying || !razorpayReady ? 'wait' : 'pointer',
             }}
           >
-            {paying ? 'Opening checkout…' : !razorpayReady ? 'Loading checkout…' : `Pay ${priceLabel} in browser`}
+            {paying ? 'Opening checkout…' : !razorpayReady ? 'Loading checkout…' : `Pay ${priceLabel} for this month`}
           </button>
-
-          <p style={{ margin: `${spacing[3]}px 0 0`, fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 1.45 }}>
-            You get 3 free form videos without paying. This unlocks the rest permanently.
-          </p>
 
           <p style={{ margin: `${spacing[3]}px 0 0`, fontSize: 13, textAlign: 'center' }}>
             <Link href="/tracker/workout" style={{ color: colors.accent, textDecoration: 'none', fontWeight: 600 }}>

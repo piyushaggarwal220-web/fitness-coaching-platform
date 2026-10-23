@@ -7,10 +7,9 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard'
 import { MembershipRenewalBanner } from '@/components/dashboard/MembershipRenewalBanner'
-import { profileEntitledForExerciseLibrary } from '@/lib/addon-protocols'
 import { authenticateClient } from '@/lib/onboarding'
 import {
-  EXERCISE_LIBRARY_ADDON_PAISE,
+  EXERCISE_VIDEOS_MONTHLY_PAISE,
   formatInrFromPaise,
 } from '@/lib/payments/checkout-discounts'
 import { getActiveSubscription, getMembershipRenewalPrompt } from '@/lib/subscription'
@@ -48,7 +47,7 @@ export default function ClientSettingsPage() {
         .from('purchases')
         .select('id, user_id, status, amount_paise, currency, created_at, plan_name, plan_slug')
         .eq('user_id', result.user.id)
-        .neq('plan_slug', 'exercise_library')
+        .not('plan_slug', 'in', '(exercise_library,exercise_videos_monthly)')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -131,18 +130,16 @@ export default function ClientSettingsPage() {
         {consentMsg && <p style={{ margin: '10px 0 0', fontSize: 13, color: colors.textMuted }}>{consentMsg}</p>}
       </Card>
 
-      {!profileEntitledForExerciseLibrary(profile) ? (
-        <Card variant="elevated" style={{ marginBottom: spacing[3] }}>
-          <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 16 }}>Exercise form videos</p>
-          <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textSecondary }}>
-            Unlock every lift in your workout tracker for {formatInrFromPaise(EXERCISE_LIBRARY_ADDON_PAISE)},
-            one-time. Pay securely in your browser.
-          </p>
-          <Button fullWidth onClick={() => router.push('/library/unlock')}>
-            Unlock form videos
-          </Button>
-        </Card>
-      ) : null}
+      <Card variant="elevated" style={{ marginBottom: spacing[3] }}>
+        <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 16 }}>Exercise form videos</p>
+        <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textSecondary }}>
+          Plans under ₹600 include 2 days of videos, then {formatInrFromPaise(EXERCISE_VIDEOS_MONTHLY_PAISE)}/month.
+          ₹600+ plans keep videos included.
+        </p>
+        <Button fullWidth onClick={() => router.push('/library/unlock')}>
+          Manage form videos
+        </Button>
+      </Card>
 
       <Card variant="glass">
         <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 16 }}>Account</p>

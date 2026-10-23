@@ -27,7 +27,7 @@ import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { planGoalName } from '@/lib/payments/plan-pages';
 import { isAutoDeliveryCoach } from '@/lib/coach-delivery-policy';
 import { clientChatNavLabel } from '@/lib/coach-routing';
-import { clientHasCoachChat, usesAiCoach } from '@/lib/coach-service';
+import { clientHasCoachChat } from '@/lib/coach-service';
 import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window';
 import { isDigitalPlanSlug } from '@/lib/payments/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
@@ -50,7 +50,7 @@ import { loadTodayTrackerView } from '@/lib/daily-tracker';
 import { trackerDayCountsAsWorkout } from '@/lib/daily-tracker/week-workouts';
 import { buildModuleSummaries, type TrackerModuleSummary } from '@/lib/daily-tracker/module-summaries';
 import { coachingDateKeyDaysAgo } from '@/lib/checkin-schedule';
-import { countSmartCoachUnread, SMART_COACH_READ_EVENT } from '@/lib/smart-coach-unread';
+import { countVisibleClientChatUnread, SMART_COACH_READ_EVENT } from '@/lib/smart-coach-unread';
 import type { TrackerCompletion } from '@/lib/daily-tracker/types';
 import { createClient } from '@/lib/supabase/client';
 import { clientColors as colors, spacing, typography } from '@/lib/design-tokens';
@@ -102,19 +102,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user || isPublicDemoEmail(user.email) || !clientHasCoachChat(profile)) return;
     const refreshUnread = () => {
-      if (usesAiCoach(profile)) {
-        void countSmartCoachUnread(supabase, user.id).then(setUnreadMessages);
-        return;
-      }
-      void supabase
-        .from('coach_conversations')
-        .select('unread_by_client')
-        .eq('client_id', user.id)
-        .neq('status', 'closed')
-        .maybeSingle()
-        .then((result: { data: { unread_by_client?: number | null } | null }) =>
-          setUnreadMessages(Number(result.data?.unread_by_client ?? 0))
-        );
+      void countVisibleClientChatUnread(supabase, user.id, profile).then(setUnreadMessages);
     };
     refreshUnread();
     const timer = window.setInterval(refreshUnread, 20_000);
@@ -193,7 +181,7 @@ export default function Dashboard() {
             .from('purchases')
             .select('id, user_id, status, amount_paise, currency, created_at, plan_name, plan_slug')
             .eq('user_id', userId)
-            .neq('plan_slug', 'exercise_library')
+            .not('plan_slug', 'in', '(exercise_library,exercise_videos_monthly)')
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle(),
@@ -263,10 +251,10 @@ export default function Dashboard() {
         setRecentActivity(activity.slice(0, 5));
 
         if (coachResult.data) setCoach(coachResult.data as Coach);
-        if (isPublicDemoEmail(result.user.email) || !usesAiCoach(profileData)) {
+        if (isPublicDemoEmail(result.user.email)) {
           setUnreadMessages((convResult.data?.unread_by_client as number) ?? 0);
         } else {
-          setUnreadMessages(await countSmartCoachUnread(supabase, userId));
+          setUnreadMessages(await countVisibleClientChatUnread(supabase, userId, profileData));
         }
         setGenerationJob(generationResult.data as InitialPlanGenerationJob | null);
 

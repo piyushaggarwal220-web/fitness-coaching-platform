@@ -86,6 +86,10 @@ export const CHECKOUT_ADDON_UNIT_PAISE = SUPPLEMENT_PROTOCOL_ADDON_PAISE
 export const EXERCISE_LIBRARY_ADDON_PAISE = 34900
 export const EXERCISE_LIBRARY_ADDON_LABEL = 'Exercise form videos'
 export const EXERCISE_LIBRARY_ADDON_ID = 'exercise_library' as const
+/** After the 2-day trial, low-cash clients keep videos for 30 days at this price. */
+export const EXERCISE_VIDEOS_MONTHLY_PAISE = 6900
+export const EXERCISE_VIDEOS_MONTHLY_LABEL = 'Exercise form videos · 1 month'
+export const EXERCISE_VIDEOS_MONTHLY_ID = 'exercise_videos_monthly' as const
 
 export const CHECKOUT_ADDON_IDS = [
   'testo_boost',

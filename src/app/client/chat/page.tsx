@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { AiCoachChatThread } from '@/components/chat/AiCoachChatThread'
@@ -13,13 +13,75 @@ import { createClient } from '@/lib/supabase/client'
 import { isPublicDemoEmail } from '@/lib/public-demo'
 import { CHAT_AFTER_ENROLLMENT_MESSAGE } from '@/lib/chat-availability'
 import { clientChatPageTitle } from '@/lib/coach-routing'
-import { clientHasCoachChat, PIYUSH_NO_CHAT_MESSAGE, usesAiCoach } from '@/lib/coach-service'
+import { memberFacingCoachFirstName } from '@/lib/coach-delivery-policy'
+import { clientHasDualChat, PIYUSH_NO_CHAT_MESSAGE, usesAiCoach } from '@/lib/coach-service'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import type { CoachConversation, OnboardingProfile } from '@/types/database'
 
 const supabase = createClient()
 
+function DualChatSwitcher({
+  mode,
+  coachName,
+}: {
+  mode: 'smart' | 'piyush'
+  coachName: string
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: 8,
+        padding: '10px 12px 0',
+        flexShrink: 0,
+      }}
+    >
+      <a
+        href="/client/chat?with=smart"
+        style={{
+          flex: 1,
+          minHeight: 40,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 10,
+          textDecoration: 'none',
+          fontWeight: 800,
+          fontSize: 13,
+          background: mode === 'smart' ? colors.accent : colors.bgCard,
+          color: mode === 'smart' ? colors.textInverse : colors.textPrimary,
+          border: `1px solid ${mode === 'smart' ? colors.accent : colors.borderSubtle}`,
+        }}
+      >
+        Smart Coach
+      </a>
+      <a
+        href="/client/chat?with=piyush"
+        style={{
+          flex: 1,
+          minHeight: 40,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 10,
+          textDecoration: 'none',
+          fontWeight: 800,
+          fontSize: 13,
+          background: mode === 'piyush' ? colors.accent : colors.bgCard,
+          color: mode === 'piyush' ? colors.textInverse : colors.textPrimary,
+          border: `1px solid ${mode === 'piyush' ? colors.accent : colors.borderSubtle}`,
+        }}
+      >
+        {coachName}
+      </a>
+    </div>
+  )
+}
+
 export default function ClientChatPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const requested = searchParams.get('with')
   const [conversation, setConversation] = useState<CoachConversation | null>(null)
   const [authReady, setAuthReady] = useState(false)
   const [connecting, setConnecting] = useState(false)
@@ -30,6 +92,9 @@ export default function ClientChatPage() {
   const [chatDisabled, setChatDisabled] = useState(false)
   const [featureLocked, setFeatureLocked] = useState(false)
   const [aiMode, setAiMode] = useState(false)
+  const [dualMode, setDualMode] = useState(false)
+  const [chooser, setChooser] = useState(false)
+  const [coachName, setCoachName] = useState('Piyush')
   const [chatTitle, setChatTitle] = useState('Chat')
 
   useEffect(() => {
@@ -41,6 +106,8 @@ export default function ClientChatPage() {
       setChatDisabled(false)
       setFeatureLocked(false)
       setAiMode(false)
+      setDualMode(false)
+      setChooser(false)
       setChatTitle('Chat')
       setConnecting(true)
       setAuthReady(false)
@@ -64,15 +131,23 @@ export default function ClientChatPage() {
 
       const profile = auth.profile as OnboardingProfile
       const demo = isPublicDemoEmail(auth.user.email ?? profile.email)
+      const dual = clientHasDualChat(profile)
+      const humanName = memberFacingCoachFirstName(profile.coach_id, profile.coach_service)
       setReadOnly(demo)
-      setChatTitle(clientChatPageTitle(profile))
+      setDualMode(dual)
+      setCoachName(humanName === 'your coach' ? 'Piyush' : humanName)
+      setChatTitle(
+        dual
+          ? requested === 'smart'
+            ? 'Smart Coach'
+            : requested === 'piyush'
+              ? humanName === 'your coach'
+                ? 'Piyush'
+                : humanName
+              : 'Chat'
+          : clientChatPageTitle(profile)
+      )
       setAuthReady(true)
-
-      if (!clientHasCoachChat(profile)) {
-        setChatDisabled(true)
-        setConnecting(false)
-        return
-      }
 
       const { data: purchases } = await supabase
         .from('purchases')
@@ -97,7 +172,13 @@ export default function ClientChatPage() {
         return
       }
 
-      if (!demo && usesAiCoach(profile)) {
+      if (dual && requested !== 'smart' && requested !== 'piyush') {
+        setChooser(true)
+        setConnecting(false)
+        return
+      }
+
+      if (!demo && (usesAiCoach(profile) || (dual && requested === 'smart'))) {
         setAiMode(true)
         setConnecting(false)
         return
@@ -151,7 +232,7 @@ export default function ClientChatPage() {
     return () => {
       active = false
     }
-  }, [router, reloadKey])
+  }, [router, reloadKey, requested])
 
   if (!authReady && !error) {
     return (
@@ -169,9 +250,70 @@ export default function ClientChatPage() {
     )
   }
 
+  if (chooser) {
+    return (
+      <ClientShell title="Chat">
+        <div style={{ padding: `8px ${spacing[4]}px ${spacing[5]}px` }}>
+          <p
+            style={{
+              margin: '8px 0 6px',
+              fontSize: 13,
+              fontWeight: 800,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: colors.textMuted,
+            }}
+          >
+            Choose who to talk to
+          </p>
+          <h1 style={{ margin: '0 0 16px', fontSize: 24, lineHeight: 1.25, color: colors.textPrimary }}>
+            Smart Coach or {coachName}
+          </h1>
+          <div style={{ display: 'grid', gap: 12 }}>
+            <a
+              href="/client/chat?with=smart"
+              style={{
+                display: 'block',
+                padding: 16,
+                borderRadius: radius.lg,
+                background: colors.bgCard,
+                border: `1px solid ${colors.borderSubtle}`,
+                textDecoration: 'none',
+                color: colors.textPrimary,
+              }}
+            >
+              <p style={{ margin: 0, fontSize: 17, fontWeight: 800 }}>Smart Coach</p>
+              <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.45, color: colors.textSecondary }}>
+                Instant answers on diet, workouts, and your plan.
+              </p>
+            </a>
+            <a
+              href="/client/chat?with=piyush"
+              style={{
+                display: 'block',
+                padding: 16,
+                borderRadius: radius.lg,
+                background: colors.bgCard,
+                border: `1px solid ${colors.borderSubtle}`,
+                textDecoration: 'none',
+                color: colors.textPrimary,
+              }}
+            >
+              <p style={{ margin: 0, fontSize: 17, fontWeight: 800 }}>Talk to {coachName}</p>
+              <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.45, color: colors.textSecondary }}>
+                Message your coach when you want a human reply.
+              </p>
+            </a>
+          </div>
+        </div>
+      </ClientShell>
+    )
+  }
+
   if (aiMode) {
     return (
       <ClientShell title={chatTitle} hideBottomNav fullHeight>
+        {dualMode ? <DualChatSwitcher mode="smart" coachName={coachName} /> : null}
         <AiCoachChatThread />
       </ClientShell>
     )
@@ -207,6 +349,7 @@ export default function ClientChatPage() {
 
   return (
     <ClientShell title={chatTitle} hideBottomNav fullHeight>
+      {dualMode ? <DualChatSwitcher mode="piyush" coachName={coachName} /> : null}
       {connecting && !conversation && (
         <div
           style={{

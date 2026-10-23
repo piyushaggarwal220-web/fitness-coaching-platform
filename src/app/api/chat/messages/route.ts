@@ -11,7 +11,6 @@ import {
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { autoReplyUnreadChat, chatNeedsHumanCoach } from '@/lib/piyush-chat-auto'
 import { COACH_REPLY_QUIET_MS, COACH_TYPING_FRESH_MS } from '@/lib/chat-reply-pause'
-import { clientHasCoachChat, PIYUSH_NO_CHAT_MESSAGE } from '@/lib/coach-service'
 import { isPublicDemoEmail } from '@/lib/public-demo'
 import { publicDemoReadOnlyJson } from '@/lib/public-demo-guard'
 
@@ -204,9 +203,6 @@ export async function POST(request: Request) {
         .select('payment_confirmed, access_source, subscription_expires_at, coach_id')
         .eq('id', userId)
         .maybeSingle()
-      if (!clientHasCoachChat(profile)) {
-        return NextResponse.json({ success: false, error: PIYUSH_NO_CHAT_MESSAGE }, { status: 403 })
-      }
       if (!hasClientEntitlement(profile)) {
         return NextResponse.json(
           {

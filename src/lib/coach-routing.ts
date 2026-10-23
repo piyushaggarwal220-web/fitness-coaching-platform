@@ -1,5 +1,10 @@
 import { memberFacingCoachFirstName } from '@/lib/coach-delivery-policy'
-import { resolveCoachService, usesHumanCoach, type CoachServiceProfile } from '@/lib/coach-service'
+import {
+  clientHasDualChat,
+  resolveCoachService,
+  usesHumanCoach,
+  type CoachServiceProfile,
+} from '@/lib/coach-service'
 
 /** ₹1,400. Below this, the client keeps Smart Coach. At or above, they get Piyush. */
 export const PIYUSH_HUMAN_COACH_MIN_PAISE = 140_000
@@ -14,7 +19,7 @@ export type PaidCoachPurchase = {
 
 export function isCoachRoutingAddonSlug(slug: string | null | undefined): boolean {
   if (!slug) return false
-  return slug === 'exercise_library' || slug.startsWith('unlock_')
+  return slug === 'exercise_library' || slug === 'exercise_videos_monthly' || slug.startsWith('unlock_')
 }
 
 /** Cash still kept on a captured purchase. Redeemed codes and add-ons are 0. */
@@ -40,11 +45,13 @@ export function purchasesQualifyForPiyushHumanCoach(rows: PaidCoachPurchase[]): 
 }
 
 export function clientChatNavLabel(profile: CoachServiceProfile | null | undefined): string {
+  if (clientHasDualChat(profile)) return 'Chat'
   if (!usesHumanCoach(profile)) return 'Smart Coach'
   const name = memberFacingCoachFirstName(profile?.coach_id, profile?.coach_service)
   return name === 'your coach' ? 'Coach' : name
 }
 
 export function clientChatPageTitle(profile: CoachServiceProfile | null | undefined): string {
+  if (clientHasDualChat(profile)) return 'Chat'
   return resolveCoachService(profile) === 'human' ? clientChatNavLabel(profile) : 'Smart Coach'
 }

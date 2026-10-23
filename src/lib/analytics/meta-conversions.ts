@@ -61,7 +61,7 @@ export function resolveMetaPurchaseEventTime(
 export function metaEventSourcePathForPlanSlug(planSlug: string | null | undefined): string {
   if (!planSlug) return '/checkout'
   if (planSlug.startsWith('unlock_')) return '/unlock'
-  if (planSlug === 'exercise_library') return '/library/unlock'
+  if (planSlug === 'exercise_library' || planSlug === 'exercise_videos_monthly') return '/library/unlock'
   return '/checkout'
 }
 

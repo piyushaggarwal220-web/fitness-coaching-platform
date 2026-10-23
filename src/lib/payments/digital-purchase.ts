@@ -73,7 +73,9 @@ export async function latestCoachingPurchase(
   const row = paid.find((p) => {
     const slug = p.plan_slug
     if (!slug || isDigitalPlanSlug(slug)) return false
-    if (slug.startsWith('unlock_') || slug === 'exercise_library') return false
+    if (slug.startsWith('unlock_') || slug === 'exercise_library' || slug === 'exercise_videos_monthly') {
+      return false
+    }
     // Redeemed / expired codes are not an active coaching membership.
     const status = (p.status || '').toLowerCase()
     return status === 'paid' || status === 'captured' || status === 'completed'

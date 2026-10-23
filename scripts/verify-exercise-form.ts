@@ -6,7 +6,15 @@ import {
   shouldSkipExerciseForm,
 } from '../src/lib/exercise-form/normalize'
 import { exerciseFormUnlockKey, FREE_EXERCISE_FORM_LIFETIME_CAP } from '../src/lib/exercise-form/free-unlocks'
-import { EXERCISE_LIBRARY_ADDON_PAISE } from '../src/lib/payments/checkout-discounts'
+import {
+  EXERCISE_LIBRARY_ADDON_PAISE,
+  EXERCISE_VIDEOS_MONTHLY_PAISE,
+} from '../src/lib/payments/checkout-discounts'
+import {
+  EXERCISE_VIDEO_TRIAL_DAYS,
+  EXERCISE_VIDEO_UNLIMITED_MIN_PAISE,
+  resolveExerciseVideoAccess,
+} from '../src/lib/exercise-form/access'
 import {
   inferEquipmentCategory,
   listFormVideoOptions,
@@ -25,7 +33,84 @@ assert.equal(shouldSkipExerciseForm('Rest'), true)
 assert.equal(shouldSkipExerciseForm('Hip Flexor Stretch'), true)
 assert.equal(shouldSkipExerciseForm('Barbell Bench Press'), false)
 assert.equal(EXERCISE_LIBRARY_ADDON_PAISE, 34900)
+assert.equal(EXERCISE_VIDEOS_MONTHLY_PAISE, 6900)
+assert.equal(EXERCISE_VIDEO_UNLIMITED_MIN_PAISE, 60_000)
+assert.equal(EXERCISE_VIDEO_TRIAL_DAYS, 2)
 assert.equal(FREE_EXERCISE_FORM_LIFETIME_CAP, 3)
+
+const trialStart = '2026-10-20T00:00:00.000Z'
+const duringTrial = Date.parse('2026-10-21T12:00:00.000Z')
+const afterTrial = Date.parse('2026-10-23T00:00:01.000Z')
+const cheapPurchase = {
+  status: 'captured',
+  amount_paise: 49900,
+  plan_slug: 'offer_3_months',
+  created_at: trialStart,
+}
+assert.equal(
+  resolveExerciseVideoAccess({
+    nowMs: duringTrial,
+    lifetimeLibrary: false,
+    purchases: [cheapPurchase],
+  }).reason,
+  'trial'
+)
+assert.equal(
+  resolveExerciseVideoAccess({
+    nowMs: afterTrial,
+    lifetimeLibrary: false,
+    purchases: [cheapPurchase],
+  }).locked,
+  true
+)
+assert.equal(
+  resolveExerciseVideoAccess({
+    nowMs: afterTrial,
+    lifetimeLibrary: false,
+    purchases: [
+      cheapPurchase,
+      {
+        status: 'captured',
+        amount_paise: 6900,
+        plan_slug: 'exercise_videos_monthly',
+        created_at: '2026-10-22T12:00:00.000Z',
+      },
+    ],
+  }).reason,
+  'monthly'
+)
+assert.equal(
+  resolveExerciseVideoAccess({
+    nowMs: afterTrial,
+    lifetimeLibrary: false,
+    purchases: [{ status: 'captured', amount_paise: 89900, plan_slug: '3_months', created_at: trialStart }],
+  }).reason,
+  'unlimited_paid'
+)
+assert.equal(
+  resolveExerciseVideoAccess({
+    nowMs: afterTrial,
+    lifetimeLibrary: true,
+    purchases: [cheapPurchase],
+  }).reason,
+  'lifetime_library'
+)
+assert.equal(
+  resolveExerciseVideoAccess({
+    nowMs: afterTrial,
+    lifetimeLibrary: false,
+    purchases: [{ status: 'captured', amount_paise: 59900, plan_slug: '3_months', created_at: trialStart }],
+  }).locked,
+  true
+)
+assert.equal(
+  resolveExerciseVideoAccess({
+    nowMs: afterTrial,
+    lifetimeLibrary: false,
+    purchases: [{ status: 'captured', amount_paise: 60000, plan_slug: '3_months', created_at: trialStart }],
+  }).unlimited,
+  true
+)
 assert.equal(
   exerciseFormUnlockKey({ found: true, exerciseId: 42, query: 'bench press', name: 'Barbell Bench Press' }),
   'mw:42'

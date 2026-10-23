@@ -8,6 +8,8 @@ import {
   checkoutAddonsFromNotes,
   EXERCISE_LIBRARY_ADDON_LABEL,
   EXERCISE_LIBRARY_ADDON_PAISE,
+  EXERCISE_VIDEOS_MONTHLY_LABEL,
+  EXERCISE_VIDEOS_MONTHLY_PAISE,
 } from '@/lib/payments/checkout-discounts'
 import { isAffiliateDiscountCode } from '@/lib/payments/affiliate-codes'
 import { notifyAffiliateCodeUsage } from '@/lib/payments/affiliate-notify'
@@ -27,6 +29,10 @@ import {
   fulfillExerciseLibraryAddon,
   isExerciseLibraryAddonOrder,
 } from '@/lib/payments/exercise-library-addon'
+import {
+  fulfillExerciseVideosMonthly,
+  isExerciseVideosMonthlyOrder,
+} from '@/lib/payments/exercise-videos-monthly'
 import {
   fulfillPlatformUnlockAddon,
   isPlatformUnlockOrder,
@@ -313,6 +319,40 @@ export async function POST(request: Request) {
         ...metaIdsFromOrderNotes(notes),
       })
       return NextResponse.json({ success: true, purchaseId: result.purchaseId, addon: 'exercise_library' })
+    }
+
+    if (isExerciseVideosMonthlyOrder(notes)) {
+      const userId = notes.user_id?.trim()
+      const email = (notes.customer_email || payment.email || '').trim().toLowerCase()
+      const name = (notes.customer_name || '').trim() || 'Member'
+      if (!userId || !email) {
+        return NextResponse.json({ success: false, error: 'Missing exercise videos buyer' }, { status: 422 })
+      }
+      if (payment.amount !== EXERCISE_VIDEOS_MONTHLY_PAISE) {
+        return NextResponse.json({ success: false, error: 'Amount mismatch' }, { status: 422 })
+      }
+      const result = await fulfillExerciseVideosMonthly({
+        userId,
+        email,
+        name,
+        phone: notes.customer_phone || payment.contact || null,
+        razorpayPaymentId: payment.id,
+        razorpayOrderId: payment.order_id,
+        amountPaise: payment.amount,
+      })
+      scheduleMetaPurchaseBackup({
+        purchaseId: result.purchaseId,
+        paymentId: payment.id,
+        email,
+        phone: notes.customer_phone || payment.contact || null,
+        amountPaise: payment.amount,
+        currency: payment.currency || 'INR',
+        planSlug: 'exercise_videos_monthly',
+        contentName: EXERCISE_VIDEOS_MONTHLY_LABEL,
+        eventSourcePath: '/library/unlock',
+        ...metaIdsFromOrderNotes(notes),
+      })
+      return NextResponse.json({ success: true, purchaseId: result.purchaseId, addon: 'exercise_videos_monthly' })
     }
 
     // Resolve active + legacy plans so in-flight retired purchases can still fulfill.

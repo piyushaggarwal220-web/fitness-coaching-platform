@@ -1,9 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { Loader2, Play, X } from 'lucide-react'
 import { clientColors as colors, layout, radius, spacing } from '@/lib/design-tokens'
 import type { FormDemoGender } from '@/lib/exercise-form/musclewiki'
+import { formatInrFromPaise } from '@/lib/payments/checkout-discounts'
 
 type VideoOption = { gender: FormDemoGender; angle: string; hasPoster?: boolean }
 
@@ -26,6 +28,10 @@ type FormPayload = {
   unavailable?: boolean
   locked?: boolean
   entitled?: boolean
+  unlimited?: boolean
+  reason?: string
+  trialEndsAt?: string | null
+  accessUntil?: string | null
   freeUnlock?: boolean
   freeUsed?: number
   freeRemaining?: number
@@ -416,6 +422,59 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
             <p style={{ margin: 0, color: colors.textSecondary, lineHeight: 1.45 }}>
               No form video for this move. Follow your coach&apos;s notes, or ask in chat.
             </p>
+          ) : data?.locked ? (
+            <>
+              <div
+                style={{
+                  marginBottom: 14,
+                  padding: 14,
+                  borderRadius: 12,
+                  background: colors.bgCard,
+                  border: `1px solid ${colors.borderSubtle}`,
+                }}
+              >
+                <p style={{ margin: '0 0 8px', fontWeight: 800, fontSize: 16, color: colors.textPrimary }}>
+                  Video trial ended
+                </p>
+                <p style={{ margin: '0 0 12px', fontSize: 14, lineHeight: 1.5, color: colors.textSecondary }}>
+                  Form videos stay free for 2 days on plans under ₹600. Continue this month for{' '}
+                  {formatInrFromPaise(data.pricePaise ?? 6900)}.
+                </p>
+                <Link
+                  href="/library/unlock"
+                  style={{
+                    display: 'block',
+                    textAlign: 'center',
+                    textDecoration: 'none',
+                    padding: '12px 14px',
+                    borderRadius: 10,
+                    background: colors.accent,
+                    color: colors.textInverse,
+                    fontWeight: 800,
+                    fontSize: 14,
+                  }}
+                >
+                  Continue videos · {formatInrFromPaise(data.pricePaise ?? 6900)}/month
+                </Link>
+              </div>
+              {data.steps.length > 0 ? (
+                <ol
+                  style={{
+                    margin: 0,
+                    paddingLeft: 18,
+                    color: colors.textSecondary,
+                    fontSize: 14,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {data.steps.map((step, index) => (
+                    <li key={`${index}-${step.slice(0, 24)}`} style={{ marginBottom: 10 }}>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              ) : null}
+            </>
           ) : (
             <>
               {showPlayers ? (

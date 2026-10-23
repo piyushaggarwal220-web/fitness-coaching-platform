@@ -56,6 +56,8 @@ assert.equal(
 )
 assert.match(read('src/app/api/payment/verify/route.ts'), /queueMetaPurchaseForRecordedSale/)
 assert.match(read('src/lib/payments/exercise-library-addon.ts'), /queueMetaPurchaseForRecordedSale/)
+assert.match(read('src/lib/payments/exercise-videos-monthly.ts'), /queueMetaPurchaseForRecordedSale/)
+assert.match(read('src/app/api/payment/webhook/route.ts'), /isExerciseVideosMonthlyOrder/)
 assert.match(read('src/lib/payments/platform-unlock-addon.ts'), /queueMetaPurchaseForRecordedSale/)
 assert.match(read('src/lib/analytics/meta-purchase-backfill.ts'), /isMetaPurchaseEligibleSale/)
 assert.doesNotMatch(read('src/lib/analytics/meta-purchase-backfill.ts'), /like\('razorpay_payment_id', 'pay_%'\)/)

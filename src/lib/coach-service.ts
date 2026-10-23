@@ -28,11 +28,17 @@ export function usesHumanCoach(profile: CoachServiceProfile | null | undefined):
   return resolveCoachService(profile) === 'human'
 }
 
-/** Piyush clients get automated plans and check-ins only — no Smart Coach or Piyush chat. */
-export function clientHasCoachChat(profile: CoachServiceProfile | null | undefined): boolean {
-  return profile?.coach_id !== PIYUSH_COACH_ID
+/** High-payers on Piyush can use Smart Coach and also message Piyush. */
+export function clientHasDualChat(profile: CoachServiceProfile | null | undefined): boolean {
+  return profile?.coach_id === PIYUSH_COACH_ID
 }
 
+/** Every client can open chat. Dual clients pick Smart Coach or Piyush. */
+export function clientHasCoachChat(_profile?: CoachServiceProfile | null): boolean {
+  return true
+}
+
+/** Automated check-in notes skip Piyush's inbox — only client-started messages go there. */
 export function coachIdHasClientChat(coachId: string | null | undefined): boolean {
   return coachId !== PIYUSH_COACH_ID
 }

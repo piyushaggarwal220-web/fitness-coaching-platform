@@ -19,7 +19,7 @@ import { mobileStyles } from '@/lib/mobile-styles';
 import { clientColors as colors, spacing } from '@/lib/design-tokens';
 import { SuccessState } from '@/components/motion';
 import { clientChatNavLabel } from '@/lib/coach-routing';
-import { clientHasCoachChat } from '@/lib/coach-service';
+import { coachIdHasClientChat } from '@/lib/coach-service';
 import type { Checkin, MidWeekCheckinFormData, OnboardingProfile } from '@/types/database';
 
 const supabase = createClient();
@@ -128,7 +128,7 @@ export default function MidWeekCheckinPage() {
       if (!parsed.ok) throw new Error(parsed.error)
 
       setSuccess(
-        clientHasCoachChat(profile)
+        coachIdHasClientChat(profile?.coach_id)
           ? `Day 3 check-in submitted! ${clientChatNavLabel(profile)} replies within 30 minutes. Your plan stays the same until the next weekly update.`
           : 'Day 3 check-in submitted! You’ll get a notification within 30 minutes. Your plan stays the same until the next weekly update.'
       );

@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireApiUser } from '@/lib/api-auth'
 import { profileEntitledForExerciseLibrary } from '@/lib/addon-protocols'
-import { FREE_EXERCISE_FORM_LIFETIME_CAP } from '@/lib/exercise-form/free-unlocks'
+import { loadExerciseVideoAccess } from '@/lib/exercise-form/access-server'
+import { publicExerciseVideoAccess } from '@/lib/exercise-form/access'
 import { lookupExerciseForm, publicFormPayload } from '@/lib/exercise-form/lookup'
 import type { FormDemoGender } from '@/lib/exercise-form/musclewiki'
-import { EXERCISE_LIBRARY_ADDON_PAISE } from '@/lib/payments/checkout-discounts'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,24 +21,6 @@ async function loadFormProfile(supabase: SupabaseClient, userId: string) {
   }
 }
 
-function accessMeta(input: {
-  locked: boolean
-  entitled: boolean
-  freeUnlock?: boolean
-  used?: number
-  remaining?: number
-}) {
-  return {
-    locked: input.locked,
-    entitled: input.entitled,
-    freeUnlock: input.freeUnlock === true,
-    freeUsed: input.used ?? 0,
-    freeRemaining: input.remaining ?? (input.entitled ? FREE_EXERCISE_FORM_LIFETIME_CAP : 0),
-    freeCap: FREE_EXERCISE_FORM_LIFETIME_CAP,
-    pricePaise: EXERCISE_LIBRARY_ADDON_PAISE,
-  }
-}
-
 export async function GET(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response
@@ -50,24 +32,27 @@ export async function GET(request: Request) {
 
   try {
     const profile = await loadFormProfile(auth.supabase, auth.user.id)
+    const access = await loadExerciseVideoAccess({
+      userId: auth.user.id,
+      lifetimeLibrary: profile.entitled,
+    })
     const result = await lookupExerciseForm(name)
     const publicPayload = publicFormPayload(result, profile.gender)
+    const accessMeta = publicExerciseVideoAccess(access)
 
-    if (!result.configured || result.skipped || !result.found || !publicPayload.hasVideo) {
+    if (!access.allowed) {
       return NextResponse.json({
         success: true,
-        ...accessMeta({
-          locked: false,
-          entitled: profile.entitled,
-          remaining: FREE_EXERCISE_FORM_LIFETIME_CAP,
-        }),
+        ...accessMeta,
         ...publicPayload,
+        videos: [],
+        hasVideo: false,
       })
     }
 
     return NextResponse.json({
       success: true,
-      ...accessMeta({ locked: false, entitled: true, remaining: FREE_EXERCISE_FORM_LIFETIME_CAP }),
+      ...accessMeta,
       ...publicPayload,
     })
   } catch (err) {

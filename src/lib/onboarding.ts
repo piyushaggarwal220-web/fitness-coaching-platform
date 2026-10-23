@@ -2162,7 +2162,7 @@ export async function authenticateClient(
         .select('id')
         .eq('user_id', user.id)
         .eq('status', 'captured')
-        .neq('plan_slug', 'exercise_library')
+        .not('plan_slug', 'in', '(exercise_library,exercise_videos_monthly)')
         .limit(1)
         .maybeSingle()
       if (capturedPurchase) {

@@ -1,4 +1,5 @@
 import { requireApiUser } from '@/lib/api-auth'
+import { loadExerciseVideoAccess } from '@/lib/exercise-form/access-server'
 import { lookupExerciseForm } from '@/lib/exercise-form/lookup'
 import {
   getCachedMuscleWikiMedia,
@@ -23,6 +24,11 @@ export async function GET(request: Request) {
   }
 
   try {
+    const access = await loadExerciseVideoAccess({ userId: auth.user.id })
+    if (!access.allowed) {
+      return new Response('Exercise videos require a plan or ₹69/month', { status: 403 })
+    }
+
     const result = await lookupExerciseForm(name)
     const video = pickFormVideo(result.videos, gender, angle)
     if (!video) {

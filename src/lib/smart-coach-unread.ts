@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { clientHasDualChat, usesAiCoach, type CoachServiceProfile } from '@/lib/coach-service'
 
 const READ_KEY = 'lurvox-smart-coach-read-at'
 export const SMART_COACH_READ_EVENT = 'lurvox-smart-coach-read'
@@ -48,4 +49,27 @@ export async function countSmartCoachUnread(
     .gt('created_at', since)
 
   return count ?? 0
+}
+
+export async function countVisibleClientChatUnread(
+  supabase: SupabaseClient,
+  clientId: string,
+  profile: CoachServiceProfile | null | undefined
+): Promise<number> {
+  const dual = clientHasDualChat(profile)
+  const ai = usesAiCoach(profile)
+  let total = 0
+  if (dual || ai) {
+    total += await countSmartCoachUnread(supabase, clientId)
+  }
+  if (dual || !ai) {
+    const { data } = await supabase
+      .from('coach_conversations')
+      .select('unread_by_client')
+      .eq('client_id', clientId)
+      .neq('status', 'closed')
+      .maybeSingle()
+    total += Number(data?.unread_by_client ?? 0)
+  }
+  return total
 }
