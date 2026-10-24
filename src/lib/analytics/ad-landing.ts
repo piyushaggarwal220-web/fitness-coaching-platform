@@ -104,7 +104,7 @@ export const PREVIEW6_DROPOFF_SECTIONS = [
  * and keys/labels landing_dropoff already allows for path=/preview7.
  */
 export const PREVIEW7_DROPOFF_SECTIONS = [
-  { id: 'lurvox-offer-strip-home', key: 'p7_hero', index: 0, label: 'Hero' },
+  { id: 'MainContent', key: 'p7_hero', index: 0, label: 'Hero' },
   { id: 'plans', key: 'p7_plans', index: 1, label: 'Plans' },
   { id: 'start', key: 'p7_close', index: 5, label: 'Closing offer' },
 ] as const

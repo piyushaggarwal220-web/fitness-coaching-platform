@@ -88,7 +88,7 @@ const snippet = `{%- comment -%} ${MARKER} {%- endcomment -%}
 (function () {
   if (location.pathname !== '/' && location.pathname !== '') return;
   var parts = [
-    [['lurvox-offer-strip-home', 'top'], 'hero', 0, 'Hero'],
+    [['MainContent', 'lurvox-offer-strip-home', 'top'], 'hero', 0, 'Hero'],
     [['what-you-get', 'system'], 'system', 2, 'What you get'],
     [['plans', 'pricing'], 'pricing', 5, 'Plans'],
     [['start'], 'close', 7, 'Closing offer']
