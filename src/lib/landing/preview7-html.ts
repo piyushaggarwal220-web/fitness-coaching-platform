@@ -14,7 +14,10 @@ export function preview7LiveHtml(html: string): string {
 }
 
 function rewriteHomeOfferStrip(html: string): string {
-  return html.replace(
+  const hide =
+    '<style id="lx-brand-strip">.lurvox-offer-strip__timer,.lurvox-offer-strip__emoji,.lurvox-offer-strip__clock{display:none!important}</style>'
+  const withCss = html.includes('id="lx-brand-strip"') ? html : html.replace(/<\/head>/i, `${hide}</head>`)
+  return withCss.replace(
     /<aside\b[^>]*id="lurvox-offer-strip-home"[^>]*>[\s\S]*?<\/aside>/i,
     (aside) => {
       let next = aside.replace(/aria-label="[^"]*"/i, `aria-label="${BRAND_TOP_BAR.replace(/"/g, '&quot;')}"`)
@@ -26,11 +29,11 @@ function rewriteHomeOfferStrip(html: string): string {
       } else {
         next = next.replace(/>[\s\S]*?</, `>${BRAND_TOP_BAR}<`)
       }
-      next = next.replace(/<span class="lurvox-offer-strip__emoji"[^>]*>[\s\S]*?<\/span>/, '')
       next = next.replace(
-        /<span\b[^>]*class="[^"]*lurvox-offer-strip__timer[^"]*"[\s\S]*?<\/span>/,
+        /<span[^>]*lurvox-offer-strip__timer[\s\S]*?<strong>[^<]*<\/strong>\s*<\/span>/,
         ''
       )
+      next = next.replace(/<span class="lurvox-offer-strip__emoji"[^>]*>[\s\S]*?<\/span>/, '')
       return next
     }
   )

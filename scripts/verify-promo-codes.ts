@@ -284,6 +284,7 @@ const normal = preview7LiveHtml(`<head></head><body>
 assert.equal(normal.includes('id="lx-p7-prices"'), false)
 assert.equal(normal.includes('id="lurvox-offer-strip-home"'), true)
 assert.match(normal, /India's best human fitness coaching/)
+assert.match(normal, /id="lx-brand-strip"/)
 assert.doesNotMatch(normal, /WELCOME60 for 60% OFF ENDS SOON/)
 assert.match(normal, /WELCOME60 = 60% off/)
 assert.match(normal, /60% OFF · SAVE ₹1,200/)
