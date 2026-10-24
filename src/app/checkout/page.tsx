@@ -51,6 +51,8 @@ import {
 import { type CheckoutBasicsFormState } from '@/components/checkout/CheckoutBasicsStep';
 import { isPublicDemoEmail } from '@/lib/public-demo';
 import { leavePublicDemoSession } from '@/lib/public-demo-session';
+import { loadRazorpayCheckout } from '@/lib/payments/load-razorpay';
+import { normalizePhoneForWhatsApp } from '@/lib/phone';
 
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
@@ -141,7 +143,6 @@ function CheckoutForm() {
  const [loading, setLoading] = useState(false);
  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
  const [error, setError] = useState('');
- const [razorpayReady, setRazorpayReady] = useState(false);
  const [verificationId, setVerificationId] = useState('');
  const [emailCode, setEmailCode] = useState('');
  const [emailVerified, setEmailVerified] = useState(false);
@@ -565,19 +566,11 @@ function CheckoutForm() {
  if (!email.trim()) missing.push('Email');
  else if (!email.includes('@')) missing.push('A valid email address');
  if (!phone.trim()) missing.push('WhatsApp number');
- const razorpayLoaded =
- razorpayReady || (typeof window !== 'undefined' && Boolean(window.Razorpay));
- if (!testMode && !razorpayLoaded) {
- missing.push('Wait for the payment form to finish loading');
+ else if (!normalizePhoneForWhatsApp(phone)) {
+ missing.push('A valid WhatsApp number (10-digit Indian mobile)');
  }
  return missing;
  };
-
- useEffect(() => {
- if (typeof window !== 'undefined' && window.Razorpay) setRazorpayReady(true);
- }, []);
-
- const liveMissing = getMissingRequirements();
 
  const focusFirstMissing = () => {
  if (!name.trim()) {
@@ -766,6 +759,7 @@ function CheckoutForm() {
  ...adFunnel,
  });
 
+ const payPhone = normalizePhoneForWhatsApp(phone) ?? phone
  const orderRes = await fetch('/api/payment/create-order', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
@@ -773,7 +767,7 @@ function CheckoutForm() {
  planSlug: plan.slug,
  email,
  name,
- phone,
+ phone: payPhone,
  policyAgreementAccepted: true,
  verificationId: checkoutVerificationId && checkoutVerificationId !== 'saved'
  ? checkoutVerificationId
@@ -809,9 +803,7 @@ function CheckoutForm() {
  return;
  }
 
- if (!window.Razorpay) {
- throw new Error('Razorpay checkout failed to load. Please refresh and try again.');
- }
+ await loadRazorpayCheckout();
 
  const rzp = new window.Razorpay({
  key: orderData.keyId,
@@ -820,7 +812,7 @@ function CheckoutForm() {
  name: 'LURVOX',
  description: `${plan.name} coaching plan`,
  order_id: orderData.orderId,
- prefill: { name, email, contact: phone },
+ prefill: { name, email, contact: payPhone },
  handler: async (response: RazorpayHandlerResponse) => {
  try {
  setLoading(true);
@@ -1162,13 +1154,7 @@ function CheckoutForm() {
  )}
  </div>
 
- {!testMode && (
- <Script
- src="https://checkout.razorpay.com/v1/checkout.js"
- onLoad={() => setRazorpayReady(true)}
- onReady={() => setRazorpayReady(true)}
- />
- )}
+ {!testMode && <Script src="https://checkout.razorpay.com/v1/checkout.js" />}
  </div>
  );
 }

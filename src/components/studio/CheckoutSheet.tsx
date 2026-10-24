@@ -6,6 +6,7 @@ import { PREVIEW_AD_PATH } from '@/lib/analytics/ad-landing'
 import { metaBrowserIdsForRequest, readMetaBrowserIds } from '@/lib/analytics/meta-attribution'
 import { queueMetaPurchase } from '@/lib/analytics/meta-pixel'
 import { COACHING_PLANS } from '@/lib/payments/plans'
+import { loadRazorpayCheckout } from '@/lib/payments/load-razorpay'
 import { FIRST_PLAN_TARGET, planName, planPrice, type StudioPlan } from './content'
 
 type RazorpayResponse = {
@@ -20,26 +21,6 @@ declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => RazorpayInstance
   }
-}
-
-function loadRazorpay() {
-  if (typeof window === 'undefined') return Promise.resolve()
-  if (window.Razorpay) return Promise.resolve()
-  return new Promise<void>((resolve, reject) => {
-    const found = document.querySelector<HTMLScriptElement>('script[data-lx-razorpay]')
-    if (found) {
-      found.addEventListener('load', () => resolve(), { once: true })
-      found.addEventListener('error', () => reject(new Error('Razorpay checkout failed to load.')), { once: true })
-      return
-    }
-    const script = document.createElement('script')
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-    script.async = true
-    script.dataset.lxRazorpay = '1'
-    script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Razorpay checkout failed to load. Refresh and try again.'))
-    document.body.appendChild(script)
-  })
 }
 
 function normalizePhone(value: string) {
@@ -171,7 +152,7 @@ export function CheckoutSheet({
         return
       }
 
-      await loadRazorpay()
+      await loadRazorpayCheckout()
       if (!window.Razorpay) throw new Error('Razorpay checkout failed to load.')
       const checkout = new window.Razorpay({
         key: orderData.keyId,

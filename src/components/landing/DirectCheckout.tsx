@@ -9,6 +9,7 @@ import { getCoachingPlan, isDurationOfferSlug } from '@/lib/payments/plans'
 import { PREVIEW7_AD_PATH } from '@/lib/analytics/ad-landing'
 import { PREVIEW_SALE_CODE } from '@/lib/payments/preview-sale-code'
 import { formatPreview7Inr, preview7AmountPaise } from '@/lib/payments/preview7-prices'
+import { loadRazorpayCheckout } from '@/lib/payments/load-razorpay'
 import { usePreviewSale } from './PreviewSaleCode'
 import styles from './DirectCheckout.module.css'
 
@@ -24,26 +25,6 @@ declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => RazorpayInstance
   }
-}
-
-function loadRazorpay() {
-  if (typeof window === 'undefined') return Promise.resolve()
-  if (window.Razorpay) return Promise.resolve()
-  return new Promise<void>((resolve, reject) => {
-    const found = document.querySelector<HTMLScriptElement>('script[data-lx-razorpay]')
-    if (found) {
-      found.addEventListener('load', () => resolve(), { once: true })
-      found.addEventListener('error', () => reject(new Error('Razorpay checkout failed to load.')), { once: true })
-      return
-    }
-    const script = document.createElement('script')
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-    script.async = true
-    script.dataset.lxRazorpay = '1'
-    script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Razorpay checkout failed to load. Refresh and try again.'))
-    document.body.appendChild(script)
-  })
 }
 
 function normalizePhone(value: string) {
@@ -192,7 +173,7 @@ export function DirectCheckout({
         return
       }
 
-      await loadRazorpay()
+      await loadRazorpayCheckout()
       if (!window.Razorpay) throw new Error('Razorpay checkout failed to load.')
       const accent = tone === 'purple' ? '#7c3aed' : tone === 'colour' ? '#f59e0b' : tone === 'orange' ? '#ff6200' : '#1e4d3d'
       const checkout = new window.Razorpay({
