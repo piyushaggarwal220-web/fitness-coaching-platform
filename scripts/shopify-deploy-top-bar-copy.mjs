@@ -24,7 +24,7 @@ async function get(key) {
   return (await res.json()).asset.value
 }
 
-const headline = 'Best human coaching platform in India'
+const headline = "India's best human fitness coaching"
 let index = await get('templates/index.json')
 const data = JSON.parse(index)
 const offer = data.sections?.lurvox_offer_home
