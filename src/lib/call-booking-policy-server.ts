@@ -1,9 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   evaluateCallBookingPolicy,
+  isWeeklyCallPlanSlug,
+  weeklyCallAlreadyBooked,
+  weeklyCallLimitMessage,
   type CallBookingPolicy,
 } from '@/lib/call-booking-policy'
-import { getInitialWeeklyCallWindow } from '@/lib/weekly-call-timing'
+import { hasClientEntitlement } from '@/lib/entitlements'
 import { getClientPlanSlug } from '@/lib/weekly-call-schedule'
 
 async function loadAthleticBodyJoinedAt(
@@ -36,57 +39,69 @@ export async function loadClientCallBookingPolicy(
   const [{ data: profile }, planSlug, joinedAt] = await Promise.all([
     admin
       .from('profiles')
-      .select('plan_delivered, checkin_schedule_started_at')
+      .select(
+        'plan_delivered, checkin_schedule_started_at, payment_confirmed, access_source, subscription_expires_at'
+      )
       .eq('id', clientId)
       .maybeSingle(),
     getClientPlanSlug(admin, clientId),
     loadAthleticBodyJoinedAt(admin, clientId),
   ])
 
-  const policy = evaluateCallBookingPolicy({
+  let policy = evaluateCallBookingPolicy({
     planSlug,
     checkinScheduleStartedAt: profile?.checkin_schedule_started_at ?? null,
     planDelivered: Boolean(profile?.plan_delivered),
     joinedAt,
   })
 
-  if (!policy.canRequestManualCall) return policy
+  if (!hasClientEntitlement(profile)) {
+    return {
+      ...policy,
+      weeklyCallPlan: false,
+      canRequestManualCall: false,
+      message: null,
+    }
+  }
 
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const { data: recent } = await admin
+  if (!policy.weeklyCallPlan) return policy
+
+  const { data: rows, error } = await admin
     .from('call_requests')
-    .select('id')
+    .select('status, requested_at')
     .eq('client_id', clientId)
-    .eq('status', 'completed')
-    .gte('resolved_at', weekAgo)
-    .limit(1)
-    .maybeSingle()
+    .in('status', ['requested', 'scheduled', 'completed', 'declined'])
+    .order('requested_at', { ascending: false })
+    .limit(20)
 
-  if (recent?.id) {
+  if (error) {
     return {
       ...policy,
       canRequestManualCall: false,
-      message: 'You already had a coach call this week. You can book the next one after 7 days.',
+      message: 'Call booking could not be checked. Try again in a moment.',
+    }
+  }
+
+  const history = rows ?? []
+  const open = history.some((row) => row.status === 'requested' || row.status === 'scheduled')
+  const week = weeklyCallAlreadyBooked(history, new Date())
+  if (open || week.booked) {
+    policy = {
+      ...policy,
+      canRequestManualCall: false,
+      message: weeklyCallLimitMessage(open || week.open),
     }
   }
 
   return policy
 }
 
-/** Cancel active call requests that violate plan / first-week / new-client rules. */
+/** Cancel open calls that are not a 6-month or 12-month client booking from Home. */
 export async function enforceClientCallPolicy(
   admin: SupabaseClient,
   clientId: string
 ): Promise<void> {
-  const [{ data: profile }, planSlug, joinedAt] = await Promise.all([
-    admin
-      .from('profiles')
-      .select('checkin_schedule_started_at')
-      .eq('id', clientId)
-      .maybeSingle(),
-    getClientPlanSlug(admin, clientId),
-    loadAthleticBodyJoinedAt(admin, clientId),
-  ])
+  const planSlug = await getClientPlanSlug(admin, clientId)
 
   const now = new Date().toISOString()
   const { data: active } = await admin
@@ -110,32 +125,16 @@ export async function enforceClientCallPolicy(
       .in('status', ['requested', 'scheduled'])
   }
 
-  const policy = evaluateCallBookingPolicy({
-    planSlug,
-    checkinScheduleStartedAt: profile?.checkin_schedule_started_at ?? null,
-    planDelivered: true,
-    joinedAt,
-  })
-
-  if (!policy.isGrandfatheredAthleticBody) {
+  if (!isWeeklyCallPlanSlug(planSlug)) {
     for (const row of active) {
-      await cancel(row.id, 'Auto-closed — no coach calls. Message the coaches on Instagram.')
+      await cancel(row.id, 'Auto-closed — coach calls are for 6-month and 12-month plans.')
     }
     return
   }
 
-  const startedAt = profile?.checkin_schedule_started_at
-  if (!startedAt) {
-    for (const row of active) {
-      await cancel(row.id, 'Auto-closed — weekly call books after your plan is delivered')
-    }
-    return
-  }
-
-  const window = getInitialWeeklyCallWindow(startedAt)
-  if (!window.eligible) {
-    for (const row of active) {
-      await cancel(row.id, 'Auto-closed — weekly call opens after the first week of coaching')
+  for (const row of active) {
+    if (row.source !== 'client_requested') {
+      await cancel(row.id, 'Auto-closed — place a call from Home.')
     }
   }
 }
