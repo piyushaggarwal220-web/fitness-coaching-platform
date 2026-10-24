@@ -74,48 +74,52 @@ function trackingScript(
   var dropoffUrl = ${JSON.stringify(dropoff ? `${dropoff.supabaseUrl}/rest/v1/landing_dropoff` : '')};
   var dropoffKey = ${JSON.stringify(dropoff?.anonKey || '')};
   var sections = ${JSON.stringify(sections)};
-  if (!dropoffUrl || !('IntersectionObserver' in window)) return;
-  var sent = {};
-  function record(section) {
-    if (sent[section.key]) return;
-    sent[section.key] = true;
-    var session = sessionStorage.getItem('lx_drop');
-    if (!session) {
-      var bytes = new Uint8Array(16);
-      crypto.getRandomValues(bytes);
-      session = Array.from(bytes).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
-      sessionStorage.setItem('lx_drop', session);
+  function bootDropoff() {
+    if (!dropoffUrl || !('IntersectionObserver' in window)) return;
+    var sent = {};
+    function record(section) {
+      if (sent[section.key]) return;
+      sent[section.key] = true;
+      var session = sessionStorage.getItem('lx_drop');
+      if (!session) {
+        var bytes = new Uint8Array(16);
+        crypto.getRandomValues(bytes);
+        session = Array.from(bytes).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+        sessionStorage.setItem('lx_drop', session);
+      }
+      fetch(dropoffUrl, {
+        method: 'POST',
+        headers: {
+          apikey: dropoffKey,
+          Authorization: 'Bearer ' + dropoffKey,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({
+          session_id: session,
+          section_key: section.key,
+          section_index: section.index,
+          section_label: section.label,
+          source: traffic,
+          path: '/preview7'
+        })
+      }).catch(function () {});
     }
-    fetch(dropoffUrl, {
-      method: 'POST',
-      headers: {
-        apikey: dropoffKey,
-        Authorization: 'Bearer ' + dropoffKey,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal'
-      },
-      body: JSON.stringify({
-        session_id: session,
-        section_key: section.key,
-        section_index: section.index,
-        section_label: section.label,
-        source: traffic,
-        path: '/preview7'
-      })
-    }).catch(function () {});
+    var nodes = sections.map(function (section) {
+      return [document.getElementById(section.id), section];
+    }).filter(function (row) { return row[0]; });
+    if (!nodes.length) return;
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var match = nodes.find(function (row) { return row[0] === entry.target; });
+        if (match) record(match[1]);
+      });
+    }, { threshold: 0, rootMargin: '0px 0px -25% 0px' });
+    nodes.forEach(function (row) { observer.observe(row[0]); });
   }
-  var nodes = sections.map(function (section) {
-    return [document.getElementById(section.id), section];
-  }).filter(function (row) { return row[0]; });
-  if (!nodes.length) return;
-  var observer = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      if (!entry.isIntersecting) return;
-      var match = nodes.find(function (row) { return row[0] === entry.target; });
-      if (match) record(match[1]);
-    });
-  }, { threshold: 0, rootMargin: '0px 0px -25% 0px' });
-  nodes.forEach(function (row) { observer.observe(row[0]); });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootDropoff);
+  else bootDropoff();
 })();
 `.replace(/<\/script/gi, '<\\/script')
 }

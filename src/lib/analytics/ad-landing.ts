@@ -99,15 +99,14 @@ export const PREVIEW6_DROPOFF_SECTIONS = [
   { id: 'quiz', key: 'p6_quiz', index: 7, label: 'Fitness quiz' },
 ] as const
 
-/** Sections on the live quiz page. Keys and labels stay the ones landing_dropoff allows. */
+/**
+ * Preview 7 mirrors live lurvox.in. Bind only IDs that exist on that homepage
+ * and keys/labels landing_dropoff already allows for path=/preview7.
+ */
 export const PREVIEW7_DROPOFF_SECTIONS = [
   { id: 'lurvox-offer-strip-home', key: 'p7_hero', index: 0, label: 'Hero' },
   { id: 'plans', key: 'p7_plans', index: 1, label: 'Plans' },
-  { id: 'truth', key: 'p7_truth', index: 2, label: 'Truth check' },
-  { id: 'steps', key: 'p7_steps', index: 3, label: 'How it works' },
-  { id: 'faq', key: 'p7_faq', index: 4, label: 'Questions' },
   { id: 'start', key: 'p7_close', index: 5, label: 'Closing offer' },
-  { id: 'lx-home-quiz', key: 'p7_quiz', index: 6, label: 'Fitness quiz' },
 ] as const
 
 /** Only a known preview ad page may set the purchase source URL. Anything else stays on /checkout. */
