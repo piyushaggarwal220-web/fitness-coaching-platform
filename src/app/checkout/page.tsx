@@ -565,11 +565,17 @@ function CheckoutForm() {
  if (!email.trim()) missing.push('Email');
  else if (!email.includes('@')) missing.push('A valid email address');
  if (!phone.trim()) missing.push('WhatsApp number');
- if (!testMode && !razorpayReady) {
+ const razorpayLoaded =
+ razorpayReady || (typeof window !== 'undefined' && Boolean(window.Razorpay));
+ if (!testMode && !razorpayLoaded) {
  missing.push('Wait for the payment form to finish loading');
  }
  return missing;
  };
+
+ useEffect(() => {
+ if (typeof window !== 'undefined' && window.Razorpay) setRazorpayReady(true);
+ }, []);
 
  const liveMissing = getMissingRequirements();
 
@@ -1057,7 +1063,18 @@ function CheckoutForm() {
  </p>
  ) : null}
 
- {error && <div style={styles.error}>{error}</div>}
+ {error && (
+ <div style={styles.error}>
+ {error}
+ {missingItems.length > 0 ? (
+ <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+ {missingItems.map((item) => (
+ <li key={item}>{item}</li>
+ ))}
+ </ul>
+ ) : null}
+ </div>
+ )}
 
  <div style={{ ...styles.form, ...(storefrontCheckout ? styles.formFit : null) }}>
  <h2 style={{ ...dig(styles.sectionLabel, 'sectionLabel'), ...(storefrontCheckout ? styles.sectionLabelFit : null) }}>For payment</h2>
@@ -1149,6 +1166,7 @@ function CheckoutForm() {
  <Script
  src="https://checkout.razorpay.com/v1/checkout.js"
  onLoad={() => setRazorpayReady(true)}
+ onReady={() => setRazorpayReady(true)}
  />
  )}
  </div>
