@@ -88,9 +88,16 @@ async function get(key) {
 
 let layout = await get('layout/theme.liquid')
 const stamp = Date.now()
+const liquidSrc = `{{ 'lurvox-offer-overlay.js' | asset_url }}`
+if (/src="[^"]*lurvox-offer-overlay\.js[^"]*"/.test(layout)) {
+  layout = layout.replace(/src="[^"]*lurvox-offer-overlay\.js[^"]*"/, `src="${liquidSrc}"`)
+} else if (!layout.includes('lurvox-offer-overlay.js')) {
+  layout = layout.replace('</head>', `  <script src="${liquidSrc}" defer></script>\n</head>`)
+}
 layout = /<!-- lurvox-cache-bust \d+ -->/.test(layout)
   ? layout.replace(/<!-- lurvox-cache-bust \d+ -->/, `<!-- lurvox-cache-bust ${stamp} -->`)
   : layout.replace('</head>', `<!-- lurvox-cache-bust ${stamp} -->\n</head>`)
+console.log('overlay src liquid', layout.includes(liquidSrc))
 
 const files = [
   {
