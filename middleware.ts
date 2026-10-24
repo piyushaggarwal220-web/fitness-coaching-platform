@@ -26,6 +26,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(hostRedirect, 308)
   }
 
+  const pathname = request.nextUrl.pathname
+  // Razorpay has no session. A Supabase auth 504 here drops paid webhooks
+  // and can block create-order / verify while Auth is down.
+  if (shouldSkipAuthRefresh(pathname)) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
   const { url, anonKey } = supabasePublicConfig()
 
@@ -44,9 +51,21 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  await supabase.auth.getUser()
+  try {
+    await supabase.auth.getUser()
+  } catch {
+    // Keep the request alive. Auth outages must not fail checkout or webhooks.
+  }
 
   return supabaseResponse
+}
+
+function shouldSkipAuthRefresh(pathname: string): boolean {
+  return (
+    pathname === '/api/payment/webhook' ||
+    pathname === '/api/payment/create-order' ||
+    pathname === '/api/payment/verify'
+  )
 }
 
 export const config = {
