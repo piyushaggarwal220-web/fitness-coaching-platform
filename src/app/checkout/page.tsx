@@ -804,8 +804,12 @@ function CheckoutForm() {
  }
 
  await loadRazorpayCheckout();
+ const RazorpayCheckout = window.Razorpay;
+ if (!RazorpayCheckout) {
+ throw new Error('Razorpay checkout failed to load. Refresh and try again.');
+ }
 
- const rzp = new window.Razorpay({
+ const rzp = new RazorpayCheckout({
  key: orderData.keyId,
  amount: orderData.amount,
  currency: orderData.currency,

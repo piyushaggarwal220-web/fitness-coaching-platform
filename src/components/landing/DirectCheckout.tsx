@@ -174,9 +174,10 @@ export function DirectCheckout({
       }
 
       await loadRazorpayCheckout()
-      if (!window.Razorpay) throw new Error('Razorpay checkout failed to load.')
+      const RazorpayCheckout = window.Razorpay
+      if (!RazorpayCheckout) throw new Error('Razorpay checkout failed to load.')
       const accent = tone === 'purple' ? '#7c3aed' : tone === 'colour' ? '#f59e0b' : tone === 'orange' ? '#ff6200' : '#1e4d3d'
-      const checkout = new window.Razorpay({
+      const checkout = new RazorpayCheckout({
         key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,

@@ -153,8 +153,9 @@ export function CheckoutSheet({
       }
 
       await loadRazorpayCheckout()
-      if (!window.Razorpay) throw new Error('Razorpay checkout failed to load.')
-      const checkout = new window.Razorpay({
+      const RazorpayCheckout = window.Razorpay
+      if (!RazorpayCheckout) throw new Error('Razorpay checkout failed to load.')
+      const checkout = new RazorpayCheckout({
         key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,
