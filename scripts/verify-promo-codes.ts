@@ -281,18 +281,15 @@ const normal = preview7LiveHtml(`<head></head><body>
 <div class="ai-transformation-plan-card-savings-abc">60% OFF · SAVE ₹1,200</div>
 <div class="price">₹1999</div>
 </body>`)
-assert.equal(normal.includes('id="lx-p7-sale"'), false)
-assert.equal(normal.includes('Diwali sale'), false)
-assert.equal(normal.includes('DIWALI7O'), false)
-assert.equal(normal.includes('id="lurvox-offer-strip-home"'), false)
-assert.equal(normal.includes('WELCOME60'), false)
+assert.equal(normal.includes('id="lx-p7-prices"'), false)
+assert.equal(normal.includes('id="lurvox-offer-strip-home"'), true)
+assert.match(normal, /WELCOME60 for 60% OFF ENDS SOON/)
+assert.match(normal, /WELCOME60 = 60% off/)
+assert.match(normal, /60% OFF · SAVE ₹1,200/)
 assert.match(normal, /₹1299/)
 assert.match(normal, /≈ ₹433\/month/)
-assert.equal(normal.includes('60% OFF'), false)
 assert.match(normal, /₹2499/)
 assert.match(normal, />₹1999<\/div>/)
-assert.match(normal, /font-size: 58px/)
-assert.match(normal, /\[data-plan-index="3"\]/)
 assert.equal(normal.includes('preview7-beige'), false)
 assert.match(normal, /<base href="https:\/\/www\.lurvox\.in\/">/)
 const tracked = injectPreview7Tracking(normal, {
@@ -306,7 +303,7 @@ assert.match(tracked, /Lurvox_view_landing/)
 assert.match(tracked, /lurvox-offer-strip-home/)
 assert.equal(tracked.includes('location.replace'), false)
 assert.equal(tracked.indexOf('id="preview7-tracking"') < tracked.indexOf('<base '), true)
-pass('preview 7 shows today’s prices with no sale banner or sale code')
+pass('preview 7 mirrors the live storefront and keeps the app pixel')
 
 const lukeMigration = readFileSync(
   resolve('supabase/migrations/20260809180000_luke_affiliate_promo.sql'),

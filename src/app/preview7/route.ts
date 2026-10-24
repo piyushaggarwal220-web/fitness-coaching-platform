@@ -12,7 +12,7 @@ let cachedHome: { at: number; html: string } | null = null
 /**
  * ABO sales opens this URL. It has to stay on the app and fire the app pixel,
  * the same way preview 4, 5, and 6 do. A redirect to the shop never records a view.
- * The page is the live quiz storefront, before the sale banner and price changes.
+ * The page is the live lurvox.in homepage, plus the app pixel.
  */
 export async function GET(request: NextRequest) {
   const rendered = await renderPreview(request)
