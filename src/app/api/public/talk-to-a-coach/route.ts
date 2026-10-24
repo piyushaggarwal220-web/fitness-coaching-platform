@@ -11,7 +11,11 @@ import {
   isClientEmail,
 } from '@/lib/talk-to-coach-confirmation'
 
-const ALLOWED_ORIGINS = new Set(['https://www.lurvox.in', 'https://lurvox.in'])
+const ALLOWED_ORIGINS = new Set([
+  'https://www.lurvox.in',
+  'https://lurvox.in',
+  'https://app.lurvox.in',
+])
 const MAX_SUBMISSIONS = 2
 const NOTIFY_TO =
   process.env.TALK_TO_COACH_NOTIFY_EMAIL?.trim() || 'piyushfitness44@gmail.com'
