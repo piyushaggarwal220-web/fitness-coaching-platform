@@ -24,14 +24,6 @@ type RazorpayResponse = {
   razorpay_signature: string
 }
 
-type RazorpayInstance = { open: () => void; on?: (event: string, handler: (response: { error?: { description?: string } }) => void) => void }
-
-declare global {
-  interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => RazorpayInstance
-  }
-}
-
 function normalizePhone(value: string) {
   const digits = value.replace(/[^\d+]/g, '')
   if (/^\+91\d{10}$/.test(digits)) return digits

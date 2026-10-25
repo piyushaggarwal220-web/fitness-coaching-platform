@@ -11,15 +11,6 @@ type RazorpayHandlerResponse = {
   razorpay_signature: string
 }
 
-type RazorpayInstance = { open: () => void }
-type RazorpayConstructor = new (options: Record<string, unknown>) => RazorpayInstance
-
-declare global {
-  interface Window {
-    Razorpay?: RazorpayConstructor
-  }
-}
-
 export type PlatformUnlockCheckoutResult =
   | { status: 'success' }
   | { status: 'already_unlocked' }

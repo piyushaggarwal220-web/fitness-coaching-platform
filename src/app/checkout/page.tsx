@@ -114,18 +114,6 @@ type RazorpayHandlerResponse = {
  razorpay_signature: string;
 };
 
-type RazorpayInstance = {
- open: () => void;
- on?: (event: string, handler: (response: { error?: { description?: string } }) => void) => void;
-};
-type RazorpayConstructor = new (options: Record<string, unknown>) => RazorpayInstance;
-
-declare global {
- interface Window {
- Razorpay?: RazorpayConstructor;
- }
-}
-
 function CheckoutForm() {
  const searchParams = useSearchParams();
  const adLandingPath = previewAdLandingPath(searchParams.get('landing'));

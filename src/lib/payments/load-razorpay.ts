@@ -12,6 +12,14 @@ export type RazorpayCheckoutInstance = {
   on?: (event: string, handler: (response: { error?: { description?: string } }) => void) => void
 }
 
+export type RazorpayCheckoutConstructor = new (options: Record<string, unknown>) => RazorpayCheckoutInstance
+
+declare global {
+  interface Window {
+    Razorpay?: RazorpayCheckoutConstructor
+  }
+}
+
 function razorpayAvailable(): boolean {
   return typeof window !== 'undefined' && typeof window.Razorpay === 'function'
 }
