@@ -15,6 +15,8 @@ const ALLOWED_ORIGINS = new Set([
   'https://www.lurvox.in',
   'https://lurvox.in',
   'https://app.lurvox.in',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
 ])
 const MAX_SUBMISSIONS = 2
 const NOTIFY_TO =
@@ -163,15 +165,13 @@ export async function POST(request: Request) {
   if (!phone || phone.replace(/\D/g, '').length < 10) {
     return NextResponse.json({ ok: false, error: 'Please enter a valid phone number.' }, { status: 400, headers })
   }
+  if (!email || !email.includes('@')) {
+    return NextResponse.json({ ok: false, error: 'Please enter your email.' }, { status: 400, headers })
+  }
   if (genderRaw && !gender) {
     return NextResponse.json({ ok: false, error: 'Please pick your gender.' }, { status: 400, headers })
   }
-  if (!message || message.length < 10) {
-    return NextResponse.json(
-      { ok: false, error: 'Please share a bit more about what you need help with.' },
-      { status: 400, headers }
-    )
-  }
+  const storedNote = message.length >= 10 ? message : 'Please call me about LURVOX coaching.'
   if (
     body.preferredTime?.trim() &&
     !LEGACY_PREFERRED_TIME_OPTIONS.has(body.preferredTime.trim())
@@ -229,7 +229,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const messageWithGender = withGenderLine(message, gender)
+  const messageWithGender = withGenderLine(storedNote, gender)
   const storedMessage = explicitPreferredTime
     ? `Preferred call time: ${explicitPreferredTime}\n\n${messageWithGender}`
     : messageWithGender

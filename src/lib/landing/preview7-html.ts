@@ -1,26 +1,352 @@
 import { BRAND_TOP_BAR } from '@/lib/landing/brand-line'
 
 /**
- * Keep /preview7 visually identical to the live storefront.
- * Only fix protocol-relative shop URLs, set a base href so Shopify assets load
- * from app.lurvox.in, and replace the retired discount strip with the brand line.
+ * Keep /preview7 visually the live storefront, then fix the dead homepage
+ * call path: Shopify /contact never produced a lead. Replace it with the
+ * same consult fields as /pages/talk-to-a-coach, and put Talk in the hero
+ * and mobile header so catalog visitors can book without leaving preview7.
  */
 export function preview7LiveHtml(html: string): string {
   let next = html.replace(/\/\/www\.lurvox\.in/g, 'https://www.lurvox.in')
   if (!next.includes('<base ')) {
     next = next.replace(/<head[^>]*>/i, (head) => `${head}<base href="https://www.lurvox.in/">`)
   }
-  return injectHomeCoachForm(rewriteHomeOfferStrip(next))
+  return injectHomeCoachForm(
+    revampWhatYouGet(movePlansBeforeWhatYouGet(rewriteHeroStartCopy(rewriteHomeOfferStrip(next)))),
+  )
 }
 
-const HOME_COACH_FORM_SCRIPT = `<script id="lx-home-coach-form">
-(function(){if(window.__lurvoxHomeCoachForm)return;window.__lurvoxHomeCoachForm=true;var A="https://app.lurvox.in/api/public/talk-to-a-coach";var M="Homepage request: please call me about LURVOX coaching.";function field(f,k){for(var i=0;i<k.length;i++){var e=f.querySelector('[name="'+k[i]+'"]');if(e&&String(e.value||"").trim())return String(e.value).trim()}return""}function bind(f){if(f.dataset.lxCoachBound==="1")return;f.dataset.lxCoachBound="1";f.addEventListener("submit",function(ev){ev.preventDefault();ev.stopPropagation();var name=field(f,["contact[name]","name"]);var email=field(f,["contact[email]","email"]);var phone=field(f,["contact[phone]","phone"]);var st=f.querySelector("[data-lx-coach-status]");if(!st){st=document.createElement("p");st.setAttribute("data-lx-coach-status","1");st.setAttribute("role","status");f.appendChild(st)}var btn=f.querySelector('button[type="submit"],input[type="submit"],button:not([type])');if(!name||name.length<2){st.textContent="Please enter your name.";return}if(!phone||phone.replace(/\\D/g,"").length<10){st.textContent="Please enter a valid WhatsApp number.";return}st.textContent="Sending…";if(btn)btn.disabled=true;fetch(A,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,email:email,phone:phone,message:M})}).then(function(r){return r.json().catch(function(){return null}).then(function(d){return{ok:r.ok&&d&&d.ok,error:d&&d.error}})}).then(function(res){if(!res.ok){st.textContent=res.error||"Could not send. Please try again.";if(btn)btn.disabled=false;return}st.textContent="Got it. A coach will call you."}).catch(function(){st.textContent="Network error. Please try again.";if(btn)btn.disabled=false})},true)}function scan(){document.querySelectorAll('form[action*="/contact"]').forEach(bind)}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",scan);else scan();setTimeout(scan,800)})();
+const WYG_SECTION = `<section class="lx-wyg lx-wyg--cards" id="what-you-get" aria-label="What you get on LURVOX">
+  <div class="lx-wyg__inner">
+    <header class="lx-wyg__header">
+      <p class="lx-wyg__eyebrow">Included on every plan</p>
+      <h2 class="lx-wyg__title">What you get on the platform</h2>
+      <p class="lx-wyg__lede">A living coaching system. Not a PDF.</p>
+    </header>
+    <ul class="lx-wyg__grid">
+      <li class="lx-wyg__item"><span class="lx-wyg__mark">01</span><div><h3>Personal workout + diet</h3><p>Built for your body and food. In the app within 24–48 hours.</p></div></li>
+      <li class="lx-wyg__item"><span class="lx-wyg__mark">02</span><div><h3>Human coach in the app</h3><p>A real person owns your case. Chat them directly.</p></div></li>
+      <li class="lx-wyg__item"><span class="lx-wyg__mark">03</span><div><h3>Mid-week + weekly check-ins</h3><p>Photos and numbers reviewed. The plan moves with you.</p></div></li>
+      <li class="lx-wyg__item"><span class="lx-wyg__mark">04</span><div><h3>Daily trackers</h3><p>Workout, meals, water, sleep, steps. Your coach sees them.</p></div></li>
+      <li class="lx-wyg__item"><span class="lx-wyg__mark">05</span><div><h3>Journey + progress photos</h3><p>A timeline of proof. Not guessing.</p></div></li>
+      <li class="lx-wyg__item"><span class="lx-wyg__mark">06</span><div><h3>Plan tweaks when you stall</h3><p>Coach adjusts workouts and diet. Not a static PDF.</p></div></li>
+    </ul>
+  </div>
+</section>`
+
+function revampWhatYouGet(html: string): string {
+  const start = html.search(/<section\b[^>]*\bid="what-you-get"/)
+  if (start < 0) return html
+  const end = html.indexOf('</section>', start)
+  if (end < 0) return html
+  return html.slice(0, start) + WYG_SECTION + html.slice(end + '</section>'.length)
+}
+
+const HERO_START_FROM = 'Start in 90 days'
+const HERO_START_TO = 'Start the journey within 24 hours'
+
+function rewriteHeroStartCopy(html: string): string {
+  return html.replaceAll(`${HERO_START_FROM}.`, `${HERO_START_TO}.`).replaceAll(HERO_START_FROM, HERO_START_TO)
+}
+
+/**
+ * Catalog visitors hit “See plans” in the hero, then have to scroll past
+ * the feature list. Only ~1 in 5 reached #plans. Put the goal/price cards
+ * first; “What you get” explains the price after they see it.
+ */
+export function movePlansBeforeWhatYouGet(html: string): string {
+  const wygOpen = html.search(/<div>\s*<section\b[^>]*\blx-wyg\b/)
+  const plansOpen = html.search(/<div>\s*<div id="plans"/)
+  if (wygOpen < 0 || plansOpen < 0 || plansOpen < wygOpen) return html
+
+  const wygEnd = endOfDiv(html, wygOpen)
+  const spacerEnd = endOfDiv(html, plansOpen)
+  if (wygEnd < 0 || spacerEnd < 0) return html
+
+  let plansEnd = spacerEnd
+  const nextDiv = findDivOpen(html, spacerEnd)
+  if (nextDiv >= 0 && nextDiv - spacerEnd < 16) {
+    const blockEnd = endOfDiv(html, nextDiv)
+    const block = blockEnd > nextDiv ? html.slice(nextDiv, blockEnd) : ''
+    if (blockEnd > nextDiv && /Pick your goal|CHOOSE YOUR GOAL|ai-transformation-plan/i.test(block)) {
+      plansEnd = blockEnd
+    }
+  }
+
+  const plans = html.slice(plansOpen, plansEnd)
+  const wyg = html.slice(wygOpen, wygEnd)
+  return html.slice(0, wygOpen) + plans + wyg + html.slice(wygEnd, plansOpen) + html.slice(plansEnd)
+}
+
+function findDivOpen(html: string, from: number): number {
+  const match = html.slice(from).match(/<div(?=[\s>])/)
+  return match && match.index != null ? from + match.index : -1
+}
+
+function endOfDiv(html: string, openIndex: number): number {
+  if (!/^<div(?=[\s>])/i.test(html.slice(openIndex))) return -1
+  let i = openIndex
+  let depth = 0
+  while (i < html.length) {
+    const rest = html.slice(i)
+    const nextOpenRel = rest.search(/<div(?=[\s>])/i)
+    const nextCloseRel = rest.indexOf('</div>')
+    if (nextCloseRel < 0) return -1
+    const nextOpen = nextOpenRel >= 0 ? i + nextOpenRel : -1
+    const nextClose = i + nextCloseRel
+    if (nextOpen >= 0 && nextOpen < nextClose) {
+      depth += 1
+      i = nextOpen + 4
+    } else {
+      depth -= 1
+      i = nextClose + 6
+      if (depth === 0) return i
+    }
+  }
+  return -1
+}
+
+const CONSULT_FORM = `<section id="lx-home-consult" class="lx-p7-consult">
+  <div class="lx-p7-consult__booked" data-lx-consult-booked hidden>
+    <p class="lx-p7-consult__kicker">Confirmed</p>
+    <h2>Call booked</h2>
+    <p>We have your request. A coach will call you.</p>
+  </div>
+  <form class="lx-p7-consult__form" data-lx-consult-form novalidate>
+    <p class="lx-p7-consult__kicker">Free coach call</p>
+    <h2>Talk to a coach</h2>
+    <p class="lx-p7-consult__lede">Name, email, and WhatsApp. Takes 20 seconds. A coach calls you.</p>
+    <label>Name
+      <input name="name" type="text" required autocomplete="name" placeholder="Your full name">
+    </label>
+    <label>Email
+      <input name="email" type="email" required autocomplete="email" placeholder="you@email.com">
+    </label>
+    <label>Phone / WhatsApp
+      <input name="phone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="+91 98765 43210">
+    </label>
+    <p class="lx-p7-consult__status" data-lx-consult-status role="status" aria-live="polite"></p>
+    <button type="submit" data-lx-consult-submit>Request a free call</button>
+    <p class="lx-p7-consult__fine">Free consultation · No payment · A coach typically responds within a few hours</p>
+  </form>
+</section>`
+
+const CONSULT_STYLE = `<style id="lx-home-consult-css">
+.lx-p7-consult{scroll-margin-top:88px;margin:0 auto;max-width:560px;padding:28px 16px 40px;color:#f5f5f5}
+.lx-p7-consult__form,.lx-p7-consult__booked{background:#141414;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:20px 16px 18px}
+.lx-p7-consult__kicker{margin:0 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#ff6200;font-weight:750}
+.lx-p7-consult h2{margin:0 0 8px;font-size:26px;letter-spacing:-.03em}
+.lx-p7-consult__lede,.lx-p7-consult__hint,.lx-p7-consult__fine{margin:0 0 14px;color:rgba(245,245,245,.68);font-size:14px;line-height:1.45}
+.lx-p7-consult__hint{margin:0 0 8px;font-size:12px}
+.lx-p7-consult label{display:grid;gap:6px;margin:0 0 12px;font-size:13px;font-weight:650}
+.lx-p7-consult input[type=text],.lx-p7-consult input[type=tel],.lx-p7-consult input[type=email],.lx-p7-consult textarea{
+  width:100%;box-sizing:border-box;min-height:48px;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.16);
+  background:#1a1a1a;color:#fff;font:inherit
+}
+.lx-p7-consult textarea{min-height:88px;resize:vertical}
+.lx-p7-consult__row{display:grid;gap:10px}
+@media(min-width:560px){.lx-p7-consult__row{grid-template-columns:1fr 1fr}}
+.lx-p7-consult fieldset{border:0;margin:0 0 14px;padding:0}
+.lx-p7-consult legend{margin:0 0 8px;font-size:13px;font-weight:750}
+.lx-p7-consult__opts,.lx-p7-consult__goals{display:grid;gap:8px}
+.lx-p7-consult__opts{grid-template-columns:1fr 1fr}
+.lx-p7-consult__opts--times{grid-template-columns:1fr 1fr; }
+@media(min-width:560px){.lx-p7-consult__opts--times{grid-template-columns:repeat(3,1fr)}}
+.lx-p7-consult__opts label,.lx-p7-consult__goals label{
+  margin:0;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:#1a1a1a;
+  display:flex;flex-direction:column;gap:2px;cursor:pointer;font-weight:700
+}
+.lx-p7-consult__opts label:has(input:checked),.lx-p7-consult__goals label:has(input:checked){
+  border-color:#ff6200;background:rgba(255,98,0,.16)
+}
+.lx-p7-consult__opts small,.lx-p7-consult__goals small{font-weight:600;opacity:.6;font-size:11px}
+.lx-p7-consult button[type=submit]{
+  width:100%;min-height:52px;border:0;border-radius:999px;background:#ff6200;color:#140900;font-weight:800;font-size:16px;cursor:pointer
+}
+.lx-p7-consult button[type=submit]:disabled{opacity:.65;cursor:wait}
+.lx-p7-consult__status{min-height:1.2em;margin:0 0 10px;font-size:13px}
+.lx-p7-consult__status.is-error{color:#ff8a80}
+.lx-p7-consult__status.is-success{color:#9be7a6}
+.lx-p7-consult__fine{margin:10px 0 0;text-align:center;font-size:12px}
+[data-lx-hero-cta]{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;
+  gap:10px!important;padding:12px 12px 8px!important
+}
+[data-lx-hero-cta] > a[class*="cta-primary"]{
+  width:100%!important;min-height:58px!important;border-radius:999px!important;
+  display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important
+}
+[data-lx-hero-cta] .lx-hero-cta-text,
+[data-lx-hero-cta] a[href="#plans"]{display:none!important}
+.lx-p7-talk-hero{
+  display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;
+  width:100%;box-sizing:border-box;padding:12px 16px;min-height:58px;
+  border-radius:999px;border:1.5px solid #ff6200;background:#111;
+  color:#fff!important;text-align:center;text-decoration:none!important;font-weight:800;line-height:1.2;font-size:16px
+}
+.lx-p7-talk-hero small{display:block;font-weight:650;color:#ffb089;font-size:12px;letter-spacing:.02em}
+#what-you-get.lx-wyg{padding:36px 16px 48px!important;background:#070707!important;overflow:visible!important}
+#what-you-get .lx-wyg__glow{display:none!important}
+#what-you-get .lx-wyg__inner{max-width:720px!important}
+#what-you-get .lx-wyg__header{text-align:left!important;max-width:none!important;margin:0 0 20px!important}
+#what-you-get .lx-wyg__eyebrow{margin:0 0 8px!important;letter-spacing:.14em!important}
+#what-you-get .lx-wyg__title{margin:0 0 8px!important;font-size:clamp(1.55rem,6vw,2rem)!important;line-height:1.15!important}
+#what-you-get .lx-wyg__lede{font-size:1rem!important;color:rgba(245,245,245,.72)!important}
+#what-you-get .lx-wyg__grid{
+  display:grid!important;grid-template-columns:1fr!important;gap:10px!important;border:0!important
+}
+@media(min-width:640px){#what-you-get .lx-wyg__grid{grid-template-columns:1fr 1fr!important}}
+#what-you-get .lx-wyg__item,
+#what-you-get .lx-wyg__item:nth-child(odd),
+#what-you-get .lx-wyg__item:nth-child(even){
+  display:flex!important;flex-direction:column!important;gap:8px!important;align-items:stretch!important;
+  padding:16px 16px 18px!important;margin:0!important;
+  border:1px solid rgba(255,255,255,.1)!important;border-radius:16px!important;background:#141414!important;
+  grid-template-columns:none!important
+}
+#what-you-get .lx-wyg__mark{
+  width:auto!important;height:auto!important;margin:0!important;border-radius:0!important;
+  background:none!important;box-shadow:none!important;
+  font-size:11px!important;font-weight:800!important;letter-spacing:.14em;color:#ff6200
+}
+#what-you-get .lx-wyg__item h3{margin:0 0 4px!important;font-size:1.05rem!important;line-height:1.25!important}
+#what-you-get .lx-wyg__item p{margin:0!important;font-size:.92rem!important;line-height:1.45!important;color:rgba(245,245,245,.68)!important}
+a.header-actions__action[href*="talk-to-a-coach"],
+a.header-actions__action[href="#lx-home-consult"]{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  gap:6px!important;height:36px!important;min-height:36px!important;min-width:0!important;
+  padding:0 12px 0 10px!important;margin:0!important;
+  border-radius:999px!important;border:1px solid rgba(255,98,0,.55)!important;
+  background:#141414!important;color:#fff!important;box-shadow:none!important;
+  text-decoration:none!important
+}
+a.header-actions__action[href*="talk-to-a-coach"] .svg-wrapper,
+a.header-actions__action[href="#lx-home-consult"] .svg-wrapper,
+a.header-actions__action[href*="talk-to-a-coach"] svg,
+a.header-actions__action[href="#lx-home-consult"] svg{
+  width:16px!important;height:16px!important;color:#ff6200!important
+}
+a.header-actions__action[href*="talk-to-a-coach"] .lurvox-talk-cta__label,
+a.header-actions__action[href="#lx-home-consult"] .lurvox-talk-cta__label{
+  display:inline!important;font-size:12px!important;font-weight:750!important;
+  letter-spacing:-.01em;white-space:nowrap;color:#fff!important;line-height:1
+}
+</style>`
+
+const CONSULT_SCRIPT = `<script id="lx-home-coach-form">
+(function(){
+  if(window.__lurvoxHomeCoachForm)return;
+  window.__lurvoxHomeCoachForm=true;
+  var A=location.origin+"/api/public/talk-to-a-coach";
+  var KEY="lurvox_consult_booked";
+
+  function $(sel,root){return (root||document).querySelector(sel)}
+  function showBooked(root){
+    var form=$("[data-lx-consult-form]",root);
+    var done=$("[data-lx-consult-booked]",root);
+    if(form)form.hidden=true;
+    if(done)done.hidden=false;
+  }
+  function setStatus(el,msg,type){
+    if(!el)return;
+    el.textContent=msg||"";
+    el.className="lx-p7-consult__status"+(type?" is-"+type:"");
+  }
+  function bindForm(form){
+    if(!form||form.dataset.lxCoachBound==="1")return;
+    form.dataset.lxCoachBound="1";
+    var root=form.closest(".lx-p7-consult")||document;
+    var status=$("[data-lx-consult-status]",root);
+    var btn=$("[data-lx-consult-submit]",root);
+    try{if(localStorage.getItem(KEY)==="1")showBooked(root)}catch(e){}
+    form.addEventListener("submit",function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      var name=(form.name&&form.name.value||"").trim();
+      var phone=(form.phone&&form.phone.value||"").trim();
+      var email=(form.email&&form.email.value||"").trim();
+      if(name.length<2){setStatus(status,"Please enter your name.","error");return}
+      if(!email||email.indexOf("@")<0){setStatus(status,"Please enter your email.","error");return}
+      if(phone.replace(/\\D/g,"").length<10){setStatus(status,"Please enter a valid WhatsApp number.","error");return}
+      setStatus(status,"Sending…","");
+      if(btn)btn.disabled=true;
+      fetch(A,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        name:name,email:email,phone:phone,message:"Please call me about LURVOX coaching."
+      })}).then(function(r){
+        return r.json().catch(function(){return null}).then(function(d){return{ok:r.ok&&d&&d.ok,error:d&&d.error}})
+      }).then(function(res){
+        if(!res.ok){
+          setStatus(status,res.error||"Could not send. Please try again.","error");
+          if(btn)btn.disabled=false;
+          return;
+        }
+        setStatus(status,"Call booked. A coach will call you.","success");
+        try{localStorage.setItem(KEY,"1")}catch(e){}
+        showBooked(root);
+      }).catch(function(){
+        setStatus(status,"Network error. Please try again.","error");
+        if(btn)btn.disabled=false;
+      });
+    },true);
+  }
+
+  function addHeroTalk(){
+    var wrap=document.querySelector("[data-lx-hero-cta]");
+    if(!wrap)return;
+    wrap.removeAttribute("data-lx-hero-cta-single");
+    wrap.querySelectorAll('a[href="#plans"],a.lx-hero-cta-text').forEach(function(a){a.remove()});
+    if(wrap.querySelector(".lx-p7-talk-hero"))return;
+    var a=document.createElement("a");
+    a.className="lx-p7-talk-hero";
+    a.href="#lx-home-consult";
+    a.setAttribute("data-funnel","talk_to_coach");
+    a.innerHTML="Talk to a coach <small>Free · 10 min · no payment</small>";
+    wrap.appendChild(a);
+  }
+
+  function pointTalkLinks(){
+    document.querySelectorAll('a[href*="talk-to-a-coach"],a[href*="book-a-free-call"]').forEach(function(a){
+      a.setAttribute("href","#lx-home-consult");
+      if(a.classList.contains("header-actions__action")){
+        var label=a.querySelector(".lurvox-talk-cta__label");
+        if(!label){
+          label=document.createElement("span");
+          label.className="lurvox-talk-cta__label";
+          a.appendChild(label);
+        }
+        label.textContent="Talk";
+      }
+    });
+  }
+
+  function boot(){
+    addHeroTalk();
+    pointTalkLinks();
+    document.querySelectorAll("[data-lx-consult-form]").forEach(bindForm);
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);
+  else boot();
+  setTimeout(boot,400);
+})();
 </script>`
 
+function placeConsultForm(html: string): string {
+  if (html.includes('id="lx-home-consult"')) return html
+  const withForm = html.replace(
+    /<form\b[^>]*action="[^"]*contact[^"]*"[^>]*>[\s\S]*?<\/form>/i,
+    CONSULT_FORM,
+  )
+  if (withForm !== html) return withForm
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${CONSULT_FORM}</body>`)
+  return html + CONSULT_FORM
+}
+
 function injectHomeCoachForm(html: string): string {
-  if (html.includes('id="lx-home-coach-form"')) return html
-  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${HOME_COACH_FORM_SCRIPT}</body>`)
-  return html + HOME_COACH_FORM_SCRIPT
+  const withForm = placeConsultForm(html)
+  if (withForm.includes('id="lx-home-coach-form"')) return withForm
+  const boot = `${CONSULT_STYLE}${CONSULT_SCRIPT}`
+  if (/<\/body>/i.test(withForm)) return withForm.replace(/<\/body>/i, `${boot}</body>`)
+  return withForm + boot
 }
 
 function rewriteHomeOfferStrip(html: string): string {

@@ -1,6 +1,6 @@
 {% comment %}
   LURVOX — Book a free consultation call
-  On-site form only (name, phone, goal). No plan picker.
+  On-site form only (name, email, phone). No plan picker.
   Posts to app.lurvox.in API.
 {% endcomment %}
 
@@ -31,6 +31,7 @@
         <p class="lx-consult__booked-kicker">Confirmed</p>
         <h2 class="lx-consult__booked-title">Call booked</h2>
         <p class="lx-consult__booked-copy">We have your request. A coach will call you back soon. No need to submit again.</p>
+        <a class="lx-consult__home" href="/">Back to home</a>
       </div>
       <form class="lx-consult__form" id="lx-consult-form-{{ section.id }}" novalidate>
         <h2 class="lx-consult__form-title">{{ section.settings.form_heading | default: 'Your details' }}</h2>
@@ -48,6 +49,18 @@
         </div>
 
         <div class="lx-consult__field">
+          <label for="lx-consult-email-{{ section.id }}">Email</label>
+          <input
+            id="lx-consult-email-{{ section.id }}"
+            name="email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="you@email.com"
+          >
+        </div>
+
+        <div class="lx-consult__field">
           <label for="lx-consult-phone-{{ section.id }}">Phone / WhatsApp</label>
           <input
             id="lx-consult-phone-{{ section.id }}"
@@ -59,38 +72,6 @@
           >
         </div>
 
-        <fieldset class="lx-consult__goals">
-          <legend>Your goal</legend>
-          <p class="lx-consult__timing-hint">Pick the plan. Fat loss ₹599 · Fat loss + muscle ₹999 · Athletic body ₹1,699.</p>
-          <div class="lx-consult__goal-options" role="radiogroup" aria-label="Your goal">
-            <label class="lx-consult__goal-opt">
-              <input type="radio" name="goal" value="Fat loss" data-duration="90 days" required>
-              <span class="lx-consult__goal-primary">Fat loss</span>
-              <span class="lx-consult__goal-secondary">90 days · ₹599</span>
-            </label>
-            <label class="lx-consult__goal-opt">
-              <input type="radio" name="goal" value="Fat loss + muscle gain" data-duration="6 months">
-              <span class="lx-consult__goal-primary">Fat loss + muscle gain</span>
-              <span class="lx-consult__goal-secondary">6 months · ₹999</span>
-            </label>
-            <label class="lx-consult__goal-opt">
-              <input type="radio" name="goal" value="Athletic body" data-duration="12 months">
-              <span class="lx-consult__goal-primary">Athletic body</span>
-              <span class="lx-consult__goal-secondary">12 months · ₹1,699</span>
-            </label>
-          </div>
-        </fieldset>
-
-        <div class="lx-consult__field">
-          <label for="lx-consult-goal-{{ section.id }}">Anything else? <span style="font-weight:500;opacity:.7">(optional)</span></label>
-          <textarea
-            id="lx-consult-goal-{{ section.id }}"
-            name="message"
-            rows="3"
-            placeholder="Injuries, schedule, questions…"
-          ></textarea>
-        </div>
-
         <p class="lx-consult__status" id="lx-consult-status-{{ section.id }}" role="status" aria-live="polite"></p>
 
         <button type="submit" class="lx-consult__submit" id="lx-consult-submit-{{ section.id }}">
@@ -100,6 +81,7 @@
         <p class="lx-consult__fineprint">
           {{ section.settings.fineprint | default: 'Free consultation · No payment on this page · A coach typically responds within a few hours' }}
         </p>
+        <p class="lx-consult__home-row"><a class="lx-consult__home" href="/">Back to home</a></p>
       </form>
     </div>
   </div>
@@ -231,14 +213,16 @@
   }
 
   #lx-consult-{{ section.id }} .lx-consult__timing,
-  #lx-consult-{{ section.id }} .lx-consult__goals {
+  #lx-consult-{{ section.id }} .lx-consult__goals,
+  #lx-consult-{{ section.id }} .lx-consult__gender {
     margin: 4px 0 18px;
     padding: 0;
     border: 0;
   }
 
   #lx-consult-{{ section.id }} .lx-consult__timing legend,
-  #lx-consult-{{ section.id }} .lx-consult__goals legend {
+  #lx-consult-{{ section.id }} .lx-consult__goals legend,
+  #lx-consult-{{ section.id }} .lx-consult__gender legend {
     margin: 0 0 4px;
     padding: 0;
     font-size: 0.82rem;
@@ -294,6 +278,12 @@
     font-weight: 700;
     letter-spacing: 0.01em;
     color: #ffb07a;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__gender-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
   #lx-consult-{{ section.id }} .lx-consult__timing-options {
@@ -437,6 +427,21 @@
       border-radius: 14px;
     }
   }
+
+  #lx-consult-{{ section.id }} .lx-consult__home {
+    display: flex;
+    width: fit-content;
+    margin: 18px auto 0;
+    min-height: 48px;
+    padding: 12px 22px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: transparent;
+    color: #fff;
+    font-weight: 750;
+    text-decoration: none;
+  }
+
 </style>
 
 <script>
@@ -471,23 +476,30 @@
       setStatus('', '');
       if (submitBtn) submitBtn.disabled = true;
 
-      var goalInput = form.querySelector('input[name="goal"]:checked');
-      if (!goalInput) {
-        setStatus('Please pick your goal.', 'error');
+      var name = form.name.value.trim();
+      var email = form.email.value.trim();
+      var phone = form.phone.value.trim();
+      if (name.length < 2) {
+        setStatus('Please enter your name.', 'error');
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
+      if (!email || email.indexOf('@') < 0) {
+        setStatus('Please enter your email.', 'error');
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
+      if (phone.replace(/\D/g, '').length < 10) {
+        setStatus('Please enter a valid WhatsApp number.', 'error');
         if (submitBtn) submitBtn.disabled = false;
         return;
       }
 
-      var goal = goalInput.value;
-      var duration = goalInput.getAttribute('data-duration') || '';
-      var notes = (form.message.value || '').trim();
-      var message = 'Goal: ' + goal + (duration ? ' (' + duration + ')' : '');
-      if (notes) message += '\n\nNotes: ' + notes;
-
       var payload = {
-        name: form.name.value.trim(),
-        phone: form.phone.value.trim(),
-        message: message
+        name: name,
+        email: email,
+        phone: phone,
+        message: 'Please call me about LURVOX coaching.'
       };
 
       fetch(apiUrl, {
