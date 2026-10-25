@@ -165,9 +165,6 @@ export async function POST(request: Request) {
   if (!phone || phone.replace(/\D/g, '').length < 10) {
     return NextResponse.json({ ok: false, error: 'Please enter a valid phone number.' }, { status: 400, headers })
   }
-  if (!email || !email.includes('@')) {
-    return NextResponse.json({ ok: false, error: 'Please enter your email.' }, { status: 400, headers })
-  }
   if (genderRaw && !gender) {
     return NextResponse.json({ ok: false, error: 'Please pick your gender.' }, { status: 400, headers })
   }

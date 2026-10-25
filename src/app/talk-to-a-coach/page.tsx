@@ -11,7 +11,6 @@ const CONSULT_BOOKED_KEY = 'lurvox_consult_booked'
 
 export default function TalkToCoachPage() {
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -29,10 +28,6 @@ export default function TalkToCoachPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!email.includes('@')) {
-      setError('Please enter your email.')
-      return
-    }
 
     setLoading(true)
     setError('')
@@ -44,7 +39,6 @@ export default function TalkToCoachPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
-          email,
           phone,
           message: 'Please call me about LURVOX coaching.',
         }),
@@ -71,7 +65,6 @@ export default function TalkToCoachPage() {
         /* ignore */
       }
       setName('')
-      setEmail('')
       setPhone('')
     } catch {
       setError('Network error. Please check your connection and try again.')
@@ -88,7 +81,7 @@ export default function TalkToCoachPage() {
         <p style={{ margin: '0 0 24px', textAlign: 'center', color: colors.textSecondary, lineHeight: 1.5 }}>
           {booked
             ? 'We have your request. A coach will call you. No need to submit again.'
-            : 'Name, email, and WhatsApp. A coach calls you.'}
+            : 'Name and WhatsApp. A coach calls you.'}
         </p>
 
         {error && <p style={authStyles.error}>{error}</p>}
@@ -124,19 +117,6 @@ export default function TalkToCoachPage() {
               style={authStyles.input}
               autoComplete="name"
               placeholder="Your full name"
-            />
-          </div>
-          <div style={authStyles.inputGroup}>
-            <label htmlFor="email" style={authStyles.label}>Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={authStyles.input}
-              autoComplete="email"
-              placeholder="you@email.com"
             />
           </div>
           <div style={authStyles.inputGroup}>

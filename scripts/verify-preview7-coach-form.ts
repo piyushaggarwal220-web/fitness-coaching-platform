@@ -17,8 +17,9 @@ const withContact = preview7LiveHtml(`<head></head><body>
 
 assert.match(withContact, /id="lx-home-consult"/)
 assert.match(withContact, /name="name"/)
-assert.match(withContact, /name="email"/)
+assert.doesNotMatch(withContact, /name="email"/)
 assert.match(withContact, /name="phone"/)
+assert.doesNotMatch(withContact, /Please enter your email/)
 assert.match(withContact, /\+91 98765 43210/)
 assert.doesNotMatch(withContact, /name="preferred_time"/)
 assert.doesNotMatch(withContact, /name="gender"/)
@@ -38,6 +39,16 @@ const hero = preview7LiveHtml(`<head></head><body>
 </body>`)
 assert.match(hero, /Start the journey within 24 hours/)
 assert.doesNotMatch(hero, /Start in 90 days/)
+
+const existingEmail = preview7LiveHtml(`<head></head><body>
+<section id="lx-home-consult"><form><input name="email" required></form></section>
+<style id="lx-home-consult-css"></style>
+<script id="lx-home-coach-form">if(!email)alert(1)</script>
+</body>`)
+assert.doesNotMatch(existingEmail, /name="email"/)
+assert.doesNotMatch(existingEmail, /Please enter your email/)
+assert.match(existingEmail, /name="name"/)
+assert.match(existingEmail, /name="phone"/)
 
 const noContact = preview7LiveHtml(`<head></head><body><p>home</p></body>`)
 assert.match(noContact, /id="lx-home-consult"/)

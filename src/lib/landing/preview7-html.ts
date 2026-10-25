@@ -115,12 +115,9 @@ const CONSULT_FORM = `<section id="lx-home-consult" class="lx-p7-consult">
   <form class="lx-p7-consult__form" data-lx-consult-form novalidate>
     <p class="lx-p7-consult__kicker">Free coach call</p>
     <h2>Talk to a coach</h2>
-    <p class="lx-p7-consult__lede">Name, email, and WhatsApp. Takes 20 seconds. A coach calls you.</p>
+    <p class="lx-p7-consult__lede">Name and WhatsApp. Takes 20 seconds. A coach calls you.</p>
     <label>Name
       <input name="name" type="text" required autocomplete="name" placeholder="Your full name">
-    </label>
-    <label>Email
-      <input name="email" type="email" required autocomplete="email" placeholder="you@email.com">
     </label>
     <label>Phone / WhatsApp
       <input name="phone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="+91 98765 43210">
@@ -264,14 +261,12 @@ const CONSULT_SCRIPT = `<script id="lx-home-coach-form">
       ev.stopPropagation();
       var name=(form.name&&form.name.value||"").trim();
       var phone=(form.phone&&form.phone.value||"").trim();
-      var email=(form.email&&form.email.value||"").trim();
       if(name.length<2){setStatus(status,"Please enter your name.","error");return}
-      if(!email||email.indexOf("@")<0){setStatus(status,"Please enter your email.","error");return}
       if(phone.replace(/\\D/g,"").length<10){setStatus(status,"Please enter a valid WhatsApp number.","error");return}
       setStatus(status,"Sending…","");
       if(btn)btn.disabled=true;
       fetch(A,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-        name:name,email:email,phone:phone,message:"Please call me about LURVOX coaching."
+        name:name,phone:phone,message:"Please call me about LURVOX coaching."
       })}).then(function(r){
         return r.json().catch(function(){return null}).then(function(d){return{ok:r.ok&&d&&d.ok,error:d&&d.error}})
       }).then(function(res){
@@ -331,7 +326,12 @@ const CONSULT_SCRIPT = `<script id="lx-home-coach-form">
 </script>`
 
 function placeConsultForm(html: string): string {
-  if (html.includes('id="lx-home-consult"')) return html
+  if (html.includes('id="lx-home-consult"')) {
+    return html.replace(
+      /<section\b[^>]*id="lx-home-consult"[^>]*>[\s\S]*?<\/section>/i,
+      CONSULT_FORM,
+    )
+  }
   const withForm = html.replace(
     /<form\b[^>]*action="[^"]*contact[^"]*"[^>]*>[\s\S]*?<\/form>/i,
     CONSULT_FORM,
@@ -343,10 +343,15 @@ function placeConsultForm(html: string): string {
 
 function injectHomeCoachForm(html: string): string {
   const withForm = placeConsultForm(html)
-  if (withForm.includes('id="lx-home-coach-form"')) return withForm
-  const boot = `${CONSULT_STYLE}${CONSULT_SCRIPT}`
-  if (/<\/body>/i.test(withForm)) return withForm.replace(/<\/body>/i, `${boot}</body>`)
-  return withForm + boot
+  let next = withForm.includes('id="lx-home-consult-css"')
+    ? withForm.replace(/<style id="lx-home-consult-css">[\s\S]*?<\/style>/, CONSULT_STYLE)
+    : withForm
+  if (next.includes('id="lx-home-coach-form"')) {
+    return next.replace(/<script id="lx-home-coach-form">[\s\S]*?<\/script>/, CONSULT_SCRIPT)
+  }
+  const boot = `${next.includes('id="lx-home-consult-css"') ? '' : CONSULT_STYLE}${CONSULT_SCRIPT}`
+  if (/<\/body>/i.test(next)) return next.replace(/<\/body>/i, `${boot}</body>`)
+  return next + boot
 }
 
 function rewriteHomeOfferStrip(html: string): string {

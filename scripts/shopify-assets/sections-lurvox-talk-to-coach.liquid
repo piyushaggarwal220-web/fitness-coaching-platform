@@ -1,6 +1,6 @@
 {% comment %}
   LURVOX — Book a free consultation call
-  On-site form only (name, email, phone). No plan picker.
+  On-site form only (name, phone). No plan picker.
   Posts to app.lurvox.in API.
 {% endcomment %}
 
@@ -45,18 +45,6 @@
             required
             autocomplete="name"
             placeholder="Your full name"
-          >
-        </div>
-
-        <div class="lx-consult__field">
-          <label for="lx-consult-email-{{ section.id }}">Email</label>
-          <input
-            id="lx-consult-email-{{ section.id }}"
-            name="email"
-            type="email"
-            required
-            autocomplete="email"
-            placeholder="you@email.com"
           >
         </div>
 
@@ -477,15 +465,9 @@
       if (submitBtn) submitBtn.disabled = true;
 
       var name = form.name.value.trim();
-      var email = form.email.value.trim();
       var phone = form.phone.value.trim();
       if (name.length < 2) {
         setStatus('Please enter your name.', 'error');
-        if (submitBtn) submitBtn.disabled = false;
-        return;
-      }
-      if (!email || email.indexOf('@') < 0) {
-        setStatus('Please enter your email.', 'error');
         if (submitBtn) submitBtn.disabled = false;
         return;
       }
@@ -497,7 +479,6 @@
 
       var payload = {
         name: name,
-        email: email,
         phone: phone,
         message: 'Please call me about LURVOX coaching.'
       };
