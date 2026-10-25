@@ -4,7 +4,7 @@ export const PHYSIQUE_PREVIEW_PLANS = {
   '3_months': {
     slug: '3_months',
     name: 'Fat loss',
-    price: '₹899',
+    price: '₹1,999',
     checkoutUrl: 'https://app.lurvox.in/checkout?plan=3_months',
     change:
       'a realistic 3-month fat-loss change: a slightly slimmer waist and a little less body fat, with arms and shoulders almost the same',
@@ -12,7 +12,7 @@ export const PHYSIQUE_PREVIEW_PLANS = {
   '6_months': {
     slug: '6_months',
     name: 'Fat loss + muscle',
-    price: '₹1,499',
+    price: '₹3,499',
     checkoutUrl: 'https://app.lurvox.in/checkout?plan=6_months',
     change:
       'a realistic 6-month fat-loss plus muscle change: a slimmer waist and fuller shoulders and arms, athletic but not a bodybuilder',
@@ -20,7 +20,7 @@ export const PHYSIQUE_PREVIEW_PLANS = {
   '12_months': {
     slug: '12_months',
     name: 'Athletic body',
-    price: '₹2,299',
+    price: '₹5,999',
     checkoutUrl: 'https://app.lurvox.in/checkout?plan=12_months',
     change:
       'a realistic year of athletic change: a leaner waist, broader shoulders, and more defined arms, still a normal person after 12 months of training, not a competition bodybuilder',

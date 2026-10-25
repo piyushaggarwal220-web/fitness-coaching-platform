@@ -82,13 +82,13 @@ const STOREFRONT_PLAN_CARDS: Record<string, { badge: string; duration: string; s
  '6_months': {
  badge: '⭐ Most Popular',
  duration: '6 MONTHS',
-    savings: 'Save ₹301 vs monthly rate',
+    savings: 'Save ₹499 vs two 3-month plans',
  footer: 'Best for: losing fat while building muscle',
  },
  '12_months': {
  badge: 'Complete transformation',
  duration: '12 MONTHS',
-    savings: 'Save ₹1,301 vs monthly rate',
+    savings: 'Save ₹1,997 vs four 3-month plans',
  footer: 'Best for: building an athletic body — fat loss, muscle, and stamina. Testosterone protocol for men, hourglass for women.',
  },
 };
