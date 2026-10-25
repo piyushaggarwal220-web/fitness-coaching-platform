@@ -86,6 +86,15 @@ const PAIRS = [
   ['data-value="1500"', 'data-value="3499"'],
   ['data-value="899"', 'data-value="1999"'],
   ['data-value="900"', 'data-value="1999"'],
+  [`.replace(/₹666/g, '₹300')`, `.replace(/₹300/g, '₹666')`],
+  [`.replace(/₹583/g, '₹250')`, `.replace(/₹250/g, '₹583')`],
+  [`.replace(/₹600/g, '₹300')`, `.replace(/₹600/g, '₹666')`],
+  [`.replace(/₹467/g, '₹250')`, `.replace(/₹467/g, '₹583')`],
+  [`.replace(/₹433/g, '₹300')`, `.replace(/₹433/g, '₹666')`],
+  [`.replace(/₹500/g, '₹192')`, `.replace(/₹192/g, '₹500')`],
+  [`.replace(/₹375/g, '₹192')`, `.replace(/₹375/g, '₹500')`],
+  [`.replace(/₹350/g, '₹250')`, `.replace(/₹350/g, '₹583')`],
+  [`.replace(/₹292/g, '₹192')`, `.replace(/₹292/g, '₹500')`],
 ]
 
 function patchPrices(text) {
