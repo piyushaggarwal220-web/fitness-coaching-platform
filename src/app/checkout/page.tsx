@@ -51,7 +51,12 @@ import {
 import { type CheckoutBasicsFormState } from '@/components/checkout/CheckoutBasicsStep';
 import { isPublicDemoEmail } from '@/lib/public-demo';
 import { leavePublicDemoSession } from '@/lib/public-demo-session';
-import { loadRazorpayCheckout } from '@/lib/payments/load-razorpay';
+import {
+ bindRazorpayFailure,
+ IN_APP_PAY_HINT,
+ isInAppBrowser,
+ loadRazorpayCheckout,
+} from '@/lib/payments/load-razorpay';
 import { normalizePhoneForWhatsApp } from '@/lib/phone';
 
 const supabase = createClient();
@@ -109,7 +114,10 @@ type RazorpayHandlerResponse = {
  razorpay_signature: string;
 };
 
-type RazorpayInstance = { open: () => void };
+type RazorpayInstance = {
+ open: () => void;
+ on?: (event: string, handler: (response: { error?: { description?: string } }) => void) => void;
+};
 type RazorpayConstructor = new (options: Record<string, unknown>) => RazorpayInstance;
 
 declare global {
@@ -558,6 +566,7 @@ function CheckoutForm() {
  value: (sale ?? plan.amountPaise) / 100,
  ...adFunnel,
  });
+ void loadRazorpayCheckout().catch(() => {});
  }, [plan, testMode]);
 
  const getMissingRequirements = (): string[] => {
@@ -834,6 +843,10 @@ function CheckoutForm() {
  },
  });
 
+ bindRazorpayFailure(rzp, (message) => {
+ setError(message);
+ setLoading(false);
+ });
  rzp.open();
  } catch (err) {
  const message = err instanceof Error ? err.message : 'Checkout failed';
@@ -1114,6 +1127,9 @@ function CheckoutForm() {
  style={{ ...dig(styles.input, 'input'), ...(storefrontCheckout ? styles.inputFit : null) }}
  />
 
+ {isInAppBrowser() ? (
+ <p style={{ ...dig(styles.error, 'error'), marginBottom: 10 }} role="note">{IN_APP_PAY_HINT}</p>
+ ) : null}
  <button
  type="button"
  style={{ ...dig(styles.payBtn, 'payBtn'), ...(storefrontCheckout ? styles.payBtnFit : null) }}

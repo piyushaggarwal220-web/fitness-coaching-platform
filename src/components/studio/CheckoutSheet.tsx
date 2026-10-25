@@ -6,7 +6,12 @@ import { PREVIEW_AD_PATH } from '@/lib/analytics/ad-landing'
 import { metaBrowserIdsForRequest, readMetaBrowserIds } from '@/lib/analytics/meta-attribution'
 import { queueMetaPurchase } from '@/lib/analytics/meta-pixel'
 import { COACHING_PLANS } from '@/lib/payments/plans'
-import { loadRazorpayCheckout } from '@/lib/payments/load-razorpay'
+import {
+  bindRazorpayFailure,
+  IN_APP_PAY_HINT,
+  isInAppBrowser,
+  loadRazorpayCheckout,
+} from '@/lib/payments/load-razorpay'
 import { FIRST_PLAN_TARGET, planName, planPrice, type StudioPlan } from './content'
 
 type RazorpayResponse = {
@@ -15,7 +20,7 @@ type RazorpayResponse = {
   razorpay_signature: string
 }
 
-type RazorpayInstance = { open: () => void }
+type RazorpayInstance = { open: () => void; on?: (event: string, handler: (response: { error?: { description?: string } }) => void) => void }
 
 declare global {
   interface Window {
@@ -60,9 +65,11 @@ export function CheckoutSheet({
       source: 'preview1',
     })
     cardRef.current?.focus()
+    void loadRazorpayCheckout().catch(() => {})
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && document.querySelector('.razorpay-container')) return
       if (event.key === 'Escape') closeRef.current()
     }
     window.addEventListener('keydown', onKey)
@@ -174,6 +181,10 @@ export function CheckoutSheet({
           ondismiss: () => setLoading(false),
         },
       })
+      bindRazorpayFailure(checkout, (message) => {
+        setError(message)
+        setLoading(false)
+      })
       checkout.open()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Checkout failed. Try again.')
@@ -220,6 +231,7 @@ export function CheckoutSheet({
           </span>
         </label>
         {error ? <p className="st-error" role="alert">{error}</p> : null}
+        {isInAppBrowser() ? <p className="st-error" role="note">{IN_APP_PAY_HINT}</p> : null}
         <button type="submit" className="st-btn st-btn-solid" disabled={loading}>
           {loading ? 'Opening checkout…' : `${plan.cta} — ${planPrice(plan.slug)}`}
         </button>

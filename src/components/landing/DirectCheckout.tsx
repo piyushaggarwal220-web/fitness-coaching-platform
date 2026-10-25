@@ -9,7 +9,12 @@ import { getCoachingPlan, isDurationOfferSlug } from '@/lib/payments/plans'
 import { PREVIEW7_AD_PATH } from '@/lib/analytics/ad-landing'
 import { PREVIEW_SALE_CODE } from '@/lib/payments/preview-sale-code'
 import { formatPreview7Inr, preview7AmountPaise } from '@/lib/payments/preview7-prices'
-import { loadRazorpayCheckout } from '@/lib/payments/load-razorpay'
+import {
+  bindRazorpayFailure,
+  IN_APP_PAY_HINT,
+  isInAppBrowser,
+  loadRazorpayCheckout,
+} from '@/lib/payments/load-razorpay'
 import { usePreviewSale } from './PreviewSaleCode'
 import styles from './DirectCheckout.module.css'
 
@@ -19,7 +24,7 @@ type RazorpayResponse = {
   razorpay_signature: string
 }
 
-type RazorpayInstance = { open: () => void }
+type RazorpayInstance = { open: () => void; on?: (event: string, handler: (response: { error?: { description?: string } }) => void) => void }
 
 declare global {
   interface Window {
@@ -79,9 +84,11 @@ export function DirectCheckout({
       path: landingPath,
     })
     cardRef.current?.focus()
+    void loadRazorpayCheckout().catch(() => {})
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && document.querySelector('.razorpay-container')) return
       if (event.key === 'Escape') closeRef.current()
     }
     window.addEventListener('keydown', onKey)
@@ -194,6 +201,10 @@ export function DirectCheckout({
         },
         modal: { ondismiss: () => setLoading(false) },
       })
+      bindRazorpayFailure(checkout, (message) => {
+        setError(message)
+        setLoading(false)
+      })
       checkout.open()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Checkout failed. Try again.')
@@ -242,6 +253,7 @@ export function DirectCheckout({
           </span>
         </label>
         {error ? <p className={styles.error} role="alert">{error}</p> : null}
+        {isInAppBrowser() ? <p className={styles.error} role="note">{IN_APP_PAY_HINT}</p> : null}
         <button type="submit" className={styles.pay} disabled={loading}>
           {loading ? 'Opening checkout…' : 'Start your transformation'}
         </button>
