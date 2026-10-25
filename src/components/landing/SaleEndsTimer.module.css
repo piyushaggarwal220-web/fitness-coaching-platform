@@ -11,14 +11,6 @@
   line-height: 1;
 }
 
-.line {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
 .offer {
   display: flex;
   align-items: baseline;

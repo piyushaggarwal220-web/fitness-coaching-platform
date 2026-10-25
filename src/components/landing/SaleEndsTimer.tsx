@@ -13,7 +13,7 @@ function clockParts(label: string) {
   return { hours, minutes, seconds }
 }
 
-/** Visual urgency on preview 4/5/6 only. Does not change plan prices. */
+/** Visual urgency only. Does not change plan prices. */
 export function SaleEndsTimer({ tone = 'beige' }: { tone?: Tone }) {
   const [label, setLabel] = useState('05:00:00')
 

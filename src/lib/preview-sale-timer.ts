@@ -1,6 +1,6 @@
 /** Preview 4/5/6 hero sale clock. Starts at 5 hours, then starts again when it ends. */
 export const PREVIEW_SALE_CYCLE_MS = 5 * 60 * 60 * 1000
-export const PREVIEW_SALE_STORAGE_KEY = 'lurvox-preview456-sale-v1'
+export const PREVIEW_SALE_STORAGE_KEY = 'lurvox-preview456-sale-v2'
 
 type ClockStorage = Pick<Storage, 'getItem' | 'setItem'> | null
 
