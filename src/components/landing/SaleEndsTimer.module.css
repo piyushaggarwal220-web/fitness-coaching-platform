@@ -2,12 +2,13 @@
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 12px 16px;
   width: fit-content;
   max-width: 100%;
   margin: 0 0 18px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  line-height: 1.2;
+  padding: 12px 14px 12px 16px;
+  border-radius: 20px;
+  line-height: 1;
 }
 
 .line {
