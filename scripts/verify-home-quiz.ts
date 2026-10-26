@@ -14,6 +14,11 @@ assert.match(quiz, /backdrop-filter: blur\(18px\)/)
 assert.match(quiz, /perspective\(1200px\)/)
 assert.doesNotMatch(quiz, /How many days a week/)
 assert.doesNotMatch(quiz, /Have you worked with a coach before/)
+assert.match(quiz, /What is the main goal\?', options: \[\s*\{ label: 'Fat loss and visible muscle'/)
+assert.doesNotMatch(
+  quiz,
+  /What is the main goal\?', options: \[\s*\{ label: 'Fast fat loss'/,
+)
 
 const finderStart = finder.indexOf('var steps = [')
 const finderEnd = finder.indexOf('];', finderStart)

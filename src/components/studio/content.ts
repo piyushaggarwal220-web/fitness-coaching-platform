@@ -244,65 +244,65 @@ export const FINDER_QUESTIONS: {
   {
     prompt: 'What is the main goal?',
     options: [
-      { label: 'Fast fat loss', plan: 'fat' },
       { label: 'Fat loss and visible muscle', plan: 'mix' },
       { label: 'A complete overhaul: fat, muscle, stamina, and strength', plan: 'athletic' },
+      { label: 'Fast fat loss', plan: 'fat' },
     ],
   },
   {
     prompt: 'How long can you commit?',
     options: [
+      { label: 'A full year', plan: 'athletic' },
       { label: 'About 3 months', plan: 'fat' },
       { label: 'Half a year', plan: 'mix' },
-      { label: 'A full year', plan: 'athletic' },
     ],
   },
   {
     prompt: 'Where is your training now?',
     options: [
-      { label: 'New to structured training', plan: 'fat' },
       { label: 'Trained on and off', plan: 'mix' },
+      { label: 'New to structured training', plan: 'fat' },
       { label: 'I train fairly regularly', plan: 'athletic' },
     ],
   },
   {
     prompt: 'Beyond fat loss, what else?',
     options: [
-      { label: 'Nothing else. Fat loss is the job.', plan: 'fat' },
-      { label: 'Noticeable muscle and strength', plan: 'mix' },
       { label: 'Muscle, stamina, and performance', plan: 'athletic' },
+      { label: 'Noticeable muscle and strength', plan: 'mix' },
+      { label: 'Nothing else. Fat loss is the job.', plan: 'fat' },
     ],
   },
   {
     prompt: 'How much does stamina matter?',
     options: [
-      { label: 'Not a priority', plan: 'fat' },
       { label: 'Somewhat', plan: 'mix' },
       { label: 'Very. I want to feel athletic.', plan: 'athletic' },
+      { label: 'Not a priority', plan: 'fat' },
     ],
   },
   {
     prompt: 'What is realistic for your schedule and budget?',
     options: [
-      { label: 'Start small', plan: 'fat' },
-      { label: 'A mid-range plan', plan: 'mix' },
       { label: 'I am ready for the full year', plan: 'athletic' },
+      { label: 'A mid-range plan', plan: 'mix' },
+      { label: 'Start small', plan: 'fat' },
     ],
   },
   {
     prompt: 'A year from now, success looks like…',
     options: [
+      { label: 'I feel like a different, athletic person', plan: 'athletic' },
       { label: 'The fat is gone', plan: 'fat' },
       { label: 'The fat is gone and muscle is on', plan: 'mix' },
-      { label: 'I feel like a different, athletic person', plan: 'athletic' },
     ],
   },
   {
     prompt: 'Where will you train?',
     options: [
-      { label: 'Home', where: 'home' },
       { label: 'A gym', where: 'gym' },
       { label: 'Home and a gym', where: 'both' },
+      { label: 'Home', where: 'home' },
     ],
   },
 ]

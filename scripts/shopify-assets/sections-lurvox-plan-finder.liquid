@@ -439,44 +439,44 @@
     var planBase = (root.getAttribute('data-plan-base') || 'https://app.lurvox.in/plans').replace(/\/$/, '');
     var steps = [
       { key: 'goal', q: 'What is the main goal?', options: [
-        { id: 'a', label: 'Fast fat loss', plan: 'fat' },
         { id: 'b', label: 'Fat loss and visible muscle', plan: 'mix' },
-        { id: 'c', label: 'A complete overhaul: fat, muscle, stamina, and strength', plan: 'athletic' }
+        { id: 'c', label: 'A complete overhaul: fat, muscle, stamina, and strength', plan: 'athletic' },
+        { id: 'a', label: 'Fast fat loss', plan: 'fat' }
       ]},
       { key: 'commit', q: 'How long can you commit?', options: [
+        { id: 'c', label: 'A full year', plan: 'athletic' },
         { id: 'a', label: 'About 3 months', plan: 'fat' },
-        { id: 'b', label: 'Half a year', plan: 'mix' },
-        { id: 'c', label: 'A full year', plan: 'athletic' }
+        { id: 'b', label: 'Half a year', plan: 'mix' }
       ]},
       { key: 'training', q: 'Where is your training now?', options: [
-        { id: 'a', label: 'New to structured training', plan: 'fat' },
         { id: 'b', label: 'Trained on and off', plan: 'mix' },
+        { id: 'a', label: 'New to structured training', plan: 'fat' },
         { id: 'c', label: 'I train fairly regularly', plan: 'athletic' }
       ]},
       { key: 'beyond', q: 'Beyond fat loss, what else?', options: [
-        { id: 'a', label: 'Nothing else. Fat loss is the job.', plan: 'fat' },
+        { id: 'c', label: 'Muscle, stamina, and performance', plan: 'athletic' },
         { id: 'b', label: 'Noticeable muscle and strength', plan: 'mix' },
-        { id: 'c', label: 'Muscle, stamina, and performance', plan: 'athletic' }
+        { id: 'a', label: 'Nothing else. Fat loss is the job.', plan: 'fat' }
       ]},
       { key: 'stamina', q: 'How much does stamina matter?', options: [
-        { id: 'a', label: 'Not a priority', plan: 'fat' },
         { id: 'b', label: 'Somewhat', plan: 'mix' },
-        { id: 'c', label: 'Very. I want to feel athletic.', plan: 'athletic' }
+        { id: 'c', label: 'Very. I want to feel athletic.', plan: 'athletic' },
+        { id: 'a', label: 'Not a priority', plan: 'fat' }
       ]},
       { key: 'budget', q: 'What is realistic for your schedule and budget?', options: [
-        { id: 'a', label: 'Start small', plan: 'fat' },
+        { id: 'c', label: 'I am ready for the full year', plan: 'athletic' },
         { id: 'b', label: 'A mid-range plan', plan: 'mix' },
-        { id: 'c', label: 'I am ready for the full year', plan: 'athletic' }
+        { id: 'a', label: 'Start small', plan: 'fat' }
       ]},
       { key: 'success', q: 'A year from now, success looks like…', options: [
+        { id: 'c', label: 'I feel like a different, athletic person', plan: 'athletic' },
         { id: 'a', label: 'The fat is gone', plan: 'fat' },
-        { id: 'b', label: 'The fat is gone and muscle is on', plan: 'mix' },
-        { id: 'c', label: 'I feel like a different, athletic person', plan: 'athletic' }
+        { id: 'b', label: 'The fat is gone and muscle is on', plan: 'mix' }
       ]},
       { key: 'where', q: 'Where will you train?', options: [
-        { id: 'a', label: 'Home', where: 'home' },
         { id: 'b', label: 'A gym', where: 'gym' },
-        { id: 'c', label: 'Home and a gym', where: 'both' }
+        { id: 'c', label: 'Home and a gym', where: 'both' },
+        { id: 'a', label: 'Home', where: 'home' }
       ]}
     ];
 
