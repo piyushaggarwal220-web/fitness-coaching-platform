@@ -6,6 +6,9 @@ export type CoachingPlanSlug = '3_months' | '6_months' | '12_months'
  */
 export type DurationOfferSlug = 'offer_1_month' | 'offer_3_months'
 
+/** Beige preview only. One block of coaching. The 60% preview code does not apply. */
+export type TransformationSlug = 'offer_84_days'
+
 /** Historical slugs kept for existing purchases / entitlements only. */
 export type LegacyCoachingPlanSlug = '1_month' | '1_week_trial'
 
@@ -13,7 +16,7 @@ export type LegacyCoachingPlanSlug = '1_month' | '1_week_trial'
 export type DigitalPlanSlug = 'digital_workout' | 'digital_diet' | 'digital_complete'
 
 export type AnyCoachingPlanSlug = CoachingPlanSlug | LegacyCoachingPlanSlug
-export type AnyProductPlanSlug = AnyCoachingPlanSlug | DigitalPlanSlug | DurationOfferSlug
+export type AnyProductPlanSlug = AnyCoachingPlanSlug | DigitalPlanSlug | DurationOfferSlug | TransformationSlug
 
 export type DigitalPlanSections = 'workout' | 'diet' | 'both'
 
@@ -195,6 +198,23 @@ export const DURATION_PLAN_LIST = [
   DURATION_OFFER_PLANS.offer_3_months,
 ]
 
+/** Single beige offer. Full price. The preview sale code does not apply. */
+export const TRANSFORMATION_PLANS: Record<TransformationSlug, CoachingPlan> = {
+  offer_84_days: {
+    slug: 'offer_84_days',
+    name: '84-day transformation',
+    displayPrice: '₹999',
+    amountPaise: 99900,
+    durationMonths: 0,
+    durationDays: 84,
+    saveLabel: '84 days',
+  },
+}
+
+export function isTransformationSlug(slug: string | null | undefined): slug is TransformationSlug {
+  return Boolean(slug && slug in TRANSFORMATION_PLANS)
+}
+
 export function isDurationOfferSlug(slug: string | null | undefined): slug is DurationOfferSlug {
   return Boolean(slug && slug in DURATION_OFFER_PLANS)
 }
@@ -220,6 +240,7 @@ export function getCoachingPlan(slug: string | null | undefined): CoachingPlan |
   if (!slug) return null
   if (slug in COACHING_PLANS) return COACHING_PLANS[slug as CoachingPlanSlug]
   if (slug in DURATION_OFFER_PLANS) return DURATION_OFFER_PLANS[slug as DurationOfferSlug]
+  if (slug in TRANSFORMATION_PLANS) return TRANSFORMATION_PLANS[slug as TransformationSlug]
   if (slug in DIGITAL_PLANS) return DIGITAL_PLANS[slug as DigitalPlanSlug]
   if (slug in LEGACY_COACHING_PLANS) return LEGACY_COACHING_PLANS[slug as LegacyCoachingPlanSlug]
   return null
@@ -230,6 +251,7 @@ export function getPurchasablePlan(slug: string | null | undefined): CoachingPla
   if (!slug) return null
   if (slug in COACHING_PLANS) return COACHING_PLANS[slug as CoachingPlanSlug]
   if (slug in DURATION_OFFER_PLANS) return DURATION_OFFER_PLANS[slug as DurationOfferSlug]
+  if (slug in TRANSFORMATION_PLANS) return TRANSFORMATION_PLANS[slug as TransformationSlug]
   if (slug in DIGITAL_PLANS) return DIGITAL_PLANS[slug as DigitalPlanSlug]
   return null
 }
@@ -239,7 +261,7 @@ export function isValidPlanSlug(slug: string): slug is CoachingPlanSlug {
 }
 
 export function isValidPurchasableSlug(slug: string): boolean {
-  return slug in COACHING_PLANS || slug in DURATION_OFFER_PLANS || slug in DIGITAL_PLANS
+  return slug in COACHING_PLANS || slug in DURATION_OFFER_PLANS || slug in TRANSFORMATION_PLANS || slug in DIGITAL_PLANS
 }
 
 export function isTrialPlanSlug(slug: string | null | undefined): boolean {

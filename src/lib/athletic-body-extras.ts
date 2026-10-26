@@ -12,14 +12,14 @@ export function planIncludesTestosteroneBoost(
   gender: string | null | undefined
 ): boolean {
   if (gender !== 'male') return false
-  return slug === 'offer_3_months' || isAthleticBodyPlan(slug)
+  return slug === 'offer_3_months' || slug === 'offer_84_days' || isAthleticBodyPlan(slug)
 }
 
 export function athleticBodyIncludesHourglassGuidance(
   slug: string | null | undefined,
   gender: string | null | undefined
 ): boolean {
-  return isAthleticBodyPlan(slug) && gender === 'female'
+  return (isAthleticBodyPlan(slug) || slug === 'offer_84_days') && gender === 'female'
 }
 
 export function shouldApplyHourglassGuidance(input: {

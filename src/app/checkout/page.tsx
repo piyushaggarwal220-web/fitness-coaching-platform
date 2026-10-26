@@ -14,6 +14,7 @@ import {
  getPurchasablePlan,
  isDigitalPlanSlug,
  isDurationOfferSlug,
+ isTransformationSlug,
 } from '@/lib/payments/plans';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
@@ -179,13 +180,16 @@ function CheckoutForm() {
  manrope: checkoutFont.style.fontFamily,
  inter: studioFont.style.fontFamily,
  });
+ const singleOffer = isTransformationSlug(plan.slug);
  const planPickerList = (isDigitalCheckout
  ? DIGITAL_PLAN_LIST
+ : singleOffer
+ ? [plan]
  : isDurationOfferSlug(plan.slug)
  ? DURATION_PLAN_LIST
  : COACHING_PLAN_LIST).map((item) => preview7PricedPlan(item, adLandingPath));
  const coachingLadder =
- !isDigitalCheckout && !isTrialCheckout && !isDurationOfferSlug(plan.slug);
+ !isDigitalCheckout && !isTrialCheckout && !isDurationOfferSlug(plan.slug) && !singleOffer;
  const visiblePlans = coachingLadder
  ? planPickerList.filter((item) => item.durationMonths >= plan.durationMonths)
  : planPickerList;

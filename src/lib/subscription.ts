@@ -80,7 +80,7 @@ export function getActiveSubscription(
 export function checkoutHrefForSubscription(subscription: ActiveSubscription): string {
   const slug = subscription.planSlug
 
-  if (slug === 'offer_1_month' || slug === 'offer_3_months') {
+  if (slug === 'offer_1_month' || slug === 'offer_3_months' || slug === 'offer_84_days') {
     return `/checkout?plan=${slug}`
   }
 

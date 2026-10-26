@@ -209,7 +209,13 @@ export function DirectCheckout({
       <button type="button" className={styles.dim} aria-label="Close checkout" onClick={onClose} />
       <form ref={cardRef} className={styles.card} role="dialog" aria-modal="true" aria-labelledby="direct-checkout-title" tabIndex={-1} onSubmit={pay}>
         <button type="button" className={styles.back} onClick={onClose}>← Back</button>
-        <p className={styles.kicker}>{plan.durationMonths === 1 ? '1 month' : `${plan.durationMonths} months`}</p>
+        <p className={styles.kicker}>
+          {plan.durationDays && plan.durationMonths === 0
+            ? `${plan.durationDays} days`
+            : plan.durationMonths === 1
+              ? '1 month'
+              : `${plan.durationMonths} months`}
+        </p>
         <h2 id="direct-checkout-title">{plan.name}</h2>
         <p className={styles.price}>
           {offer?.applied ? <s className={styles.was}>{offer.listLabel}</s> : null}
@@ -222,7 +228,7 @@ export function DirectCheckout({
         ) : null}
         <p className={styles.note}>
           {payLabel} once. This is not a monthly charge. {FIRST_PLAN_TARGET}
-          {plan.slug === 'offer_3_months'
+          {plan.slug === 'offer_3_months' || plan.slug === 'offer_84_days'
             ? ' Includes a testosterone protocol for men and hourglass for women.'
             : ''}
         </p>

@@ -1,11 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import { LandingPage } from '@/components/landing/LandingPage'
-import '../landing.css'
 
 export const metadata: Metadata = {
-  title: 'LURVOX: Full coaching from ₹249',
-  description:
-    'The same full plan for 1 month at ₹249 or 3 months at ₹499.',
+  title: 'LURVOX: 84-day transformation, ₹999',
+  description: 'One coaching block. 84 days. ₹999 once. Or talk to a coach first.',
   robots: { index: false, follow: false },
 }
 

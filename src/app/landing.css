@@ -151,7 +151,18 @@ body:has(.landing) {
 }
 .lx-nav-links { display: none; }
 .lx-nav-actions { grid-column: 3; display: flex; justify-content: flex-end; align-items: center; }
-.lx-menu { display: block; position: relative; }
+.lx-menu { display: block; position: relative; grid-column: 1; }
+.lx-menu-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 40;
+  min-width: 200px;
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(28, 25, 21, 0.12);
+}
 .lx-menu summary {
   list-style: none;
   min-height: 44px;
@@ -884,6 +895,57 @@ body:has(.landing) {
 .lx-duration .lx-plans .is-best .lx-points li.is-gold { color: #f0d78c; }
 .lx-duration .lx-plans .is-best .lx-points li em { color: rgba(244, 239, 230, 0.62); }
 .lx-duration .lx-plans .is-best .lx-points li.is-gold em { color: #e7c97a; }
+
+.lx-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.landing a.lx-btn-call {
+  width: min(100%, 420px);
+  min-height: 52px;
+  border: 1.5px solid var(--accent);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 700;
+}
+.lx-final a.lx-btn-call { border-color: var(--ink); color: var(--ink); }
+.lx-method li p, .lx-phases li p { margin: 0; color: var(--muted); line-height: 1.45; }
+.lx-phases { list-style: none; margin: 22px 0 28px; padding: 0; }
+.lx-phases li {
+  display: grid;
+  gap: 4px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+.lx-phases span { color: var(--accent); font-size: 0.85rem; font-weight: 700; }
+.lx-coaches .lx-actions, .lx-method .lx-actions, .lx-system .lx-actions { margin-top: 22px; }
+.lx-sticky { gap: 8px; align-items: center; }
+.lx-sticky .lx-btn-block { width: auto; flex: 1; max-width: 280px; }
+.lx-sticky-talk {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 0.92rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lx-talk {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+}
+.lx-talk form { display: grid; gap: 12px; margin-top: 18px; }
+.lx-talk label { display: grid; gap: 6px; font-size: 0.92rem; font-weight: 700; }
+.lx-talk input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+}
+.lx-talk-error { color: #8d2b22; font-weight: 700; }
+.lx-talk .lx-btn { margin-top: 4px; }
 
 @media (min-width: 900px) {
   .lx-duration .lx-hero h1 { font-size: 64px; }

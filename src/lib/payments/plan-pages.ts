@@ -82,6 +82,7 @@ export function planGoalName(slug: AnyCoachingPlanSlug | string): string {
   if (slug === '1_week_trial') return 'Trial'
   if (slug === 'offer_1_month') return '1 month'
   if (slug === 'offer_3_months') return '3 months'
+  if (slug === 'offer_84_days') return '84-day transformation'
   if (slug === '1_month') return '1 month'
   if (slug === 'digital_workout') return 'Workout Plan'
   if (slug === 'digital_diet') return 'Diet Plan'
@@ -92,6 +93,7 @@ export function planGoalName(slug: AnyCoachingPlanSlug | string): string {
 export function planDurationLabel(slug: AnyCoachingPlanSlug | string): string {
   if (slug === '1_week_trial') return '7 days'
   if (slug === 'offer_1_month' || slug === 'offer_3_months') return 'Full access'
+  if (slug === 'offer_84_days') return '84 days'
   if (slug === '1_month') return '1 month'
   if (
     slug === 'digital_workout' ||

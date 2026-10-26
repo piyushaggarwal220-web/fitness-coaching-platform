@@ -66,10 +66,10 @@ export function planTierFromSlug(slug: string | null | undefined): ClientPlanTie
 }
 
 export function getPlanTierTheme(slug: string | null | undefined): PlanTierTheme {
-  if (slug === 'offer_1_month' || slug === 'offer_3_months') {
+  if (slug === 'offer_1_month' || slug === 'offer_3_months' || slug === 'offer_84_days') {
     return {
       tier: 'other',
-      label: slug === 'offer_1_month' ? '1 month' : '3 months',
+      label: slug === 'offer_1_month' ? '1 month' : slug === 'offer_84_days' ? '84 days' : '3 months',
       stripe: '#1e4d3d',
       chipBg: 'rgba(30, 77, 61, 0.12)',
       chipText: '#1e4d3d',

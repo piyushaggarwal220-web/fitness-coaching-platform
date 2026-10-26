@@ -9,6 +9,7 @@ import {
   COACHING_PLANS,
   getPurchasablePlan,
   isDurationOfferSlug,
+  isTransformationSlug,
   LEGACY_CATALOG_PAISE,
   type CoachingPlan,
   type CoachingPlanSlug,
@@ -400,6 +401,14 @@ export async function resolveCheckoutPricing(input: {
     return {
       ok: false,
       error: 'Discount / referral codes cannot be applied to customised digital plans.',
+      status: 400,
+    }
+  }
+
+  if (isTransformationSlug(plan.slug)) {
+    return {
+      ok: false,
+      error: `This plan is ${plan.displayPrice}. Discount codes do not apply.`,
       status: 400,
     }
   }
