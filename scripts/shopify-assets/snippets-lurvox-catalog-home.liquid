@@ -39,6 +39,7 @@
   color:#fff!important;text-align:center;text-decoration:none!important;font-weight:800;line-height:1.2;font-size:16px
 }
 .lx-p7-talk-hero small{display:block;font-weight:650;color:#ffb089;font-size:12px;letter-spacing:.02em}
+.lx-p7-talk-block{margin:18px auto 0;max-width:420px}
 #what-you-get.lx-wyg{padding:36px 16px 48px!important;background:#070707!important;overflow:visible!important}
 #what-you-get .lx-wyg__glow{display:none!important}
 #what-you-get .lx-wyg__inner{max-width:720px!important}
@@ -183,6 +184,32 @@ a.header-actions__action[href="#lx-home-consult"] .lurvox-talk-cta__label{
     },true);
   }
 
+  function addTalkHeaderCta(){
+    var host=document.querySelector('[class*="ai-contact-header-content"]');
+    if(!host){
+      var nodes=document.querySelectorAll("h2");
+      for(var i=0;i<nodes.length;i++){
+        var t=(nodes[i].textContent||"").replace(/\s+/g," ").trim();
+        if(t.indexOf("Not sure yet? Talk to a coach")===0){
+          host=nodes[i].parentElement;
+          break;
+        }
+      }
+    }
+    if(!host||host.querySelector(".lx-p7-talk-block"))return;
+    var a=document.createElement("a");
+    a.className="lx-p7-talk-hero lx-p7-talk-block";
+    a.href="#lx-home-consult";
+    a.setAttribute("data-funnel","talk_to_coach");
+    a.innerHTML="Book a free call <small>Name + WhatsApp · 20 seconds</small>";
+    host.appendChild(a);
+    var consult=document.getElementById("lx-home-consult");
+    var block=host.closest(".shopify-block")||host.closest('[class*="ai-contact-header"]');
+    if(consult&&block&&block.parentNode){
+      block.parentNode.insertBefore(consult,block.nextSibling);
+    }
+  }
+
   function addHeroTalk(){
     var wrap=document.querySelector("[data-lx-hero-cta]");
     if(!wrap)return;
@@ -243,6 +270,7 @@ a.header-actions__action[href="#lx-home-consult"] .lurvox-talk-cta__label{
     placeConsultForm();
     revampWyg();
     addHeroTalk();
+    addTalkHeaderCta();
     pointTalkLinks();
     document.querySelectorAll("[data-lx-consult-form]").forEach(bindForm);
   }
