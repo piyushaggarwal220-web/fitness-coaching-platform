@@ -32,6 +32,8 @@ assert.match(withContact, /Book a free call/)
 assert.match(withContact, /Free · 10 min · no payment/)
 assert.match(withContact, /a\[href="#plans"\]\{display:none!important\}/)
 assert.match(withContact, /pointTalkLinks/)
+assert.match(withContact, /#Details-menu-drawer-container > summary\.header__icon--menu/)
+assert.match(withContact, /summary\.header__icon--menu path[\s\S]*stroke:#fff!important/)
 assert.match(withContact, /lurvox-talk-cta__label[\s\S]*display:inline!important/)
 assert.match(withContact, /label\.textContent="Talk"/)
 assert.match(withContact, /India's best human fitness coaching/)
@@ -71,8 +73,22 @@ assert.doesNotMatch(
   reordered,
   /What you get on the platform[\s\S]*id="plans"/,
 )
+assert.match(reordered, /id="lx-coach-insta"/)
+assert.match(reordered, /Tap to open coach Instagram/)
+assert.match(reordered, /instagram\.com\/maximusvault/)
+assert.match(reordered, /instagram\.com\/rakshitmohla_/)
+assert.match(reordered, /id="plans"[\s\S]*lx-coach-insta[\s\S]*Pick your goal/)
 assert.match(reordered, /lx-wyg--cards/)
 assert.match(reordered, /A living coaching system\. Not a PDF\./)
 assert.match(reordered, /Human coach in the app/)
+
+const liveTpl = preview7LiveHtml(`<head></head><body>
+<template id="lx-coach-insta-tpl"><section id="lx-coach-insta" class="lx-ig-cta">hidden</section></template>
+<div><div id="plans"></div></div>
+<div class="shopify-block"><div class="ai-transformation-plan-x"><h2>Pick your goal. We handle the rest.</h2></div></div>
+</body>`)
+assert.match(liveTpl, /id="plans"[\s\S]*<section id="lx-coach-insta"[\s\S]*Pick your goal/)
+assert.match(liveTpl, /Tap to open coach Instagram/)
+assert.equal([...liveTpl.matchAll(/<section id="lx-coach-insta"/g)].length, 2)
 
 console.log('verify-preview7-coach-form: ok')

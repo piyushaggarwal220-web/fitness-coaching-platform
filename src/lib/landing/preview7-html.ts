@@ -12,7 +12,9 @@ export function preview7LiveHtml(html: string): string {
     next = next.replace(/<head[^>]*>/i, (head) => `${head}<base href="https://www.lurvox.in/">`)
   }
   return injectHomeCoachForm(
-    revampWhatYouGet(movePlansBeforeWhatYouGet(rewriteHeroStartCopy(rewriteHomeOfferStrip(next)))),
+    injectCoachInstaCta(
+      revampWhatYouGet(movePlansBeforeWhatYouGet(rewriteHeroStartCopy(rewriteHomeOfferStrip(next)))),
+    ),
   )
 }
 
@@ -128,6 +130,56 @@ const CONSULT_FORM = `<section id="lx-home-consult" class="lx-p7-consult">
   </form>
 </section>`
 
+const COACH_INSTA_CTA = `<section id="lx-coach-insta" class="lx-ig-cta" aria-label="Tap to open coach Instagram">
+  <div class="lx-ig-cta__card">
+    <p class="lx-ig-cta__kicker"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor"/></svg> Instagram</p>
+    <h2 class="lx-ig-cta__title">Tap to open coach Instagram</h2>
+    <p class="lx-ig-cta__lede">See the coaches. Real profiles.</p>
+    <div class="lx-ig-cta__row">
+      <a class="lx-ig-cta__chip" href="https://www.instagram.com/maximusvault/" target="_blank" rel="noopener noreferrer" data-funnel="coach_instagram">
+        <span class="lx-ig-cta__ring"><img src="https://app.lurvox.in/landing/instant-coach-piyush.png" alt="Piyush Aggarwal, LURVOX coach" width="80" height="80"></span>
+        <strong>Piyush</strong>
+        <span>@maximusvault</span>
+      </a>
+      <a class="lx-ig-cta__chip" href="https://www.instagram.com/rakshitmohla_/" target="_blank" rel="noopener noreferrer" data-funnel="coach_instagram">
+        <span class="lx-ig-cta__ring"><img src="https://app.lurvox.in/landing/instant-coach-rakshit.png" alt="Rakshit Mohla, LURVOX coach" width="80" height="80"></span>
+        <strong>Rakshit</strong>
+        <span>@rakshitmohla_</span>
+      </a>
+    </div>
+  </div>
+</section>`
+
+const COACH_INSTA_STYLE = `#lx-coach-insta.lx-ig-cta{margin:4px auto 0;max-width:560px;padding:0 16px 10px;color:#fff}
+.lx-ig-cta__card{border-radius:22px;padding:18px 14px 14px;text-align:center;background:linear-gradient(160deg,#ff9ad5 0%,#ff4d8d 26%,#ee2a7b 52%,#c13584 78%,#833ab4 100%);box-shadow:0 16px 40px rgba(238,42,123,.32),inset 0 1px 0 rgba(255,255,255,.28)}
+.lx-ig-cta__kicker{margin:0 0 6px;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.lx-ig-cta__title{margin:0 0 4px;font-size:clamp(1.25rem,5vw,1.55rem);letter-spacing:-.03em;line-height:1.15}
+.lx-ig-cta__lede{margin:0 0 14px;font-size:13px;color:rgba(255,255,255,.88)}
+.lx-ig-cta__row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lx-ig-cta__chip{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px 10px;border-radius:16px;text-decoration:none!important;color:#fff!important;background:rgba(20,0,16,.22);border:1px solid rgba(255,255,255,.22)}
+.lx-ig-cta__ring{width:64px;height:64px;padding:3px;border-radius:50%;background:linear-gradient(135deg,#f9ce34,#ee2a7b 50%,#6228d7);box-sizing:border-box}
+.lx-ig-cta__ring img{width:100%;height:100%;object-fit:cover;border-radius:50%;border:2px solid #1a0b14;display:block}
+.lx-ig-cta__chip strong{font-size:14px;line-height:1.2}
+.lx-ig-cta__chip span{font-size:12px;opacity:.92}`
+
+function hasVisibleCoachInsta(html: string): boolean {
+  const withoutTemplates = html.replace(/<template\b[^>]*>[\s\S]*?<\/template>/gi, '')
+  return /<section\b[^>]*\bid="lx-coach-insta"/.test(withoutTemplates)
+}
+
+function injectCoachInstaCta(html: string): string {
+  if (hasVisibleCoachInsta(html)) return html
+  const afterPlans = html.replace(
+    /(<div id="plans"[^>]*>\s*<\/div>\s*<\/div>)/,
+    `$1${COACH_INSTA_CTA}`,
+  )
+  if (afterPlans !== html) return afterPlans
+  return html.replace(
+    /(<div[^>]*class="[^"]*shopify-block[^"]*"[^>]*>[\s\S]{0,1200}(?:CHOOSE YOUR GOAL|Pick your goal))/i,
+    `${COACH_INSTA_CTA}$1`,
+  )
+}
+
 const CONSULT_STYLE = `<style id="lx-home-consult-css">
 .lx-p7-consult{scroll-margin-top:88px;margin:0 auto;max-width:560px;padding:28px 16px 40px;color:#f5f5f5}
 .lx-p7-consult__form,.lx-p7-consult__booked{background:#141414;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:20px 16px 18px}
@@ -224,11 +276,31 @@ a.header-actions__action[href*="talk-to-a-coach"] svg,
 a.header-actions__action[href="#lx-home-consult"] svg{
   width:16px!important;height:16px!important;color:#ff6200!important
 }
+#Details-menu-drawer-container > summary.header__icon--menu,
+header-drawer summary.header__icon.header__icon--menu {
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  visibility:visible!important;opacity:1!important;color:#fff!important;
+  width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;
+  padding:8px!important;pointer-events:auto!important
+}
+#Details-menu-drawer-container > summary.header__icon--menu .header-drawer-icon,
+#Details-menu-drawer-container > summary.header__icon--menu .svg-wrapper,
+#Details-menu-drawer-container > summary.header__icon--menu svg,
+header-drawer summary.header__icon--menu .header-drawer-icon,
+header-drawer summary.header__icon--menu svg {
+  display:block!important;visibility:visible!important;opacity:1!important;
+  color:#fff!important;width:22px!important;height:22px!important
+}
+#Details-menu-drawer-container > summary.header__icon--menu path,
+header-drawer summary.header__icon--menu path {
+  stroke:#fff!important;stroke-width:1.75!important
+}
 a.header-actions__action[href*="talk-to-a-coach"] .lurvox-talk-cta__label,
 a.header-actions__action[href="#lx-home-consult"] .lurvox-talk-cta__label{
   display:inline!important;font-size:12px!important;font-weight:750!important;
   letter-spacing:-.01em;white-space:nowrap;color:#fff!important;line-height:1
 }
+${COACH_INSTA_STYLE}
 </style>`
 
 const CONSULT_SCRIPT = `<script id="lx-home-coach-form">
@@ -341,7 +413,24 @@ const CONSULT_SCRIPT = `<script id="lx-home-coach-form">
     });
   }
 
+  function placeCoachInsta(){
+    if(document.getElementById("lx-coach-insta"))return;
+    var goal=document.querySelector('[id*="ai_gen_block_361650c"]')||document.querySelector('[class*="ai-transformation-plan-"]');
+    var host=goal&&(goal.closest(".shopify-block")||goal);
+    var plans=document.getElementById("plans");
+    var wrap=document.createElement("div");
+    wrap.innerHTML=${JSON.stringify(COACH_INSTA_CTA)};
+    var el=wrap.firstElementChild;
+    if(!el)return;
+    if(host&&host.parentNode)host.parentNode.insertBefore(el,host);
+    else if(plans&&plans.parentNode){
+      var box=plans.parentElement&&plans.parentElement.tagName==="DIV"?plans.parentElement:plans;
+      box.parentNode.insertBefore(el,box.nextSibling);
+    }
+  }
+
   function boot(){
+    placeCoachInsta();
     addHeroTalk();
     addTalkHeaderCta();
     pointTalkLinks();
