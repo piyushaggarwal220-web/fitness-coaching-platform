@@ -61,7 +61,7 @@
           <span data-pf-checkout-label>See this plan</span>
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" data-pf-upgrade href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/12-months" hidden>
-          Prefer Athletic body? 12 months · ₹1,699
+          Prefer Athletic body? 12 months · ₹5,999
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" href="/">Back to home</a>
         <a class="lx-pf__link" href="{{ plans_url }}">Compare all plans</a>
@@ -438,170 +438,46 @@
 
     var planBase = (root.getAttribute('data-plan-base') || 'https://app.lurvox.in/plans').replace(/\/$/, '');
     var steps = [
-      {
-        key: 'goal',
-        q: 'What is your main goal right now?',
-        options: [
-          { id: 'event', label: 'Fat loss — get visibly leaner in 90 days', score: -4, goal: 'Fat loss' },
-          { id: 'refine', label: 'Fat loss + muscle gain — lose fat while building muscle over 6 months', score: 1, goal: 'Fat loss + muscle gain' },
-          { id: 'transform', label: 'Athletic body — fat loss, muscle gain, and stamina over 12 months', score: 5, goal: 'Athletic body' }
-        ]
-      },
-      {
-        key: 'body',
-        q: 'How would you describe your starting point?',
-        options: [
-          { id: 'soft', label: 'Softer / carrying extra fat', score: 2 },
-          { id: 'skinny_fat', label: 'Skinny fat. Soft midsection', score: 2 },
-          { id: 'thin', label: 'Thin / hard to gain', score: 0 },
-          { id: 'fit', label: 'Already trained and fairly lean', score: -2 }
-        ]
-      },
-      {
-        key: 'history',
-        q: 'How long have you been trying to change your body?',
-        options: [
-          { id: 'never', label: 'This is my first real attempt', score: 0 },
-          { id: 'months', label: 'A few months, on and off', score: 0 },
-          { id: 'years', label: 'Years of starting and stopping', score: 0 }
-        ]
-      },
-      {
-        key: 'experience',
-        q: 'How experienced are you with training?',
-        options: [
-          { id: 'beginner', label: 'Beginner. I need the full system', score: 3 },
-          { id: 'some', label: 'Some experience, inconsistent', score: 1 },
-          { id: 'advanced', label: 'Advanced. I mostly need refinement', score: -2 }
-        ]
-      },
-      {
-        key: 'time',
-        q: 'How many days a week can you realistically train?',
-        options: [
-          { id: 'low', label: '0 to 2 days', score: 0 },
-          { id: 'mid', label: '3 to 4 days', score: 0 },
-          { id: 'high', label: '5+ days', score: 0 }
-        ]
-      },
-      {
-        key: 'session',
-        q: 'How long can a training session be?',
-        options: [
-          { id: 'short', label: 'Under 30 minutes', score: 0 },
-          { id: 'normal', label: '30 to 60 minutes', score: 0 },
-          { id: 'long', label: '60+ minutes when needed', score: 0 }
-        ]
-      },
-      {
-        key: 'place',
-        q: 'Where will you train?',
-        options: [
-          { id: 'gym', label: 'Gym', score: 0 },
-          { id: 'home', label: 'Home', score: 0 },
-          { id: 'both', label: 'Both / not sure yet', score: 0 }
-        ]
-      },
-      {
-        key: 'food',
-        q: 'How do you want to eat?',
-        options: [
-          { id: 'home', label: 'Home cooked food. Keep it simple', score: 0 },
-          { id: 'mix', label: 'Home food + some eating out', score: 0 },
-          { id: 'lost', label: 'I do not know what to eat', score: 0 }
-        ]
-      },
-      {
-        key: 'sleep',
-        q: 'How is your sleep most nights?',
-        options: [
-          { id: 'good', label: 'Mostly solid', score: 0 },
-          { id: 'ok', label: 'Hit or miss', score: 0 },
-          { id: 'poor', label: 'Poor. I wake tired', score: 0 }
-        ]
-      },
-      {
-        key: 'stress',
-        q: 'How stressed is your week usually?',
-        options: [
-          { id: 'low', label: 'Manageable', score: 0 },
-          { id: 'mid', label: 'Busy but doable', score: 0 },
-          { id: 'high', label: 'Very high. I burn out easily', score: 0 }
-        ]
-      },
-      {
-        key: 'injury',
-        q: 'Any injuries or pain we should plan around?',
-        options: [
-          { id: 'none', label: 'Nothing major', score: 0 },
-          { id: 'mild', label: 'Mild aches now and then', score: 0 },
-          { id: 'limit', label: 'Yes. It limits how I train', score: 0 }
-        ]
-      },
-      {
-        key: 'blocker',
-        q: 'What usually stops you?',
-        options: [
-          { id: 'time', label: 'No time', score: 0 },
-          { id: 'food', label: 'Food / diet confusion', score: 0 },
-          { id: 'consistency', label: 'I start strong, then quit', score: 0 },
-          { id: 'knowledge', label: 'I do not know the right plan', score: 0 }
-        ]
-      },
-      {
-        key: 'accountability',
-        q: 'What kind of support actually works for you?',
-        options: [
-          { id: 'self', label: 'I am mostly self-driven. Little guidance', score: -2 },
-          { id: 'checkins', label: 'I need regular check ins', score: 1 },
-          { id: 'push', label: 'I need a coach on me for the long run', score: 2 }
-        ]
-      },
-      {
-        key: 'coachpast',
-        q: 'Have you worked with a coach before?',
-        options: [
-          { id: 'no', label: 'Never', score: 0 },
-          { id: 'failed', label: 'Yes, but it did not stick', score: 0 },
-          { id: 'yes', label: 'Yes, and it helped', score: 0 }
-        ]
-      },
-      {
-        key: 'timeline',
-        q: 'When do you want to see a real change?',
-        options: [
-          { id: 'fast', label: 'In about 90 days. Fat loss is the priority', score: -3 },
-          { id: 'steady', label: 'In about 6 months. Fat loss and muscle together', score: 1 },
-          { id: 'patient', label: 'I want an athletic body. Fat loss, muscle, and stamina', score: 4 }
-        ]
-      },
-      {
-        key: 'stamina',
-        q: 'Do you also want to build stamina?',
-        options: [
-          { id: 'looks', label: 'Mostly looks. Fat loss is enough', score: -1 },
-          { id: 'energy', label: 'I want more energy in daily life', score: 1 },
-          { id: 'athlete', label: 'Yes. Fat loss, muscle, and real stamina', score: 5 }
-        ]
-      },
-      {
-        key: 'commit',
-        q: 'How serious is this attempt for you?',
-        options: [
-          { id: 'try', label: 'I want to try and see', score: -2 },
-          { id: 'ready', label: 'I am ready to follow a plan', score: 1 },
-          { id: 'allin', label: 'This is non negotiable for me', score: 3 }
-        ]
-      },
-      {
-        key: 'calls',
-        q: 'How do you want coaching day to day?',
-        options: [
-          { id: 'yes', label: 'In the app, with weekly plan updates', score: 6 },
-          { id: 'maybe', label: 'App chat and check-ins are enough', score: 2 },
-          { id: 'no', label: 'A shorter plan is enough', score: 0 }
-        ]
-      }
+      { key: 'goal', q: 'What is the main goal?', options: [
+        { id: 'a', label: 'Fast fat loss', plan: 'fat' },
+        { id: 'b', label: 'Fat loss and visible muscle', plan: 'mix' },
+        { id: 'c', label: 'A complete overhaul: fat, muscle, stamina, and strength', plan: 'athletic' }
+      ]},
+      { key: 'commit', q: 'How long can you commit?', options: [
+        { id: 'a', label: 'About 3 months', plan: 'fat' },
+        { id: 'b', label: 'Half a year', plan: 'mix' },
+        { id: 'c', label: 'A full year', plan: 'athletic' }
+      ]},
+      { key: 'training', q: 'Where is your training now?', options: [
+        { id: 'a', label: 'New to structured training', plan: 'fat' },
+        { id: 'b', label: 'Trained on and off', plan: 'mix' },
+        { id: 'c', label: 'I train fairly regularly', plan: 'athletic' }
+      ]},
+      { key: 'beyond', q: 'Beyond fat loss, what else?', options: [
+        { id: 'a', label: 'Nothing else. Fat loss is the job.', plan: 'fat' },
+        { id: 'b', label: 'Noticeable muscle and strength', plan: 'mix' },
+        { id: 'c', label: 'Muscle, stamina, and performance', plan: 'athletic' }
+      ]},
+      { key: 'stamina', q: 'How much does stamina matter?', options: [
+        { id: 'a', label: 'Not a priority', plan: 'fat' },
+        { id: 'b', label: 'Somewhat', plan: 'mix' },
+        { id: 'c', label: 'Very. I want to feel athletic.', plan: 'athletic' }
+      ]},
+      { key: 'budget', q: 'What is realistic for your schedule and budget?', options: [
+        { id: 'a', label: 'Start small', plan: 'fat' },
+        { id: 'b', label: 'A mid-range plan', plan: 'mix' },
+        { id: 'c', label: 'I am ready for the full year', plan: 'athletic' }
+      ]},
+      { key: 'success', q: 'A year from now, success looks like…', options: [
+        { id: 'a', label: 'The fat is gone', plan: 'fat' },
+        { id: 'b', label: 'The fat is gone and muscle is on', plan: 'mix' },
+        { id: 'c', label: 'I feel like a different, athletic person', plan: 'athletic' }
+      ]},
+      { key: 'where', q: 'Where will you train?', options: [
+        { id: 'a', label: 'Home', where: 'home' },
+        { id: 'b', label: 'A gym', where: 'gym' },
+        { id: 'c', label: 'Home and a gym', where: 'both' }
+      ]}
     ];
 
     var plans = {
@@ -609,7 +485,7 @@
         slug: '3_months',
         path: '3-months',
         label: 'Fat loss',
-        price: '₹599',
+        price: '₹1,999',
         per: '90 days',
         bullets: [
           'Best for a focused 90-day fat-loss plan',
@@ -621,7 +497,7 @@
         slug: '6_months',
         path: '6-months',
         label: 'Fat loss + muscle gain',
-        price: '₹999',
+        price: '₹3,499',
         per: '6 months',
         bullets: [
           'Best for: losing fat while building muscle',
@@ -633,7 +509,7 @@
         slug: '12_months',
         path: '12-months',
         label: 'Athletic body',
-        price: '₹1,699',
+        price: '₹5,999',
         per: '12 months',
         bullets: [
           'Best for: fat loss, muscle gain, and stamina',
@@ -685,36 +561,33 @@
     var restartEl = root.querySelector('[data-pf-restart]');
 
     function recommend() {
-      var score = 0;
-      var goalLabel = 'change your body';
+      var scores = { fat: 0, mix: 0, athletic: 0 };
+      var order = ['fat', 'mix', 'athletic'];
+      var slugs = { fat: '3_months', mix: '6_months', athletic: '12_months' };
+      var picks = [];
+      var where = 'both';
       steps.forEach(function (step) {
         var picked = answers[step.key];
         if (!picked) return;
-        score += picked.score || 0;
-        if (step.key === 'goal' && picked.goal) goalLabel = picked.goal;
+        if (picked.plan) picks.push(picked.plan);
+        if (picked.where) where = picked.where;
       });
-
-      var calls = answers.calls && answers.calls.id;
-      var stamina = answers.stamina && answers.stamina.id;
-      var planKey = '12_months';
-      // Tuned so ~70%+ of answer paths land on 12 months (was score <= 8 → ~68%).
-      if (calls === 'yes' || stamina === 'athlete') planKey = '12_months';
-      else if (score <= 1) planKey = '3_months';
-      else if (score <= 6) planKey = '6_months';
-
-      var why = '';
-      if (planKey === '3_months') {
-        why = 'This is the 90-day Fat loss plan: a focused start with 1-to-1 coaching.';
-      } else if (planKey === '6_months') {
-        why = 'This is Fat loss + muscle gain. Six months to lose fat while building muscle.';
-      } else {
-        why =
-          'Your goal is ' +
-          goalLabel +
-          '. Athletic body is 12 months — fat loss, muscle gain, and stamina. No live calls.';
+      picks.forEach(function (pick) { scores[pick] += 1; });
+      var max = Math.max(scores.fat, scores.mix, scores.athletic);
+      var leaders = order.filter(function (key) { return scores[key] === max; });
+      var commitment = picks[1];
+      var winner = leaders[0] || 'mix';
+      if (leaders.length > 1 && commitment) {
+        if (leaders.indexOf(commitment) >= 0) winner = commitment;
       }
-
-      return { planKey: planKey, why: why, goalLabel: goalLabel };
+      var planKey = slugs[winner];
+      var why =
+        planKey === '3_months'
+          ? 'This is the 90-day Fat loss plan, with training at ' + where + '.'
+          : planKey === '6_months'
+            ? 'This is Fat loss + muscle gain, with training at ' + where + '.'
+            : 'Athletic body is 12 months — fat loss, muscle, and stamina, with training at ' + where + '.';
+      return { planKey: planKey, why: why, goalLabel: winner };
     }
 
     function planUrl(plan) {

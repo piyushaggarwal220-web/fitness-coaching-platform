@@ -159,6 +159,20 @@ layout = /<!-- lurvox-cache-bust \d+ -->/.test(layout)
 
 const files = [
   {
+    filename: 'sections/lurvox-plan-finder.liquid',
+    body: {
+      type: 'TEXT',
+      value: fs.readFileSync(path.join(ROOT, 'scripts/shopify-assets/sections-lurvox-plan-finder.liquid'), 'utf8'),
+    },
+  },
+  {
+    filename: 'snippets/lurvox-home-quiz.liquid',
+    body: {
+      type: 'TEXT',
+      value: fs.readFileSync(path.join(ROOT, 'scripts/shopify-assets/snippets-lurvox-home-quiz.liquid'), 'utf8'),
+    },
+  },
+  {
     filename: 'snippets/lurvox-catalog-home.liquid',
     body: {
       type: 'TEXT',
