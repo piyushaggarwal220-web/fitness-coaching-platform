@@ -21,22 +21,22 @@ const CALL_MESSAGE = 'Please call me about the 84-day transformation.'
 const PayContext = createContext<(plan: string) => void>(() => {})
 
 const PHASES = [
-  { n: '01', days: 'Days 1–21', title: 'The first plan', body: 'Workout, diet, and the week you actually have. You log it. The coach can see it.' },
-  { n: '02', days: 'Days 22–42', title: 'It moves', body: 'Mid-week and weekly check-ins. The plan changes from what you did, not from a fixed file.' },
-  { n: '03', days: 'Days 43–63', title: 'The harder block', body: 'Training and food get more specific. Same coach. Same app.' },
-  { n: '04', days: 'Days 64–84', title: 'Hold it', body: 'The last three weeks lock the routine. You leave with the next step written down.' },
+  { n: '01', days: 'Week 1', title: 'The first plan', body: 'Written from your onboarding. Workout, diet, cardio, and supplements.' },
+  { n: '02', days: 'Wednesday', title: 'Mid-week check-in', body: 'You send the check-in. You get a reply. The plan stays the same.' },
+  { n: '03', days: 'Sunday', title: 'Weekly check-in', body: 'You send the week. The next plan is written from this.' },
+  { n: '04', days: 'After Sunday', title: 'The plan is rewritten', body: 'A new week of workout and diet. This repeats for twelve weeks.' },
 ] as const
 
 const INCLUDED = [
-  'Personal workout plan',
-  'Personal diet plan',
-  'Sleep, cardio, and supplement guidance',
-  'A human coach in the app',
-  'Mid-week and weekly check-ins',
-  'Workout and diet trackers',
-  'Plan updates every week',
-  'Testosterone protocol for men',
-  'Hourglass guidance for women',
+  { label: 'Personal workout plan', src: '/images/lurvox/beige/included-workout.webp', alt: 'A silver dumbbell on cream linen' },
+  { label: 'Personal diet plan', src: '/images/lurvox/beige/included-diet.webp', alt: 'A plated meal on a beige table' },
+  { label: 'Cardio and supplement plans', src: '/images/lurvox/beige/included-guidance.webp', alt: 'A silver running shoe and a glass bottle' },
+  { label: 'A human coach in the app', src: '/images/lurvox/beige/included-coach.webp', alt: 'Hands holding a phone in a quiet room' },
+  { label: 'Mid-week and weekly check\u2011ins', src: '/images/lurvox/beige/included-checkin.webp', alt: 'An open notebook and a silver pen' },
+  { label: 'Workout and diet trackers', src: '/images/lurvox/beige/included-trackers.webp', alt: 'A small card beside a dumbbell and herbs' },
+  { label: 'Plan updates every week', src: '/images/lurvox/beige/included-updates.webp', alt: 'A hand turning a cream card in a stack' },
+  { label: 'Testosterone protocol for men', src: '/images/lurvox/beige/included-men.webp', alt: 'A man training with a kettlebell' },
+  { label: 'Hourglass guidance for women', src: '/images/lurvox/beige/included-women.webp', alt: 'A woman training in a cream studio' },
 ] as const
 
 const FAQ = [
@@ -51,6 +51,23 @@ const FAQ = [
 
 export function BeigeSite({ children, capture = false }: { children: ReactNode; capture?: boolean }) {
   const [payPlan, setPayPlan] = useState<string | null>(null)
+  useEffect(() => {
+    const bar = document.querySelector('.lx-sticky')
+    const clusters = document.querySelectorAll('[data-lx-buy]')
+    if (!bar || clusters.length === 0) return
+    const visible = new Set<Element>()
+    const sync = () => bar.classList.toggle('is-hidden', visible.size > 0)
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) visible.add(entry.target)
+        else visible.delete(entry.target)
+      }
+      sync()
+    }, { threshold: 0, rootMargin: '0px 0px 88px 0px' })
+    clusters.forEach((node) => observer.observe(node))
+    sync()
+    return () => observer.disconnect()
+  }, [])
   return (
     <PreviewSaleProvider>
     <PayContext.Provider value={setPayPlan}>
@@ -87,7 +104,7 @@ function usePay() {
 function OfferActions() {
   const pay = usePay()
   return (
-    <div className="lx-actions">
+    <div className="lx-actions" data-lx-buy>
       <PrimaryCta plan={PLAN.slug} className="lx-btn-block" source="preview4" landingPath="/preview4" onPay={pay}>
         Start the 84 days · {PLAN.displayPrice}
       </PrimaryCta>
@@ -166,38 +183,30 @@ function BeigeFooter() {
 }
 
 export function BeigeHome() {
-  useEffect(() => {
-    const pricing = document.getElementById('pricing')
-    const heroCta = document.querySelector('.lx-hero .lx-actions')
-    const bar = document.querySelector('.lx-sticky')
-    if (!pricing || !heroCta || !bar) return
-    const seen = { hero: true, pricing: false }
-    const sync = () => bar.classList.toggle('is-hidden', seen.hero || seen.pricing)
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.target === heroCta) seen.hero = entry.isIntersecting
-        if (entry.target === pricing) seen.pricing = entry.isIntersecting
-      }
-      sync()
-    }, { threshold: 0.35 })
-    observer.observe(heroCta)
-    observer.observe(pricing)
-    sync()
-    return () => observer.disconnect()
-  }, [])
-
   return (
     <>
       <section className="lx-hero" id="top">
         <div className="lx-hero-copy">
-          <p className="lx-eyebrow">One plan</p>
+          <p className="lx-eyebrow">84 days</p>
           <h1>
-            <span>84 days.</span>
-            <span>One transformation.</span>
+            <span>Complete</span>
+            <span>transformation.</span>
           </h1>
           <p className="lx-lead">
-            A personal workout, a personal diet, and a coach in the app. No second plan to choose.
+            Your workout and diet, written for your body. Check in twice a week. The plan updates every week.
           </p>
+          <ul className="lx-hero-points" aria-label="What the 84 days cover">
+            <li>Workout</li>
+            <li>Diet</li>
+            <li>Check-ins</li>
+            <li>Weekly update</li>
+          </ul>
+          <p className="lx-price">
+            <strong>{PLAN.displayPrice}</strong>
+            <em>for 84 days · once</em>
+          </p>
+          <p className="lx-arrive">First plan within {INSTANT_PLAN_WINDOW_LABEL}, after onboarding and photos.</p>
+          <OfferActions />
           <div className="lx-hero-photo">
             <CampaignImage
               src="/images/lurvox/campaign/hero-muscle.webp"
@@ -206,11 +215,6 @@ export function BeigeHome() {
               className="lx-cover"
             />
           </div>
-          <p className="lx-price">
-            <strong>{PLAN.displayPrice}</strong>
-            <em>for 84 days · once</em>
-          </p>
-          <OfferActions />
         </div>
       </section>
 
@@ -229,9 +233,14 @@ export function BeigeHome() {
       <section className="lx-system" id="system">
         <p className="lx-eyebrow">Included</p>
         <h2>What you get for {PLAN.displayPrice}.</h2>
-        <ul className="lx-include">
+        <ul className="lx-gifts">
           {INCLUDED.map((item) => (
-            <li key={item}>{item}</li>
+            <li key={item.label}>
+              <figure>
+                <CampaignImage src={item.src} alt={item.alt} />
+              </figure>
+              <strong>{item.label}</strong>
+            </li>
           ))}
         </ul>
       </section>
@@ -253,12 +262,11 @@ export function BeigeHome() {
             </a>
           ))}
         </div>
-        <OfferActions />
       </section>
 
       <section className="lx-method" id="method">
         <p className="lx-eyebrow">The 84 days</p>
-        <h2>Four blocks. One plan.</h2>
+        <h2>Twelve weekly plans.</h2>
         <ol>
           {PHASES.map((phase) => (
             <li key={phase.n}>
@@ -282,11 +290,9 @@ export function BeigeHome() {
               {PLAN.displayPrice}
               <em>once · not a subscription</em>
             </p>
-            <ul className="lx-points">
-              {INCLUDED.map((point) => (
-                <li key={point}>{point}</li>
-              ))}
-            </ul>
+            <p className="lx-arrive">First plan within {INSTANT_PLAN_WINDOW_LABEL}, after onboarding and photos.</p>
+            <p className="lx-offer-line">Workout, diet, cardio, and supplements. Wednesday and Sunday check-ins. A new plan every week.</p>
+            <p className="lx-offer-more"><a href="#system">See everything included</a></p>
             <OfferActions />
           </article>
         </div>
@@ -313,7 +319,7 @@ export function ProgramPage() {
     <section className="lx-system" id="system">
       <p className="lx-eyebrow">The 84 days</p>
       <h2>What the twelve weeks are for.</h2>
-      <p className="lx-lead">One plan. Four blocks. The coach reviews the check-ins and the plan moves.</p>
+      <p className="lx-lead">Twelve weekly plans. Wednesday and Sunday are the check-ins. The plan is rewritten after Sunday.</p>
       <ol className="lx-phases">
         {PHASES.map((phase) => (
           <li key={phase.n}>
@@ -326,7 +332,7 @@ export function ProgramPage() {
       <h2>Included the whole way</h2>
       <ul className="lx-include">
         {INCLUDED.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item.label}>{item.label}</li>
         ))}
       </ul>
       <OfferActions />

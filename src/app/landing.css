@@ -75,6 +75,31 @@ body:has(.landing) {
   max-width: 36rem;
 }
 .lx-hero-copy .lx-lead { max-width: 34rem; margin-left: auto; margin-right: auto; }
+.lx-duration .lx-hero-points {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: center;
+  gap: 8px;
+}
+.lx-hero-points {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lx-hero-points li {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fffaf3;
+  border: 1px solid var(--line);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
 .lx-price {
   display: flex;
   align-items: baseline;
@@ -91,6 +116,16 @@ body:has(.landing) {
   font-weight: 800;
 }
 .lx-price em { font-style: normal; }
+.lx-arrive {
+  margin: 8px auto 0;
+  max-width: 22rem;
+  color: var(--dim);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+.lx-plans .lx-arrive { margin-left: 0; margin-right: 0; max-width: none; text-align: left; }
 .lx-per-hero { margin-top: 6px; color: var(--dim); font-size: 0.95rem; }
 .lx-actions { margin-top: 18px; }
 
@@ -947,6 +982,189 @@ body:has(.landing) {
 .lx-talk-error { color: #8d2b22; font-weight: 700; }
 .lx-talk .lx-btn { margin-top: 4px; }
 
+/* Premium silver rim. Scoped to the beige 84-day page.
+   The stripe is one exact tile (200% wide) and the ends are the same
+   color, so the loop lands on the frame it started from. */
+@keyframes lx-silver-sheen {
+  from { background-position: 0% 50%; }
+  to { background-position: 200% 50%; }
+}
+.lx-duration .lx-gifts {
+  display: grid;
+  gap: 10px;
+  margin: 4px auto 8px;
+  padding: 0;
+  list-style: none;
+  max-width: 520px;
+  text-align: left;
+}
+.lx-duration .lx-gifts li {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding: 8px 16px 8px 8px;
+  border: 0;
+  border-radius: 22px;
+  background: rgba(255, 250, 243, 0.92);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 12px 28px rgba(28, 25, 21, 0.07);
+}
+.lx-duration .lx-gifts li::before { content: none; }
+.lx-duration .lx-gifts figure {
+  position: relative;
+  margin: 0;
+  width: 76px;
+  height: 76px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #e7e1d6;
+}
+.lx-duration .lx-gifts img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.lx-duration .lx-gifts strong {
+  font-size: 1.02rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+.lx-duration .lx-hero-photo,
+.lx-duration .lx-hero-points li,
+.lx-duration .lx-plans article,
+.lx-duration .lx-coach-row a,
+.lx-duration .lx-final,
+.lx-duration .lx-btn-primary,
+.lx-duration a.lx-btn-call,
+.lx-duration .lx-login,
+.lx-duration .lx-talk input,
+.lx-duration .lx-menu-list,
+.lx-duration .lx-gifts figure {
+  position: relative;
+}
+.lx-duration .lx-hero-photo::after,
+.lx-duration .lx-hero-points li::after,
+.lx-duration .lx-plans article::after,
+.lx-duration .lx-coach-row a::after,
+.lx-duration .lx-final::after,
+.lx-duration .lx-btn-primary::after,
+.lx-duration a.lx-btn-call::after,
+.lx-duration .lx-login::after,
+.lx-duration .lx-talk input::after,
+.lx-duration .lx-menu-list::after,
+.lx-duration .lx-gifts figure::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background-image: linear-gradient(
+    90deg,
+    #6a6660 0%,
+    #f7f4ee 16%,
+    #ffffff 28%,
+    #b7b2a8 42%,
+    #8c8881 58%,
+    #ffffff 72%,
+    #f4f1eb 84%,
+    #6a6660 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: repeat;
+  animation: lx-silver-sheen 4.8s linear infinite;
+  pointer-events: none;
+  z-index: 3;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.lx-duration .lx-header {
+  border-bottom: 1px solid transparent;
+  background:
+    linear-gradient(#f4efe6, #f4efe6) padding-box,
+    linear-gradient(90deg, #8a8680, #ffffff, #c8c3ba, #ffffff, #6f6b64) border-box;
+}
+.lx-duration .lx-sticky {
+  border-top: 1px solid transparent;
+  background:
+    linear-gradient(rgba(244, 239, 230, 0.96), rgba(244, 239, 230, 0.96)) padding-box,
+    linear-gradient(90deg, #8a8680, #ffffff, #c8c3ba, #ffffff, #6f6b64) border-box;
+  box-shadow: 0 -10px 30px rgba(28, 25, 21, 0.06);
+}
+.lx-duration .lx-hero-photo,
+.lx-duration .lx-plans article,
+.lx-duration .lx-coach-row a,
+.lx-duration .lx-final {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 16px 36px rgba(28, 25, 21, 0.12);
+}
+.lx-duration .lx-faq details {
+  border-top-color: #c5c0b6;
+}
+.lx-duration .lx-method li,
+.lx-duration .lx-phases li,
+.lx-duration .lx-system li {
+  border-top-color: #c5c0b6;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lx-duration .lx-hero-photo::after,
+  .lx-duration .lx-hero-points li::after,
+  .lx-duration .lx-plans article::after,
+  .lx-duration .lx-coach-row a::after,
+  .lx-duration .lx-final::after,
+  .lx-duration .lx-btn-primary::after,
+  .lx-duration a.lx-btn-call::after,
+  .lx-duration .lx-login::after,
+  .lx-duration .lx-talk input::after,
+  .lx-duration .lx-menu-list::after,
+  .lx-duration .lx-gifts figure::after {
+    animation: none;
+  }
+}
+
 @media (min-width: 900px) {
   .lx-duration .lx-hero h1 { font-size: 64px; }
+  .lx-duration #system { scroll-margin-top: 84px; }
+}
+
+.lx-duration .lx-offer-line {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+.lx-duration .lx-offer-more { margin: 10px 0 0; }
+.lx-duration .lx-offer-more a {
+  color: var(--accent);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 899px) {
+  .lx-duration .lx-header { position: static; }
+  .lx-duration .lx-fail,
+  .lx-duration .lx-system,
+  .lx-duration .lx-method,
+  .lx-duration .lx-pricing,
+  .lx-duration .lx-faq,
+  .lx-duration .lx-coaches {
+    padding-top: 32px;
+    padding-bottom: 32px;
+  }
+  .lx-duration .lx-coach-row img { height: 200px; }
+  .lx-duration .lx-gifts { gap: 8px; }
+  .lx-duration .lx-gifts li {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 12px;
+    padding: 6px 12px 6px 6px;
+  }
+  .lx-duration .lx-gifts figure { width: 64px; height: 64px; }
 }

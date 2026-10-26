@@ -3,7 +3,7 @@ import { BeigeSite, ProgramPage } from '@/components/landing/beige-site'
 
 export const metadata: Metadata = {
   title: 'The 84 days · LURVOX',
-  description: 'Four blocks across 84 days. One plan. ₹999 once.',
+  description: 'Twelve weekly plans across 84 days. ₹999 once.',
   robots: { index: false, follow: false },
 }
 

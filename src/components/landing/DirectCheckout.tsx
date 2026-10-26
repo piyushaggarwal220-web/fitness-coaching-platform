@@ -208,6 +208,7 @@ export function DirectCheckout({
     <div className={`${styles.sheet} ${styles[tone]}`} role="presentation">
       <button type="button" className={styles.dim} aria-label="Close checkout" onClick={onClose} />
       <form ref={cardRef} className={styles.card} role="dialog" aria-modal="true" aria-labelledby="direct-checkout-title" tabIndex={-1} onSubmit={pay}>
+        <div className={styles.body}>
         <button type="button" className={styles.back} onClick={onClose}>← Back</button>
         <p className={styles.kicker}>
           {plan.durationDays && plan.durationMonths === 0
@@ -252,10 +253,11 @@ export function DirectCheckout({
         </label>
         {error ? <p className={styles.error} role="alert">{error}</p> : null}
         {isInAppBrowser() ? <p className={styles.error} role="note">{IN_APP_PAY_HINT}</p> : null}
+        <button type="button" className={styles.close} onClick={onClose}>← Back</button>
+        </div>
         <button type="submit" className={styles.pay} disabled={loading}>
           {loading ? 'Opening checkout…' : 'Start your transformation'}
         </button>
-        <button type="button" className={styles.close} onClick={onClose}>← Back</button>
       </form>
     </div>
   )

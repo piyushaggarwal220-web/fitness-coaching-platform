@@ -19,12 +19,20 @@
   position: relative;
   width: min(100%, 460px);
   max-height: min(92vh, 760px);
-  overflow: auto;
+  overflow: hidden;
   margin: 0;
   padding: 22px 18px calc(18px + env(safe-area-inset-bottom));
   border-radius: 22px 22px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.body {
+  overflow: auto;
+  min-height: 0;
   display: grid;
   gap: 10px;
+  padding-right: 2px;
 }
 
 .back {
