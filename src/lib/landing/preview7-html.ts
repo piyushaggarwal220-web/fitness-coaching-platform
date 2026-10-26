@@ -13,9 +13,46 @@ export function preview7LiveHtml(html: string): string {
   }
   return injectHomeCoachForm(
     injectCoachInstaCta(
-      revampWhatYouGet(movePlansBeforeWhatYouGet(rewriteHeroStartCopy(rewriteHomeOfferStrip(next)))),
+      revampWhatYouGet(
+        movePlansBeforeWhatYouGet(
+          rewriteHeroStartCopy(rewriteHomeOfferStrip(removeTransformations(next))),
+        ),
+      ),
     ),
   )
+}
+
+/**
+ * The homepage Transformations gallery is a <client-results-*> block.
+ * It is not inside the plan-card shopify block, so a :has() hide on
+ * .shopify-block never matched it. Cut the block out of preview7.
+ */
+export function removeTransformations(html: string): string {
+  let next = removeShopifyBlocks(html, 'ai_gen_block_cd3c949')
+  next = next.replace(/<style\b[^>]*>[\s\S]*?<\/style>\s*(?=<client-results-)/gi, '')
+  next = next.replace(/<client-results-[a-z0-9]+\b[^>]*>[\s\S]*?<\/client-results-[a-z0-9]+>/gi, '')
+  next = next.replace(
+    /<script\b[^>]*>[\s\S]*?customElements\.define\(\s*['"]client-results-[\s\S]*?<\/script>/gi,
+    '',
+  )
+  next = next.replace(/<section\b[^>]*\bid=["']transformations["'][^>]*>[\s\S]*?<\/section>/gi, '')
+  return next
+}
+
+function removeShopifyBlocks(html: string, idPart: string): string {
+  const openRe = /<div\b[^>]*id="shopify-block-[^"]*"[^>]*>/gi
+  const cuts: Array<[number, number]> = []
+  let match: RegExpExecArray | null
+  while ((match = openRe.exec(html))) {
+    if (!match[0].includes(idPart)) continue
+    const end = endOfDiv(html, match.index)
+    if (end > match.index) cuts.push([match.index, end])
+  }
+  let next = html
+  for (let i = cuts.length - 1; i >= 0; i--) {
+    next = next.slice(0, cuts[i][0]) + next.slice(cuts[i][1])
+  }
+  return next
 }
 
 const WYG_SECTION = `<section class="lx-wyg lx-wyg--cards" id="what-you-get" aria-label="What you get on LURVOX">
@@ -302,8 +339,8 @@ a.header-actions__action[href="#lx-home-consult"] .lurvox-talk-cta__label{
 }
 ${COACH_INSTA_STYLE}
 [id*="ai_gen_block_cd3c949"],
-.shopify-block:has([class*="ai-client-results-"]),
-.shopify-block:has([class*="ai-client-results-headline"]){
+[class*="ai-client-results-"],
+.shopify-block:has([class*="ai-client-results-"]){
   display:none!important
 }
 </style>`

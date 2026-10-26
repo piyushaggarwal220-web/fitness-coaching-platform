@@ -32,8 +32,25 @@ assert.match(withContact, /Book a free call/)
 assert.match(withContact, /Free · 10 min · no payment/)
 assert.match(withContact, /a\[href="#plans"\]\{display:none!important\}/)
 assert.match(withContact, /pointTalkLinks/)
-assert.match(withContact, /ai-client-results-[\s\S]*display:none!important/)
+assert.match(withContact, /\[class\*="ai-client-results-"\][\s\S]*display:none!important/)
 assert.match(withContact, /hideTransformations/)
+
+const gallery = preview7LiveHtml(`<head></head><body>
+<style>.ai-client-results-abc{display:flex}</style>
+<client-results-abc class="ai-client-results-abc">
+  <div class="ai-client-results-label-abc">Transformations</div>
+  <h2 class="ai-client-results-headline-abc">7,000+ People Have Already Transformed with LURVOX</h2>
+</client-results-abc>
+<script>customElements.define('client-results-abc', class {});</script>
+<div id="shopify-block-x__ai_gen_block_cd3c949_y" class="shopify-block"><p>Transformations leftover</p></div>
+<section id="transformations"><h2>Client transformations</h2></section>
+<h2>Pick your goal. We handle the rest.</h2>
+</body>`)
+assert.doesNotMatch(gallery, /client-results-abc/)
+assert.doesNotMatch(gallery, /7,000\+ People Have Already Transformed/)
+assert.doesNotMatch(gallery, /Transformations leftover/)
+assert.doesNotMatch(gallery, /id="transformations"/)
+assert.match(gallery, /Pick your goal/)
 assert.match(withContact, /#Details-menu-drawer-container > summary\.header__icon--menu/)
 assert.match(withContact, /summary\.header__icon--menu path[\s\S]*stroke:#fff!important/)
 assert.match(withContact, /lurvox-talk-cta__label[\s\S]*display:inline!important/)
