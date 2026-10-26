@@ -136,6 +136,13 @@ function patchIndex(raw) {
     section.blocks[contactId].disabled = true
   }
 
+  const transformId = Object.entries(section.blocks || {}).find(
+    ([id, block]) => block.type === 'ai_gen_block_cd3c949' || /cd3c949/i.test(id),
+  )?.[0]
+  if (transformId && section.blocks[transformId]) {
+    section.blocks[transformId].disabled = true
+  }
+
   return JSON.stringify(data)
 }
 

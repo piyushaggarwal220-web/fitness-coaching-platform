@@ -301,6 +301,11 @@ a.header-actions__action[href="#lx-home-consult"] .lurvox-talk-cta__label{
   letter-spacing:-.01em;white-space:nowrap;color:#fff!important;line-height:1
 }
 ${COACH_INSTA_STYLE}
+[id*="ai_gen_block_cd3c949"],
+.shopify-block:has([class*="ai-client-results-"]),
+.shopify-block:has([class*="ai-client-results-headline"]){
+  display:none!important
+}
 </style>`
 
 const CONSULT_SCRIPT = `<script id="lx-home-coach-form">
@@ -413,6 +418,13 @@ const CONSULT_SCRIPT = `<script id="lx-home-coach-form">
     });
   }
 
+  function hideTransformations(){
+    document.querySelectorAll('[id*="ai_gen_block_cd3c949"],[class*="ai-client-results-"]').forEach(function(el){
+      var host=el.closest(".shopify-block")||el;
+      host.style.setProperty("display","none","important");
+    });
+  }
+
   function placeCoachInsta(){
     if(document.getElementById("lx-coach-insta"))return;
     var goal=document.querySelector('[id*="ai_gen_block_361650c"]')||document.querySelector('[class*="ai-transformation-plan-"]');
@@ -430,6 +442,7 @@ const CONSULT_SCRIPT = `<script id="lx-home-coach-form">
   }
 
   function boot(){
+    hideTransformations();
     placeCoachInsta();
     addHeroTalk();
     addTalkHeaderCta();
