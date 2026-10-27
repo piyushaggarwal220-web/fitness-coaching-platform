@@ -100,7 +100,7 @@ export async function getPlanChangeQuota(clientId: string): Promise<PlanChangeQu
       .from('plan_change_requests')
       .select('*')
       .eq('client_id', clientId)
-      .in('status', ['generating', 'draft_ready', 'in_review'])
+      .in('status', ['generating', 'draft_ready', 'in_review', 'awaiting_planner'])
       .order('locked_at', { ascending: false })
       .limit(1),
   ])
@@ -148,6 +148,8 @@ export async function createLockedPlanChangeRequest(input: {
   activePlanId: string
   requestText: string
   scope: PlanChangeScope
+  /** Member AI chat files the request for the coach planner and does not generate a draft. */
+  queueForPlanner?: boolean
 }): Promise<{ ok: true; request: PlanChangeRequestRow } | { ok: false; error: string; status: number }> {
   const text = input.requestText.trim()
   if (text.length < PLAN_CHANGE_MIN_CHARS) {
@@ -191,7 +193,7 @@ export async function createLockedPlanChangeRequest(input: {
       active_plan_id: input.activePlanId,
       request_text: text,
       scope: input.scope,
-      status: 'generating',
+      status: input.queueForPlanner ? 'awaiting_planner' : 'generating',
       locked_at: now,
       generation_started_at: null,
       created_at: now,

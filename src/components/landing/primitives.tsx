@@ -267,6 +267,29 @@ export function SectionCta({ href, children }: { href: string; children: ReactNo
   )
 }
 
+export function TalkToCoachLink({
+  className = 'lx-btn-ghost',
+  source,
+  landingPath,
+}: {
+  className?: string
+  source: string
+  landingPath: string
+}) {
+  return (
+    <Link
+      href="/talk-to-a-coach"
+      className={className}
+      onClick={() => {
+        persistMetaClickIdsFromLocation()
+        trackFunnelStep('talk_to_coach', { source, path: landingPath })
+      }}
+    >
+      Talk to a coach
+    </Link>
+  )
+}
+
 export function ImagePlaceholder({
   label,
   src,

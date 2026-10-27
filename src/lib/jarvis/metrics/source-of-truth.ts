@@ -15,6 +15,8 @@ export const LURVOX_PRODUCT_REVENUE_METRIC = 'lurvox_product_revenue'
 export const SHOPIFY_STORE_COMMERCE_METRIC = 'shopify_store_commerce'
 export const META_AD_PURCHASES_METRIC = 'meta_ad_purchases'
 export const INSTAGRAM_ORGANIC_ENGAGEMENT_METRIC = 'instagram_organic_engagement'
+export const META_LANDING_PAGE_VIEWS_METRIC = 'meta_landing_page_views'
+export const INSTRUMENTED_LANDING_SESSIONS_METRIC = 'instrumented_landing_sessions'
 
 export type MetricAlignment = 'aligned' | 'mismatch_pending_approval' | 'unverified'
 
@@ -123,13 +125,15 @@ export const META_AD_PURCHASES: MetricSourceOfTruth = {
   source_of_truth_verified: true,
   accepted_sources: ['meta', 'marketing_performance'],
   code_path: [
+    'src/lib/ai-marketing/meta/client.ts (extractPurchasesAndRevenue)',
     'src/lib/ai-marketing/overview.ts',
     'src/lib/ai-marketing/funnels.ts',
     'src/lib/ai-marketing/meta/sync.ts',
     'src/lib/jarvis/operator-pulse.ts (pulse cell labeled Purchases)',
   ],
   database_or_api: 'public.marketing_performance + Meta Marketing API',
-  calculation: 'Ad-platform purchase/conversion counts and attributed revenue fields. Never treat as Razorpay captured cash.',
+  calculation:
+    'One Meta purchase type only: omni_purchase, else purchase, else offsite_conversion.fb_pixel_purchase. Never sum those overlapping action/action_value rows. ROAS = that conversion value / spend. Never treat as Razorpay captured cash.',
   timezone: 'Meta report windows as stored; do not silently convert to IST cash-day totals.',
   refund_adjustment: 'Not the Razorpay refund ledger.',
   data_status_rule: 'Missing sync / API failure ≠ 0 purchases. Empty table after a successful read may be explicit zero.',
@@ -144,6 +148,7 @@ export const META_AD_PURCHASES: MetricSourceOfTruth = {
     'Call this "revenue"',
     'Blend ₹99 and ₹1,699 funnels',
     'Use ad spend as revenue',
+    'Sum purchase + omni_purchase + offsite_conversion.fb_pixel_purchase',
   ],
 }
 
@@ -211,11 +216,81 @@ export const INSTAGRAM_ORGANIC_ENGAGEMENT: MetricSourceOfTruth = {
   ],
 }
 
+/** Meta-reported ad landing page views. Not unique people, not organic, not all-site visitors. */
+export const META_LANDING_PAGE_VIEWS: MetricSourceOfTruth = {
+  metric: META_LANDING_PAGE_VIEWS_METRIC,
+  business_concept: 'Meta landing_page_view count from ads (pixel fired after a click-through)',
+  source_of_truth: 'Meta Ads insights actions.landing_page_view (same as omni_landing_page_view; do not sum)',
+  source_of_truth_verified: true,
+  accepted_sources: ['meta', 'meta_insights'],
+  code_path: ['src/lib/ai-marketing/meta/client.ts (createMetaGraphClient GET /{act}/insights)'],
+  database_or_api:
+    'Meta Marketing API act insights fields=actions. public.marketing_performance is stale for this (last row 2026-09-20) and does not store landing_page_view.',
+  calculation:
+    'One landing type only: landing_page_view or omni_landing_page_view. Never sum those overlapping action rows. Never treat as unique people or as all-website visitors. Date preset today/yesterday follows the ad account timezone.',
+  timezone: 'Meta ad-account report window. Do not silently convert to IST cash-day totals.',
+  refund_adjustment: 'N/A — not a cash metric.',
+  data_status_rule:
+    'API failure ≠ 0 landing views. marketing_performance empty/stale ≠ 0. Explicit Meta 0 after a successful insights read is verified zero.',
+  existing_tests: ['scripts/verify-jarvis.ts'],
+  jarvis_current: {
+    source: 'Live Meta insights actions.landing_page_view',
+    tool: 'none — do not use pulse Purchases or lurvox.revenue',
+    code_path: 'src/lib/ai-marketing/meta/client.ts',
+  },
+  alignment: 'aligned',
+  do_not: [
+    'Call this unique website visitors',
+    'Add organic / direct / app.lurvox.in logins into this number',
+    'Sum landing_page_view + omni_landing_page_view',
+    'Use stale marketing_performance clicks as landings',
+  ],
+}
+
+/**
+ * First-party sessions on pages that write landing_dropoff.
+ * Not unique people. Misses live lurvox.in and preview7 when the tracker is not on that page.
+ */
+export const INSTRUMENTED_LANDING_SESSIONS: MetricSourceOfTruth = {
+  metric: INSTRUMENTED_LANDING_SESSIONS_METRIC,
+  business_concept: 'Browser sessions that reached an instrumented landing (preview/home dropoff pixel)',
+  source_of_truth:
+    'public.landing_dropoff distinct session_id in the Asia/Kolkata calendar day. Unique people across all websites is Source of truth not verified.',
+  source_of_truth_verified: true,
+  accepted_sources: ['landing_dropoff'],
+  code_path: [
+    'src/lib/landing/preview7-tracking.ts',
+    'src/components/studio/PreviewAdCapture.tsx',
+    'scripts/shopify-install-landing-dropoff.mjs',
+  ],
+  database_or_api: 'Supabase public.landing_dropoff (session_id, path, source, created_at)',
+  calculation:
+    'count(distinct session_id) where created_at is in the IST day. session_id is sessionStorage, not a person. Only paths that have the dropoff script. A successful query with zero rows is explicit zero for those pages only.',
+  timezone: `${BUSINESS_TIMEZONE} calendar days.`,
+  refund_adjustment: 'N/A — not a cash metric.',
+  data_status_rule:
+    'Query failure ≠ 0. Zero rows after a successful query is verified zero on instrumented pages, not proof that lurvox.in or app.lurvox.in had no visitors.',
+  existing_tests: ['scripts/verify-jarvis.ts'],
+  jarvis_current: {
+    source: 'public.landing_dropoff',
+    tool: 'none',
+    code_path: 'public.landing_dropoff',
+  },
+  alignment: 'aligned',
+  do_not: [
+    'Treat this as unique people on all LURVOX websites',
+    'Treat 0 live-home rows as 0 lurvox.in visitors when the Shopify tracker is unwired',
+    'Use Meta landing_page_view as this same number',
+  ],
+}
+
 export const METRIC_SOURCES: readonly MetricSourceOfTruth[] = [
   LURVOX_PRODUCT_REVENUE,
   SHOPIFY_STORE_COMMERCE,
   META_AD_PURCHASES,
   INSTAGRAM_ORGANIC_ENGAGEMENT,
+  META_LANDING_PAGE_VIEWS,
+  INSTRUMENTED_LANDING_SESSIONS,
 ]
 
 export function getMetricSource(metric: string): MetricSourceOfTruth | null {
@@ -244,6 +319,8 @@ export type CatalogMetricId =
   | typeof SHOPIFY_STORE_COMMERCE_METRIC
   | typeof META_AD_PURCHASES_METRIC
   | typeof INSTAGRAM_ORGANIC_ENGAGEMENT_METRIC
+  | typeof META_LANDING_PAGE_VIEWS_METRIC
+  | typeof INSTRUMENTED_LANDING_SESSIONS_METRIC
 
 /** Deterministic routing for investigation + tests. Chat still uses tool descriptions. */
 export function dataSourcesForQuestion(question: string): CatalogMetricId[] {
@@ -254,6 +331,10 @@ export function dataSourcesForQuestion(question: string): CatalogMetricId[] {
   const instagramAsked = /\binstagram\b|\breels?\b|organic (content|engagement)|ig (followers|reach)/.test(
     q
   )
+  const landingAsked =
+    /\blanded\b|\blandings?\b|\bvisitors?\b|\bpage ?views?\b|website traffic|people (on|to) (the |our )?(web)?sites?/.test(
+      q
+    )
   const revenueAsked =
     /\brevenue\b|\bmoney\b|how has my business|business been going|last \d+ days|paid sales/.test(q)
 
@@ -261,10 +342,14 @@ export function dataSourcesForQuestion(question: string): CatalogMetricId[] {
   if (shopifyAsked) sources.add(SHOPIFY_STORE_COMMERCE_METRIC)
   if (metaAsked) sources.add(META_AD_PURCHASES_METRIC)
   if (instagramAsked) sources.add(INSTAGRAM_ORGANIC_ENGAGEMENT_METRIC)
-  if (revenueAsked && !shopifyAsked && !metaAsked && !instagramAsked) {
+  if (landingAsked) {
+    sources.add(META_LANDING_PAGE_VIEWS_METRIC)
+    sources.add(INSTRUMENTED_LANDING_SESSIONS_METRIC)
+  }
+  if (revenueAsked && !shopifyAsked && !metaAsked && !instagramAsked && !landingAsked) {
     sources.add(LURVOX_PRODUCT_REVENUE_METRIC)
   }
-  if (!shopifyAsked && !metaAsked && !instagramAsked && !revenueAsked) {
+  if (!shopifyAsked && !metaAsked && !instagramAsked && !revenueAsked && !landingAsked) {
     sources.add(LURVOX_PRODUCT_REVENUE_METRIC)
   }
   return [...sources]
@@ -279,6 +364,7 @@ export function jarvisMetricOperatorNotes(): string[] {
     'Do not reconcile LURVOX Razorpay payments against Shopify orders unless an explicit verified relationship exists. Shopify ₹0 does not explain LURVOX revenue.',
     'Never assign funnel_id from purchase amount or plan price. Funnel identity requires configured mapping; otherwise attribution is unavailable.',
     'If Meta lastSyncAt is null, investigate Meta sync before unrelated Shopify reporting.',
+    'Website landings: unique people on all sites is not verified. Meta landing_page_view is ad pixel views. landing_dropoff distinct session_id is instrumented pages only (often preview 4/5/6). Zero live-home rows ≠ zero lurvox.in visitors.',
     'If a metric is not in the source-of-truth catalog, say Source of truth not verified. Do not guess a table.',
     'API/query failure is not ₹0. Only a successful purchases query with zero captured rows is ₹0.',
   ]

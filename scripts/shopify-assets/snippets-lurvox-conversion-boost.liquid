@@ -656,17 +656,20 @@
       if (matrix) {
         var strongs = matrix.querySelectorAll('thead strong');
         if (strongs.length >= 3) {
-          strongs[0].textContent = '₹599';
-          strongs[1].textContent = '₹999';
-          strongs[2].textContent = '₹1,699';
+          strongs[0].textContent = '₹1,999';
+          strongs[1].textContent = '₹3,499';
+          strongs[2].textContent = '₹5,999';
         }
       }
       document.querySelectorAll('.lx-conv__btn-sub, .lx-conv-sticky__meta').forEach(function (el) {
         el.textContent = (el.textContent || '')
+          .replace(/₹300/g, '₹666')
+          .replace(/₹250/g, '₹583')
+          .replace(/₹192/g, '₹500')
           .replace(/₹600/g, '₹666')
           .replace(/₹467/g, '₹583')
-          .replace(/₹375/g, '₹500')
           .replace(/₹433/g, '₹666')
+          .replace(/₹375/g, '₹500')
           .replace(/₹350/g, '₹583')
           .replace(/₹292/g, '₹500');
       });
@@ -720,7 +723,7 @@
         a.setAttribute('href', '#plans');
         var text = (a.textContent || '').toLowerCase();
         if (text.indexOf('find your plan') !== -1 || text.indexOf('try the app') !== -1) {
-          a.innerHTML = 'See plans <small>Fat loss ₹599 · Muscle ₹999 · Athletic ₹1,699</small>';
+          a.innerHTML = 'See plans <small>Fat loss ₹1,999 · Muscle ₹3,499 · Athletic ₹5,999</small>';
         }
       });
       var welcome = document.getElementById('lx-welcome');

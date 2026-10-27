@@ -220,26 +220,39 @@ export type MetaInsightRow = {
   date_stop?: string
 }
 
+/**
+ * Meta reports the same checkout as several overlapping purchase types.
+ * Ads Manager ROAS uses omni_purchase. Summing these triples purchases and ROAS.
+ */
+export const META_PURCHASE_ACTION_PRIORITY = [
+  'omni_purchase',
+  'purchase',
+  'offsite_conversion.fb_pixel_purchase',
+] as const
+
+function pickMetaActionValue(
+  rows: { action_type: string; value: string }[] | undefined,
+  priority: readonly string[]
+): number {
+  const byType = new Map<string, number>()
+  for (const a of rows ?? []) {
+    if (!priority.includes(a.action_type)) continue
+    const n = Number(a.value)
+    if (Number.isFinite(n)) byType.set(a.action_type, n)
+  }
+  for (const type of priority) {
+    const n = byType.get(type)
+    if (n != null) return n
+  }
+  return 0
+}
+
 export function extractPurchasesAndRevenue(row: MetaInsightRow): {
   purchases: number
   revenue: number
 } {
-  const purchaseTypes = new Set([
-    'purchase',
-    'omni_purchase',
-    'offsite_conversion.fb_pixel_purchase',
-  ])
-  let purchases = 0
-  for (const a of row.actions ?? []) {
-    if (purchaseTypes.has(a.action_type)) {
-      purchases += Number(a.value) || 0
-    }
+  return {
+    purchases: pickMetaActionValue(row.actions, META_PURCHASE_ACTION_PRIORITY),
+    revenue: pickMetaActionValue(row.action_values, META_PURCHASE_ACTION_PRIORITY),
   }
-  let revenue = 0
-  for (const a of row.action_values ?? []) {
-    if (purchaseTypes.has(a.action_type)) {
-      revenue += Number(a.value) || 0
-    }
-  }
-  return { purchases, revenue }
 }

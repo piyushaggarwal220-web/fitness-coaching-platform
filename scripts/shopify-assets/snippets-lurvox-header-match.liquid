@@ -298,9 +298,17 @@
   .header__icon svg,
   .header-drawer-icon,
   .header__icon--menu,
-  .header summary.header__icon {
+  .header summary.header__icon,
+  #Details-menu-drawer-container > summary.header__icon--menu {
     color: var(--lx-nav-ink) !important;
     opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  #Details-menu-drawer-container > summary.header__icon--menu path,
+  .header__icon--menu path {
+    stroke: var(--lx-nav-ink) !important;
+    stroke-width: 1.75 !important;
   }
 
   /* Hide Shopify Account / Sign in — existing clients use the login rail; keep phone/call */

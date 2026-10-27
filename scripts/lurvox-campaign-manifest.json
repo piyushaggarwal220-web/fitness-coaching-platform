@@ -1,0 +1,116 @@
+{
+  "model": "gpt-image-2.5-sunburst",
+  "note": "Live homepage slots only. Real coach photographs are not in this set.",
+  "images": [
+    {
+      "id": "hero-fat-loss",
+      "file": "public/images/lurvox/campaign/hero-fat-loss.webp",
+      "replaces": "public/images/lurvox/dark/hero.webp",
+      "section": "Hero, Fat loss tab",
+      "purpose": "Sell a 90-day fat-loss plan through incline conditioning, not a portrait.",
+      "subject": "Lean athletic man, late 20s, walking uphill on a treadmill.",
+      "aspect": "1024x1536",
+      "composition": "Three-quarter side. Face, lean waist, and treadmill in the upper two-thirds. Copy sits above the photo.",
+      "text": "Above the image"
+    },
+    {
+      "id": "hero-muscle",
+      "file": "public/images/lurvox/campaign/hero-muscle.webp",
+      "replaces": "public/images/lurvox/dark/muscle.webp",
+      "section": "Hero, Muscle tab",
+      "purpose": "Sell fat loss plus muscle gain through a heavy, believable squat.",
+      "subject": "Muscular athletic man, early 30s, mid-rep squat.",
+      "aspect": "1024x1536",
+      "composition": "Low three-quarter angle. Shoulders, arms, and lean waist are the subject. Copy sits above.",
+      "text": "Above the image"
+    },
+    {
+      "id": "hero-athletic",
+      "file": "public/images/lurvox/campaign/hero-athletic.webp",
+      "replaces": "public/images/lurvox/dark/athletic.webp",
+      "section": "Hero, Athletic tab",
+      "purpose": "Sell an athletic body through a real running stride.",
+      "subject": "Athletic woman, late 20s, running at blue hour.",
+      "aspect": "1024x1536",
+      "composition": "Side tracking angle. Face and stride in the upper two-thirds. Copy sits above.",
+      "text": "Above the image"
+    },
+    {
+      "id": "training-session",
+      "file": "public/images/lurvox/campaign/training-session.webp",
+      "replaces": "public/images/lurvox/dark/train.webp",
+      "section": "What’s included, Workout",
+      "purpose": "Show a real training set. White title sits on the bottom of the photo.",
+      "subject": "Athletic man on a cable row, mid-rep.",
+      "aspect": "1024x1536",
+      "composition": "Subject in the upper half. Lower third darker and simpler for the caption.",
+      "text": "Bottom overlay"
+    },
+    {
+      "id": "nutrition-meal",
+      "file": "public/images/lurvox/campaign/nutrition-meal.webp",
+      "replaces": "public/images/lurvox/dark/diet-woman.webp",
+      "section": "What’s included, Diet",
+      "purpose": "Premium food editorial for a planned meal. Not a person staring while eating.",
+      "subject": "Hands plating dal, rice, roti, and greens in a modern kitchen.",
+      "aspect": "1024x1536",
+      "composition": "Plate in the upper half. Lower third is counter, darker, for the caption.",
+      "text": "Bottom overlay"
+    },
+    {
+      "id": "tracking-review",
+      "file": "public/images/lurvox/campaign/tracking-review.webp",
+      "replaces": "public/images/lurvox/dark/track.webp",
+      "section": "What’s included, Track",
+      "purpose": "Logging a day after training. Phone screen is not readable.",
+      "subject": "Woman on a kitchen stool, phone angled down, meal beside her.",
+      "aspect": "1024x1536",
+      "composition": "Face and hands in the upper half. Caption sits in the dark lower third.",
+      "text": "Bottom overlay"
+    },
+    {
+      "id": "weekly-checkin",
+      "file": "public/images/lurvox/campaign/weekly-checkin.webp",
+      "replaces": "public/images/lurvox/dark/checkin.webp",
+      "section": "What’s included, Check-in, and How it works step 04",
+      "purpose": "A weekly measurement, shown as a private moment, not a stock pose.",
+      "subject": "Athletic woman in profile by a window, cloth tape at her waist.",
+      "aspect": "1024x1536",
+      "composition": "Profile, looking out the window. Face and waist in the upper two-thirds.",
+      "text": "Bottom overlay on the system stage; below the photo in How it works"
+    },
+    {
+      "id": "progress-leave",
+      "file": "public/images/lurvox/campaign/progress-leave.webp",
+      "replaces": "public/images/lurvox/dark/progress.webp",
+      "section": "What’s included, Progress",
+      "purpose": "Progress as leaving a session stronger. Not a mirror portrait.",
+      "subject": "Athletic man walking out of a private gym at dusk, bag on one shoulder.",
+      "aspect": "1024x1536",
+      "composition": "Seen from a rear three-quarter. Face visible in profile. Lower third is floor.",
+      "text": "Bottom overlay"
+    },
+    {
+      "id": "intake-morning",
+      "file": "public/images/lurvox/campaign/intake-morning.webp",
+      "replaces": "public/images/lurvox/dark/intake.webp",
+      "section": "How it works, 01 Tell us about you",
+      "purpose": "The moment someone is about to describe their week. Copy sits under the photo.",
+      "subject": "Woman at a stone kitchen island with coffee, gym bag on the stool.",
+      "aspect": "1024x1536",
+      "composition": "Seated three-quarter, looking aside. Face fully in frame.",
+      "text": "Below the image"
+    },
+    {
+      "id": "plan-arrived",
+      "file": "public/images/lurvox/campaign/plan-arrived.webp",
+      "replaces": "public/images/lurvox/dark/plan.webp",
+      "section": "How it works, 02 Get your plan",
+      "purpose": "The plan has arrived. Phone is angled so no fake interface is readable.",
+      "subject": "Man on a low bench after training, phone tilted toward the floor.",
+      "aspect": "1024x1536",
+      "composition": "Three-quarter, eyes on the phone. Face and hands in the upper half.",
+      "text": "Below the image"
+    }
+  ]
+}

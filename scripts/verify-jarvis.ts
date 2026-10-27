@@ -36,6 +36,8 @@ import {
   LURVOX_PRODUCT_REVENUE_METRIC,
   SHOPIFY_STORE_COMMERCE_METRIC,
   META_AD_PURCHASES_METRIC,
+  META_LANDING_PAGE_VIEWS_METRIC,
+  INSTRUMENTED_LANDING_SESSIONS_METRIC,
   dataSourcesForQuestion,
   getMetricSource,
   jarvisMetricOperatorNotes,
@@ -458,6 +460,8 @@ function testMetricSourceOfTruthCatalog() {
   assert.equal(SHOPIFY_STORE_COMMERCE.alignment, 'aligned')
   assert.match(SHOPIFY_STORE_COMMERCE.database_or_api, /Shopify/)
   assert.ok(META_AD_PURCHASES.do_not.some((d) => d.toLowerCase().includes('revenue')))
+  assert.ok(META_AD_PURCHASES.do_not.some((d) => d.includes('omni_purchase')))
+  assert.match(META_AD_PURCHASES.calculation, /omni_purchase/)
   assert.equal(getMetricSource('lurvox_product_revenue')?.metric, 'lurvox_product_revenue')
   assert.equal(requireVerifiedMetricSource('not_a_real_metric'), SOURCE_OF_TRUTH_NOT_VERIFIED)
   assert.ok(METRIC_SOURCES.length >= 4)
@@ -478,6 +482,10 @@ function testMetricSourceOfTruthCatalog() {
   ])
   assert.deepEqual(dataSourcesForQuestion('How are my Instagram Reels performing?'), [
     'instagram_organic_engagement',
+  ])
+  assert.deepEqual(dataSourcesForQuestion('how many people landed today on our websites?'), [
+    META_LANDING_PAGE_VIEWS_METRIC,
+    INSTRUMENTED_LANDING_SESSIONS_METRIC,
   ])
   console.log('✓ metric source-of-truth catalog does not treat Shopify as LURVOX cash revenue')
 }

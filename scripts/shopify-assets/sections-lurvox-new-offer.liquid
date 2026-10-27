@@ -1,0 +1,1006 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500&display=swap">
+
+<div class="lxo-page">
+  <header class="lxo-bar">
+    <div class="lxo-bar-row">
+      <a class="lxo-word" href="#top">LURVOX</a>
+      <a class="lxo-login" href="https://app.lurvox.in/login">Client login</a>
+    </div>
+    <p class="lxo-highlight">Online fitness coaching</p>
+  </header>
+
+  <div id="lxo-browse">
+    <main id="top">
+      <section class="lxo-hero">
+        <figure class="lxo-hero-photo" id="lxo-hero-photo">
+          <img class="is-on" data-scene="gym" src="{{ 'lurvox-white-hero.webp' | asset_url }}" alt="Woman walking through a bright white gym" width="1536" height="1024">
+          <img data-scene="train" src="{{ 'lurvox-white-train.webp' | asset_url }}" alt="Man doing a cable row in a bright studio" width="1536" height="1024">
+          <img data-scene="eat" src="{{ 'lurvox-white-eat.webp' | asset_url }}" alt="A plate of chicken, rice, and greens on a white counter" width="1536" height="1024">
+          <img data-scene="checkin" src="{{ 'lurvox-white-checkin.webp' | asset_url }}" alt="Woman by a bright window with a phone for her check-in" width="1536" height="1024">
+        </figure>
+        <div class="lxo-scenes" role="tablist" aria-label="The story of the plan">
+          <button type="button" role="tab" data-scene="gym" class="is-on" aria-selected="true">Start</button>
+          <button type="button" role="tab" data-scene="train" aria-selected="false">Workout</button>
+          <button type="button" role="tab" data-scene="eat" aria-selected="false">Diet</button>
+          <button type="button" role="tab" data-scene="checkin" aria-selected="false">Check-in</button>
+        </div>
+        <p class="lxo-beat" id="lxo-beat">1 of 4 · The start</p>
+        <h1>A plan written for one person.</h1>
+        <p class="lxo-lede" id="lxo-hero-lede">Most plans are a template. This one starts with your goal, your day, and where you train.</p>
+        <button type="button" class="lxo-quiz" data-lxo-start>Find the plan that fits</button>
+      </section>
+
+      <section class="lxo-shots lxo-reveal" id="lxo-shots">
+        <p class="lxo-kicker">What you get</p>
+        <h2>A workout, a diet, and a coach who changes both.</h2>
+        <p class="lxo-intro">The three parts are written for the same week. Open each one.</p>
+        <article class="lxo-shot is-open">
+          <button type="button" data-shot="train">01 · The workout</button>
+          <p class="lxo-shot-line">Sessions set for the time you have, at home or in a gym.</p>
+          <div class="lxo-shot-body">
+            <div>
+              <img src="{{ 'lurvox-white-train.webp' | asset_url }}" alt="Man doing a cable row in a bright studio" width="1536" height="1024">
+              <p>You say where you train and how long a session can be. The coach writes the sets for that, not from a copied program.</p>
+            </div>
+          </div>
+        </article>
+        <article class="lxo-shot">
+          <button type="button" data-shot="eat">02 · The diet</button>
+          <p class="lxo-shot-line">Meals from food you will actually eat.</p>
+          <div class="lxo-shot-body">
+            <div>
+              <img src="{{ 'lurvox-white-eat.webp' | asset_url }}" alt="A plate of chicken, rice, and greens on a white counter" width="1536" height="1024">
+              <p>The diet is built around your kitchen and your day. When you log what you ate, the next version is adjusted from that.</p>
+            </div>
+          </div>
+        </article>
+        <article class="lxo-shot">
+          <button type="button" data-shot="checkin">03 · The check-in</button>
+          <p class="lxo-shot-line">You report. The plan is rewritten from what you did.</p>
+          <div class="lxo-shot-body">
+            <div>
+              <img src="{{ 'lurvox-white-checkin.webp' | asset_url }}" alt="Woman by a bright window with a phone for her check-in" width="1536" height="1024">
+              <p>A short check-in in the app, plus chat with your coach. The next plan comes from the week you had, not from a guess.</p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="lxo-steps lxo-reveal">
+        <img class="lxo-wide" src="{{ 'lurvox-white-write.webp' | asset_url }}" alt="Coach writing a plan at a white desk" width="1536" height="1024">
+        <p class="lxo-kicker">After you join</p>
+        <h2>You are not handed a file and left alone.</h2>
+        <p class="lxo-intro">This is the order. Tap a step.</p>
+        <ol id="lxo-next">
+          <li>
+            <button type="button" class="is-on">
+              <span>01</span>
+              <p><strong>You tell the coach your week.</strong> Goal, schedule, food, and where you train. A few questions, not a form you disappear into.</p>
+            </button>
+          </li>
+          <li>
+            <button type="button">
+              <span>02</span>
+              <p><strong>A coach writes the plan.</strong> The workout and the diet are for that life. Nothing is copied from a template and sent as-is.</p>
+            </button>
+          </li>
+          <li>
+            <button type="button">
+              <span>03</span>
+              <p><strong>You follow it, then it changes.</strong> Check in on what you did. The next week is harder or easier for a reason.</p>
+            </button>
+          </li>
+        </ol>
+      </section>
+
+      <section class="lxo-list lxo-reveal" id="plans">
+        <p class="lxo-kicker">The choice</p>
+        <h2>How long should the coach stay?</h2>
+        <p class="lxo-intro">Every plan includes the workout, the diet, check-ins, and chat. A longer plan is rewritten more often.</p>
+        <div class="lxo-plan-list" id="lxo-plan-list">
+          <button type="button" data-plan="fat" class="is-on">
+            <div>
+              <strong>Fat loss</strong>
+              <span>90 days</span>
+            </div>
+            <em>₹1,999</em>
+          </button>
+          <button type="button" data-plan="muscle">
+            <div>
+              <strong>Muscle</strong>
+              <span>6 months · weekly revisions, cardio, supplements</span>
+            </div>
+            <em>₹3,499</em>
+          </button>
+          <button type="button" data-plan="athletic">
+            <div>
+              <strong>Athletic</strong>
+              <span>12 months · the full plan, including stamina</span>
+            </div>
+            <em>₹5,999</em>
+          </button>
+        </div>
+        <div class="lxo-plan-more" id="lxo-plan-more">
+          <p class="lxo-plan-why" id="lxo-plan-why">90 days to lose fat. The plan is rewritten every 14 days, from your check-ins.</p>
+          <p id="lxo-plan-month">90 days · ₹666 a month</p>
+          <ul id="lxo-plan-points">
+            <li>Workout and diet for 90 days</li>
+            <li>Check-ins and chat in the app</li>
+            <li>Rewritten every 14 days</li>
+          </ul>
+        </div>
+        <p class="lxo-intro">Three questions. The quiz picks the plan, then a coach writes it for your week.</p>
+        <button type="button" class="lxo-quiz" data-lxo-start>Find the plan that fits</button>
+      </section>
+    </main>
+  </div>
+
+  <section class="lxo-ask" id="lxo-ask" hidden>
+    <div class="lxo-progress" id="lxo-progress" aria-hidden="true"><span></span></div>
+    <p class="lxo-step" id="lxo-step">1 of 3</p>
+    <h1 id="lxo-question">What do you want from this?</h1>
+    <div class="lxo-options" id="lxo-options"></div>
+    <button type="button" class="lxo-back" id="lxo-back" hidden>Back</button>
+
+    <div id="lxo-result" hidden>
+      <p class="lxo-length">Your plan</p>
+      <h1 id="lxo-result-name">Fat loss</h1>
+      <p class="lxo-price" id="lxo-result-price">₹1,999</p>
+      <p class="lxo-lede" id="lxo-result-why"></p>
+      <a class="lxo-quiz" id="lxo-continue" href="https://app.lurvox.in/plans/3-months">Continue with this plan</a>
+      <button type="button" class="lxo-back" id="lxo-again">Answer again</button>
+    </div>
+  </section>
+
+  <footer class="lxo-foot">
+    <strong>LURVOX</strong>
+    <p>Online fitness coaching</p>
+    <p>14, Sector 44, Golf Course Road, Gurugram, Haryana 122003</p>
+    <p>
+      <a href="mailto:hello@lurvox.in">hello@lurvox.in</a>
+      <a href="https://app.lurvox.in/terms">Terms</a>
+      <a href="https://app.lurvox.in/refund-policy">Refund policy</a>
+    </p>
+  </footer>
+
+  <div class="lxo-sticky" id="lxo-sticky" hidden>
+    <button type="button" class="lxo-quiz" data-lxo-start>Find the plan that fits</button>
+  </div>
+</div>
+
+<style>
+  html:has(.lxo-page),
+  body:has(.lxo-page) {
+    background: #fff !important;
+    color: #161513;
+  }
+  body:has(.lxo-page) .shopify-section-group-header-group,
+  body:has(.lxo-page) .shopify-section-group-footer-group,
+  body:has(.lxo-page) #shopify-section-header,
+  body:has(.lxo-page) #shopify-section-footer,
+  body:has(.lxo-page) .lx-mchat,
+  body:has(.lxo-page) .lx-find-float,
+  body:has(.lxo-page) a[href*="choose-your-plan"],
+  body:has(.lxo-page) a[href*="find-your-plan"] {
+    display: none !important;
+  }
+  .shopify-section:has(.lxo-page) {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    background: #fff !important;
+  }
+
+  .lxo-page {
+    --ink: #161513;
+    --quiet: #5e5954;
+    --line: rgba(22, 21, 19, 0.12);
+    --orange: #ff4d00;
+    --soft: #f6f6f5;
+    background: #fff;
+    color: var(--ink);
+    font-family: "Instrument Sans", system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 17px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding-bottom: 84px;
+  }
+  .lxo-page * { box-sizing: border-box; }
+  .lxo-page [hidden] { display: none !important; }
+  .lxo-page h1,
+  .lxo-page h2,
+  .lxo-page p,
+  .lxo-page ul,
+  .lxo-page ol { margin: 0; }
+  .lxo-page a { color: inherit; text-decoration: none; }
+  .lxo-page button {
+    appearance: none;
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+  }
+  .lxo-page a:focus-visible,
+  .lxo-page button:focus-visible {
+    outline: 2px solid var(--orange);
+    outline-offset: 3px;
+  }
+
+  .lxo-bar,
+  .lxo-hero,
+  .lxo-shots,
+  .lxo-steps,
+  .lxo-list,
+  .lxo-ask,
+  .lxo-foot {
+    width: min(680px, calc(100% - 40px));
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .lxo-bar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 18px 0 12px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(10px);
+  }
+  .lxo-bar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .lxo-word {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+  }
+  .lxo-login { font-size: 14px; color: var(--quiet); }
+  .lxo-highlight {
+    margin-top: 12px;
+    color: var(--orange);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .lxo-hero { padding: 8px 0 36px; }
+  .lxo-hero-photo {
+    position: relative;
+    margin: 8px 0 0;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--soft);
+    aspect-ratio: 4 / 3;
+  }
+  .lxo-hero-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    opacity: 0;
+    transition: opacity 0.45s ease;
+  }
+  .lxo-hero-photo img.is-on { opacity: 1; }
+  .lxo-page .lxo-scenes {
+    display: flex;
+    gap: 22px;
+    margin: 0 0 28px;
+    border-bottom: 1px solid var(--line);
+  }
+  .lxo-page .lxo-scenes button {
+    position: relative;
+    min-height: 44px;
+    padding: 14px 0 12px;
+    border-radius: 0;
+    background: none;
+    color: var(--quiet);
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+  }
+  .lxo-page .lxo-scenes button.is-on {
+    background: none;
+    color: var(--ink);
+  }
+  .lxo-page .lxo-scenes button.is-on::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--orange);
+  }
+  .lxo-beat {
+    margin: 18px 0 8px;
+    color: var(--orange);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: opacity 0.22s ease;
+  }
+  .lxo-lede,
+  .lxo-beat { transition: opacity 0.22s ease; }
+  .lxo-lede.is-swap,
+  .lxo-beat.is-swap { opacity: 0.25; }
+  .lxo-kicker {
+    margin-bottom: 8px;
+    color: var(--orange);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .lxo-intro {
+    max-width: 34em;
+    margin-top: 10px;
+    color: var(--quiet);
+  }
+  .lxo-hero h1,
+  .lxo-ask h1 {
+    max-width: 11em;
+    font-family: Newsreader, Georgia, serif;
+    font-size: clamp(36px, 8vw, 56px);
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    line-height: 0.98;
+  }
+  .lxo-lede {
+    max-width: 28em;
+    margin-top: 12px;
+    color: var(--quiet);
+  }
+
+  .lxo-length { color: var(--quiet); font-size: 14px; }
+  .lxo-price {
+    margin-top: 4px;
+    font-family: Newsreader, Georgia, serif;
+    font-size: 48px;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .lxo-month { margin-top: 6px; color: var(--quiet); }
+  .lxo-points {
+    margin-top: 12px;
+    padding: 0;
+    list-style: none;
+  }
+  .lxo-points li {
+    padding: 8px 0;
+    border-top: 1px solid var(--line);
+    font-size: 16px;
+  }
+
+  .lxo-page .lxo-quiz {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: min(100%, 360px);
+    min-height: 52px;
+    margin-top: 22px;
+    padding: 0 22px;
+    border-radius: 8px;
+    background: var(--orange);
+    color: #fff !important;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .lxo-page .lxo-quiz:hover { background: #ff6a00; }
+  .lxo-page .lxo-quiz:active { transform: scale(0.98); }
+  .lxo-hero .lxo-quiz { width: 100%; margin-top: 16px; }
+  .lxo-note {
+    margin-top: 12px;
+    color: var(--quiet);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .lxo-steps,
+  .lxo-shots,
+  .lxo-list {
+    padding: 48px 0;
+    border-top: 1px solid var(--line);
+  }
+  .lxo-steps h2,
+  .lxo-shots h2,
+  .lxo-list h2,
+  .lxo-shot h3 {
+    font-family: Newsreader, Georgia, serif;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+  }
+  .lxo-steps h2,
+  .lxo-shots h2,
+  .lxo-list h2 { font-size: 34px; }
+  .lxo-wide {
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    display: block;
+    border-radius: 12px;
+    background: var(--soft);
+    margin-bottom: 22px;
+  }
+  .lxo-shot {
+    margin-top: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .lxo-page .lxo-shot > button {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 0 2px;
+    border-radius: 0;
+    background: none;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: left;
+  }
+  .lxo-shot-line {
+    margin: 0 0 4px;
+    color: var(--ink);
+    font-size: 16px;
+  }
+  .lxo-shot.is-open > button { color: var(--ink); }
+  .lxo-shot.is-open > button::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 10px;
+    border-radius: 50%;
+    background: var(--orange);
+    transform: translateY(-1px);
+  }
+  .lxo-shot-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.45s ease;
+  }
+  .lxo-shot.is-open .lxo-shot-body { grid-template-rows: 1fr; }
+  .lxo-shot-body > div { overflow: hidden; }
+  .lxo-shot img {
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    display: block;
+    margin-top: 10px;
+    border-radius: 12px;
+    background: var(--soft);
+  }
+  .lxo-shot h3 { margin-top: 12px; font-size: 28px; }
+  .lxo-shot p { margin: 8px 0 4px; color: var(--quiet); }
+  .lxo-shot p.lxo-shot-line { margin: 0 0 4px; color: var(--ink); }
+
+  .lxo-reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .lxo-reveal.is-in { opacity: 1; transform: none; }
+  .lxo-reveal img {
+    transform: scale(1.05);
+    transition: transform 0.9s ease;
+  }
+  .lxo-reveal.is-in img { transform: none; }
+  @keyframes lxo-rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+  }
+  .lxo-steps ol { margin-top: 18px; padding: 0; list-style: none; }
+  .lxo-page .lxo-steps button {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 14px;
+    align-items: start;
+    width: 100%;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+    text-align: left;
+  }
+  .lxo-steps span {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #ffe4d4;
+    color: var(--orange);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .lxo-steps button.is-on span {
+    background: var(--orange);
+    color: #fff;
+  }
+  .lxo-steps p { color: var(--quiet); padding-top: 6px; }
+  .lxo-steps strong { color: var(--ink); font-weight: 600; }
+
+  .lxo-plan-list { margin-top: 12px; display: grid; gap: 10px; }
+  .lxo-plan-list button {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    width: 100%;
+    padding: 16px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .lxo-plan-list button.is-on {
+    border-color: var(--orange);
+    background: #fff;
+    box-shadow: inset 3px 0 0 var(--orange);
+  }
+  .lxo-plan-more {
+    margin-top: 12px;
+    padding: 4px 4px 0;
+    transition: opacity 0.2s ease;
+  }
+  .lxo-plan-more.is-swap { opacity: 0.3; }
+  .lxo-plan-more p { color: var(--quiet); font-size: 14px; }
+  .lxo-plan-more p.lxo-plan-why {
+    color: var(--ink);
+    font-size: 18px;
+    line-height: 1.4;
+  }
+  .lxo-plan-more ul { margin: 8px 0 0; padding: 0; list-style: none; }
+  .lxo-plan-more li {
+    padding: 8px 0;
+    border-top: 1px solid var(--line);
+  }
+  .lxo-plan-list strong { display: block; font-weight: 600; }
+  .lxo-plan-list span {
+    display: block;
+    margin-top: 4px;
+    color: var(--quiet);
+    font-size: 14px;
+  }
+  .lxo-plan-list em {
+    font-style: normal;
+    font-family: Newsreader, Georgia, serif;
+    font-size: 22px;
+    white-space: nowrap;
+  }
+
+  .lxo-ask { padding: 28px 0 24px; }
+  .lxo-progress {
+    height: 3px;
+    margin-bottom: 22px;
+    border-radius: 99px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .lxo-progress span {
+    display: block;
+    height: 100%;
+    width: 33%;
+    background: var(--orange);
+    transition: width 0.3s ease;
+  }
+  .lxo-step {
+    margin-bottom: 16px;
+    color: var(--orange);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .lxo-options { margin-top: 22px; display: grid; gap: 10px; }
+  .lxo-options button {
+    display: block;
+    width: 100%;
+    padding: 18px 16px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    font-size: 18px;
+    background: #fff;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  }
+  .lxo-options button:hover,
+  .lxo-options button.is-picked {
+    border-color: var(--orange);
+    background: #fff1e8;
+    color: var(--ink);
+  }
+  .lxo-options button.is-picked { transform: scale(0.99); }
+  .lxo-ask.is-swap h1,
+  .lxo-ask.is-swap .lxo-options { opacity: 0.35; }
+  .lxo-ask h1,
+  .lxo-ask .lxo-options { transition: opacity 0.18s ease; }
+  .lxo-back {
+    display: inline-block;
+    margin-top: 22px;
+    color: var(--quiet);
+    font-size: 14px;
+  }
+  #lxo-result .lxo-quiz { margin-top: 22px; }
+
+  .lxo-foot {
+    padding: 8px 0 48px;
+    color: var(--quiet);
+    font-size: 14px;
+  }
+  .lxo-foot strong {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    font-size: 12px;
+  }
+  .lxo-foot p { margin-top: 6px; }
+  .lxo-foot a { margin-right: 14px; text-decoration: underline; text-underline-offset: 3px; }
+
+  .lxo-sticky {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 8;
+    display: flex;
+    justify-content: center;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.94);
+    border-top: 1px solid var(--line);
+  }
+  .lxo-sticky .lxo-quiz { width: min(100%, 420px); margin: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lxo-page * { transition: none !important; animation: none !important; }
+    .lxo-reveal,
+    .lxo-reveal img { opacity: 1; transform: none; }
+  }
+</style>
+
+<script>
+  (function () {
+    var catalog = {
+      fat: {
+        name: 'Fat loss',
+        price: '₹1,999',
+        month: '₹666 a month',
+        length: '90 days',
+        href: 'https://app.lurvox.in/plans/3-months',
+        why: '90 days to lose fat. The plan is rewritten every 14 days, from your check-ins.',
+        points: ['Workout and diet for 90 days', 'Check-ins and chat in the app', 'Rewritten every 14 days']
+      },
+      muscle: {
+        name: 'Muscle',
+        price: '₹3,499',
+        month: '₹583 a month',
+        length: '6 months',
+        href: 'https://app.lurvox.in/plans/6-months',
+        why: 'Six months to build muscle. Cardio and supplements are included, and the plan is rewritten every week.',
+        points: ['Workout, diet, cardio, and supplements', 'Rewritten every week', 'Extra help if progress stalls after 90 days']
+      },
+      athletic: {
+        name: 'Athletic',
+        price: '₹5,999',
+        month: '₹500 a month',
+        length: '12 months',
+        href: 'https://app.lurvox.in/plans/12-months',
+        why: 'A full year. Stamina is included, and the coach rewrites the plan every week so it stays current.',
+        points: ['The full plan, kept current all year', 'Stamina work included', 'Rewritten every week']
+      }
+    }
+    var steps = [
+      {
+        key: 'goal',
+        q: 'What do you want from this?',
+        options: [
+          { label: 'Lose fat', plan: 'fat' },
+          { label: 'Lose fat and build muscle', plan: 'muscle' },
+          { label: 'An athletic body, with stamina', plan: 'athletic' }
+        ]
+      },
+      {
+        key: 'time',
+        q: 'How long do you want to stay with it?',
+        options: [
+          { label: '90 days', plan: 'fat' },
+          { label: '6 months', plan: 'muscle' },
+          { label: '12 months', plan: 'athletic' }
+        ]
+      },
+      {
+        key: 'support',
+        q: 'How should the plan keep up?',
+        options: [
+          { label: 'Rewrite it every two weeks', plan: 'fat' },
+          { label: 'Rewrite it every week, and add cardio', plan: 'muscle' },
+          { label: 'Keep it current for a full year', plan: 'athletic' }
+        ]
+      }
+    ]
+    var answers = {}
+    var index = 0
+    var browse = document.getElementById('lxo-browse')
+    var ask = document.getElementById('lxo-ask')
+    var stepEl = document.getElementById('lxo-step')
+    var questionEl = document.getElementById('lxo-question')
+    var optionsEl = document.getElementById('lxo-options')
+    var backEl = document.getElementById('lxo-back')
+    var resultEl = document.getElementById('lxo-result')
+    var planList = document.getElementById('lxo-plan-list')
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    function choose() {
+      var tally = { fat: 0, muscle: 0, athletic: 0 }
+      Object.keys(answers).forEach(function (key) { tally[answers[key]] += 1 })
+      var best = answers.goal || 'fat'
+      var top = tally[best]
+      ;['fat', 'muscle', 'athletic'].forEach(function (key) {
+        if (tally[key] > top) {
+          best = key
+          top = tally[key]
+        }
+      })
+      return catalog[best]
+    }
+
+    function setProgress() {
+      var bar = document.querySelector('#lxo-progress span')
+      if (bar) bar.style.width = (((index + 1) / steps.length) * 100) + '%'
+    }
+
+    function showQuestion() {
+      var step = steps[index]
+      resultEl.hidden = true
+      stepEl.hidden = false
+      questionEl.hidden = false
+      optionsEl.hidden = false
+      document.getElementById('lxo-progress').hidden = false
+      stepEl.textContent = (index + 1) + ' of ' + steps.length
+      questionEl.textContent = step.q
+      backEl.hidden = index === 0
+      setProgress()
+      optionsEl.textContent = ''
+      ask.classList.remove('is-swap')
+      step.options.forEach(function (option) {
+        var button = document.createElement('button')
+        button.type = 'button'
+        button.textContent = option.label
+        button.addEventListener('click', function () {
+          optionsEl.querySelectorAll('button').forEach(function (item) { item.classList.remove('is-picked') })
+          button.classList.add('is-picked')
+          window.setTimeout(function () {
+            answers[step.key] = option.plan
+            if (index < steps.length - 1) {
+              ask.classList.add('is-swap')
+              window.setTimeout(function () {
+                index += 1
+                showQuestion()
+              }, reduce ? 0 : 140)
+            } else {
+              showResult()
+            }
+          }, reduce ? 0 : 120)
+        })
+        optionsEl.appendChild(button)
+      })
+    }
+
+    function showResult() {
+      var plan = choose()
+      stepEl.hidden = true
+      questionEl.hidden = true
+      optionsEl.hidden = true
+      backEl.hidden = true
+      document.getElementById('lxo-progress').hidden = true
+      resultEl.hidden = false
+      document.getElementById('lxo-result-name').textContent = plan.name
+      document.getElementById('lxo-result-price').textContent = plan.price
+      document.getElementById('lxo-result-why').textContent = plan.why
+      var next = document.getElementById('lxo-continue')
+      next.href = plan.href
+      next.textContent = 'Continue with ' + plan.name
+    }
+
+    function openQuiz() {
+      answers = {}
+      index = 0
+      browse.hidden = true
+      document.getElementById('lxo-sticky').hidden = true
+      ask.hidden = false
+      showQuestion()
+      window.scrollTo(0, 0)
+    }
+
+    document.querySelectorAll('[data-lxo-start]').forEach(function (button) {
+      button.addEventListener('click', openQuiz)
+    })
+    backEl.addEventListener('click', function () {
+      if (index === 0) return
+      index -= 1
+      showQuestion()
+    })
+    document.getElementById('lxo-again').addEventListener('click', openQuiz)
+
+    var scenes = {
+      gym: {
+        beat: '1 of 4 · The start',
+        lede: 'Most plans are a template. This one starts with your goal, your day, and where you train.'
+      },
+      train: {
+        beat: '2 of 4 · The workout',
+        lede: 'The sessions are written for the time you have, at home or in a gym. Not copied from someone else’s program.'
+      },
+      eat: {
+        beat: '3 of 4 · The diet',
+        lede: 'The meals use food you will actually eat. When you log what you ate, the diet is adjusted from that.'
+      },
+      checkin: {
+        beat: '4 of 4 · The check-in',
+        lede: 'You tell the coach what happened. The next plan is rewritten from that week, so it does not go stale.'
+      }
+    }
+    var sceneOrder = ['gym', 'train', 'eat', 'checkin']
+    var sceneIndex = 0
+    var sceneToken = 0
+    var heroPhoto = document.getElementById('lxo-hero-photo')
+    var heroLede = document.getElementById('lxo-hero-lede')
+    var heroBeat = document.getElementById('lxo-beat')
+
+    function showScene(id) {
+      var scene = scenes[id]
+      if (!scene) return
+      sceneIndex = sceneOrder.indexOf(id)
+      var token = ++sceneToken
+      heroPhoto.querySelectorAll('img').forEach(function (img) {
+        img.classList.toggle('is-on', img.getAttribute('data-scene') === id)
+      })
+      document.querySelectorAll('.lxo-scenes button').forEach(function (button) {
+        var on = button.getAttribute('data-scene') === id
+        button.classList.toggle('is-on', on)
+        button.setAttribute('aria-selected', on ? 'true' : 'false')
+      })
+      var apply = function () {
+        if (token !== sceneToken) return
+        heroBeat.textContent = scene.beat
+        heroLede.textContent = scene.lede
+        heroBeat.classList.remove('is-swap')
+        heroLede.classList.remove('is-swap')
+      }
+      if (reduce) {
+        apply()
+        return
+      }
+      heroBeat.classList.add('is-swap')
+      heroLede.classList.add('is-swap')
+      window.setTimeout(apply, 160)
+    }
+
+    var storyTimer = 0
+    function armStory() {
+      if (reduce) return
+      window.clearInterval(storyTimer)
+      storyTimer = window.setInterval(function () {
+        var ask = document.getElementById('lxo-ask')
+        if (ask && !ask.hidden) return
+        showScene(sceneOrder[(sceneIndex + 1) % sceneOrder.length])
+      }, 5600)
+    }
+    armStory()
+    document.getElementById('top').addEventListener('pointerdown', function () {
+      window.clearInterval(storyTimer)
+    })
+
+    document.querySelector('.lxo-scenes').addEventListener('click', function (event) {
+      var button = event.target.closest('button')
+      if (!button) return
+      showScene(button.getAttribute('data-scene'))
+    })
+
+    var touchX = 0
+    heroPhoto.addEventListener('touchstart', function (event) {
+      touchX = event.changedTouches[0].clientX
+    }, { passive: true })
+    heroPhoto.addEventListener('touchend', function (event) {
+      var dx = event.changedTouches[0].clientX - touchX
+      if (Math.abs(dx) < 40) return
+      var next = sceneIndex + (dx < 0 ? 1 : -1)
+      if (next < 0) next = sceneOrder.length - 1
+      if (next >= sceneOrder.length) next = 0
+      showScene(sceneOrder[next])
+    }, { passive: true })
+
+    document.getElementById('lxo-shots').addEventListener('click', function (event) {
+      var button = event.target.closest('button')
+      if (!button) return
+      var shot = button.parentElement
+      document.querySelectorAll('.lxo-shot').forEach(function (item) {
+        item.classList.toggle('is-open', item === shot)
+      })
+    })
+
+    document.getElementById('lxo-next').addEventListener('click', function (event) {
+      var button = event.target.closest('button')
+      if (!button) return
+      document.querySelectorAll('#lxo-next button').forEach(function (item) {
+        item.classList.toggle('is-on', item === button)
+      })
+    })
+
+    function showPlan(key) {
+      var plan = catalog[key]
+      if (!plan || !planList) return
+      planList.querySelectorAll('button').forEach(function (item) {
+        item.classList.toggle('is-on', item.getAttribute('data-plan') === key)
+      })
+      var box = document.getElementById('lxo-plan-more')
+      var apply = function () {
+        document.getElementById('lxo-plan-why').textContent = plan.why
+        document.getElementById('lxo-plan-month').textContent = plan.length + ' · ' + plan.month
+        var list = document.getElementById('lxo-plan-points')
+        list.textContent = ''
+        plan.points.forEach(function (point) {
+          var item = document.createElement('li')
+          item.textContent = point
+          list.appendChild(item)
+        })
+        box.classList.remove('is-swap')
+      }
+      if (reduce) {
+        apply()
+        return
+      }
+      box.classList.add('is-swap')
+      window.setTimeout(apply, 160)
+    }
+
+    planList.addEventListener('click', function (event) {
+      var button = event.target.closest('button')
+      if (!button) return
+      showPlan(button.getAttribute('data-plan'))
+    })
+
+    var heroQuiz = document.querySelector('.lxo-hero .lxo-quiz')
+    var sticky = document.getElementById('lxo-sticky')
+    if (heroQuiz && sticky && 'IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function (entries) {
+        var gone = !entries[0].isIntersecting
+        sticky.hidden = !gone || ask.hidden === false
+      }, { threshold: 0 })
+      observer.observe(heroQuiz)
+    }
+
+    var revealItems = document.querySelectorAll('.lxo-reveal')
+    if (reduce || !('IntersectionObserver' in window)) {
+      revealItems.forEach(function (item) { item.classList.add('is-in') })
+    } else {
+      var reveal = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return
+          entry.target.classList.add('is-in')
+          reveal.unobserve(entry.target)
+        })
+      }, { threshold: 0.16 })
+      revealItems.forEach(function (item) { reveal.observe(item) })
+    }
+  })()
+</script>
+
+{% schema %}
+{
+  "name": "LURVOX new offer",
+  "settings": []
+}
+{% endschema %}

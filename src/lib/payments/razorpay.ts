@@ -94,6 +94,20 @@ export async function fetchRazorpayPayment(paymentId: string): Promise<RazorpayP
   return response.json() as Promise<RazorpayPayment>
 }
 
+export async function fetchRazorpayOrderPayments(orderId: string): Promise<RazorpayPayment[]> {
+  const response = await fetch(`${RAZORPAY_API_BASE}/orders/${orderId}/payments`, {
+    headers: { Authorization: getAuthHeader() },
+  })
+
+  if (!response.ok) {
+    const body = await response.text()
+    throw new Error(`Failed to fetch Razorpay order payments: ${body}`)
+  }
+
+  const payload = (await response.json()) as { items?: RazorpayPayment[] }
+  return payload.items ?? []
+}
+
 export async function fetchRazorpayOrder(orderId: string): Promise<RazorpayOrderDetail> {
   const response = await fetch(`${RAZORPAY_API_BASE}/orders/${orderId}`, {
     headers: { Authorization: getAuthHeader() },

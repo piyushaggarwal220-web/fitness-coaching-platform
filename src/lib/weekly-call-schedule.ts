@@ -64,7 +64,7 @@ export async function scheduleNextWeeklyCallAfterCompletion(
   return { created: false, reason: 'client_initiated_only' }
 }
 
-/** Close every open call. Coaching has no phone calls for any client. */
+/** Close leftover system-booked slots only. Never cancel a client Home booking. */
 export async function cancelAutoBookedWeeklyCalls(
   admin: SupabaseClient
 ): Promise<{ cancelled: number }> {
@@ -74,9 +74,10 @@ export async function cancelAutoBookedWeeklyCalls(
     .update({
       status: 'cancelled',
       resolved_at: now,
-      coach_note: 'Auto-closed — no coach calls. Message the coaches on Instagram.',
+      coach_note: 'Auto-closed leftover system booking. Book again from Home if you still need a call.',
       updated_at: now,
     })
+    .eq('source', 'weekly_entitlement')
     .in('status', ['requested', 'scheduled'])
     .select('id')
 

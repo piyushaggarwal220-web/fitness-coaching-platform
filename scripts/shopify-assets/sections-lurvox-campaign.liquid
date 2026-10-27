@@ -1,0 +1,1201 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<div class="landing lx-live">
+  <header class="lx-header">
+    <div class="lx-nav">
+      <nav class="lx-nav-links" aria-label="Page">
+        <a href="#system">What’s included</a>
+        <a href="#coaching">Coaches</a>
+        <a href="#method">How it works</a>
+        <a href="#pricing">Plans</a>
+      </nav>
+      <a href="#top" class="lx-logo">LURVOX</a>
+      <div class="lx-nav-actions">
+        <a class="lx-btn lx-btn-ghost lx-login" href="https://app.lurvox.in/login">Client login</a>
+      </div>
+    </div>
+  </header>
+  <main>
+    <section class="lx-hero" id="top">
+      <div class="lx-hero-copy">
+        <p class="lx-eyebrow">Online coaching</p>
+        <h1 id="lx-title">An athletic body.</h1>
+        <p class="lx-lead" id="lx-lead">Best for building an athletic body — fat loss, muscle gain, and stamina. First plan in 24–48 hours.</p>
+        <div class="lx-switch" id="lx-plans" role="tablist" aria-label="Coaching plans">
+          <button type="button" role="tab" aria-selected="false" data-plan="fat">Fat loss</button>
+          <button type="button" role="tab" aria-selected="false" data-plan="muscle">Muscle</button>
+          <button type="button" role="tab" class="is-on" aria-selected="true" data-plan="athletic">Athletic</button>
+        </div>
+        <div class="lx-hero-photo">
+          <img id="lx-hero-photo" class="lx-cover" src="{{ 'lurvox-2026-hero-athletic.webp' | asset_url }}" alt="Muscular man running in shorts along a waterfront at dawn">
+        </div>
+        <p class="lx-price">
+          <strong id="lx-price">₹5,999</strong>
+          <em id="lx-meta">₹500 a month · 12 months</em>
+        </p>
+        <div class="lx-actions">
+          <a class="lx-btn lx-btn-primary lx-btn-block" id="lx-cta" href="https://app.lurvox.in/checkout?plan=12_months">Start for ₹5,999</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="lx-fail" id="why">
+      <p class="lx-eyebrow">With LURVOX</p>
+      <h2>Why you won't fail with us.</h2>
+      <p class="lx-lead">The plan is built for your case, and it does not stop at a file.</p>
+      <div class="lx-stage">
+        <img id="lx-why-photo" class="lx-cover" src="{{ 'lurvox-2026-why-plan.webp' | asset_url }}" alt="Man at a kitchen table with a closed notebook before training">
+        <div class="lx-stage-copy">
+          <h2 id="lx-why-title">Your plan</h2>
+          <p id="lx-why-body">The workout and the diet are built around your goal, schedule, food, and where you train.</p>
+        </div>
+      </div>
+      <div class="lx-stage-nav lx-quad-nav" id="lx-why-tabs" role="tablist" aria-label="Why you won't fail with us">
+        <button type="button" role="tab" class="is-on" aria-selected="true" data-why="1"><img src="{{ 'lurvox-2026-why-plan.webp' | asset_url }}" alt=""><span>Your plan</span></button>
+        <button type="button" role="tab" aria-selected="false" data-why="2"><img src="{{ 'lurvox-2026-why-keeps.webp' | asset_url }}" alt=""><span>It keeps up</span></button>
+        <button type="button" role="tab" aria-selected="false" data-why="3"><img src="{{ 'lurvox-2026-why-principles.webp' | asset_url }}" alt=""><span>Made with tested principles</span></button>
+        <button type="button" role="tab" aria-selected="false" data-why="4"><img src="{{ 'lurvox-2026-why-work.webp' | asset_url }}" alt=""><span>The work is decided</span></button>
+      </div>
+    </section>
+
+    <section class="lx-system" id="system">
+      <p class="lx-eyebrow">What you get</p>
+      <h2>One system. Your case.</h2>
+      <p class="lx-lead">Get trained with professional principles, backed by science, not random things.</p>
+      <ul class="lx-include">
+        <li>Personal workout plan (gym, home, or both)</li>
+        <li>Personal diet plan around your food and schedule</li>
+        <li>1-to-1 coaching in the app — your case, your plan</li>
+        <li>Mid week + weekly check ins</li>
+        <li>Daily trackers: workout, meals, water, sleep, steps, habits</li>
+        <li>Journey + progress photos</li>
+      </ul>
+      <div class="lx-stage">
+        <img id="lx-system-photo" class="lx-cover" src="{{ 'lurvox-2026-training.webp' | asset_url }}" alt="Man performing a seated cable row">
+        <div class="lx-stage-split" id="lx-system-split" hidden>
+          <img src="{{ 'lurvox-2026-coach-piyush-dark.webp' | asset_url }}" alt="Piyush Aggarwal, LURVOX coach">
+          <img src="{{ 'lurvox-2026-coach-rakshit-dark.webp' | asset_url }}" alt="Rakshit Mohla, LURVOX coach">
+        </div>
+        <div class="lx-stage-copy">
+          <h2 id="lx-system-title">Workout</h2>
+          <p id="lx-system-body">Sessions for your goal, level, and equipment.</p>
+        </div>
+      </div>
+      <div class="lx-stage-nav" id="lx-system-tabs" role="tablist" aria-label="Parts of the coaching">
+        <button type="button" role="tab" class="is-on" aria-selected="true" data-tab="workout"><img src="{{ 'lurvox-2026-training.webp' | asset_url }}" alt=""><span>Workout</span></button>
+        <button type="button" role="tab" aria-selected="false" data-tab="diet"><img src="{{ 'lurvox-2026-nutrition.webp' | asset_url }}" alt=""><span>Diet</span></button>
+        <button type="button" role="tab" aria-selected="false" data-tab="track"><img src="{{ 'lurvox-2026-tracking.webp' | asset_url }}" alt=""><span>Track</span></button>
+        <button type="button" role="tab" aria-selected="false" data-tab="coach"><span class="lx-thumb-split"><img src="{{ 'lurvox-2026-coach-piyush-dark.webp' | asset_url }}" alt=""><img src="{{ 'lurvox-2026-coach-rakshit-dark.webp' | asset_url }}" alt=""></span><span>Coach</span></button>
+        <button type="button" role="tab" aria-selected="false" data-tab="checkin"><img src="{{ 'lurvox-2026-checkin.webp' | asset_url }}" alt=""><span>Check-in</span></button>
+        <button type="button" role="tab" aria-selected="false" data-tab="progress"><img src="{{ 'lurvox-2026-progress.webp' | asset_url }}" alt=""><span>Progress</span></button>
+      </div>
+    </section>
+
+    <section class="lx-coaches" id="coaching">
+      <div class="lx-coaches-copy">
+        <p class="lx-eyebrow">The method</p>
+        <h2>Get trained with professional principles.</h2>
+        <p class="lx-lead">Backed by science, not random things.</p>
+      </div>
+      <div class="lx-stage">
+        <a id="lx-coach-link" href="https://www.instagram.com/maximusvault/" target="_blank" rel="noopener noreferrer">
+          <img id="lx-coach-photo" class="lx-cover" src="{{ 'lurvox-2026-coach-piyush-dark.webp' | asset_url }}" alt="Piyush Aggarwal, LURVOX coach">
+        </a>
+        <div class="lx-stage-copy">
+          <h2 id="lx-coach-name">Piyush Aggarwal</h2>
+          <p id="lx-coach-handle">@maximusvault</p>
+          <p>Tap to open Instagram</p>
+        </div>
+      </div>
+      <div class="lx-stage-nav lx-coach-nav" id="lx-coach-tabs" role="tablist" aria-label="Coaches">
+        <button type="button" role="tab" class="is-on" aria-selected="true" data-coach="piyush"><img src="{{ 'lurvox-2026-coach-piyush-dark.webp' | asset_url }}" alt=""><span>Piyush</span></button>
+        <button type="button" role="tab" aria-selected="false" data-coach="rakshit"><img src="{{ 'lurvox-2026-coach-rakshit-dark.webp' | asset_url }}" alt=""><span>Rakshit</span></button>
+      </div>
+    </section>
+
+    <section class="lx-method" id="method">
+      <h2>How it works.</h2>
+      <div class="lx-stage lx-method-stage">
+        <img id="lx-method-photo" class="lx-cover" src="{{ 'lurvox-2026-intake.webp' | asset_url }}" alt="Woman with coffee and a gym bag before training">
+        <div class="lx-stage-copy">
+          <h2 id="lx-method-title">Tell us about you.</h2>
+          <p id="lx-method-body">Goals, schedule, food, and where you train.</p>
+        </div>
+      </div>
+      <div class="lx-stage-nav lx-method-nav" id="lx-method-tabs" role="tablist" aria-label="How it works">
+        <button type="button" role="tab" class="is-on" aria-selected="true" data-step="1"><img src="{{ 'lurvox-2026-intake.webp' | asset_url }}" alt=""><span>Tell us about you</span></button>
+        <button type="button" role="tab" aria-selected="false" data-step="2"><img src="{{ 'lurvox-2026-plan.webp' | asset_url }}" alt=""><span>Get your plan</span></button>
+        <button type="button" role="tab" aria-selected="false" data-step="3"><img src="{{ 'lurvox-2026-method-work.webp' | asset_url }}" alt=""><span>Do the work</span></button>
+        <button type="button" role="tab" aria-selected="false" data-step="4"><img src="{{ 'lurvox-2026-method-adapt.webp' | asset_url }}" alt=""><span>Adapt</span></button>
+      </div>
+    </section>
+
+    <section class="lx-pricing" id="pricing">
+      <p class="lx-eyebrow">Plans</p>
+      <h2>Choose your plan.</h2>
+      <p class="lx-shared">Every plan includes personalized coaching, a workout, a diet, tracking and coach check-ins. A free upgrade is available for 48 hours. After that, an upgrade is ₹250.</p>
+      <div class="lx-plans">
+        <article>
+          <p class="lx-kicker">90 days</p>
+          <h3>Fat loss</h3>
+          <p class="lx-plan-price">₹1,999<em>₹666 a month</em></p>
+          <ul class="lx-points">
+            <li>Workout and diet for your case</li>
+            <li>Professional principles, backed by science</li>
+            <li>Check-ins and daily tracking</li>
+            <li>Updates every 14 days</li>
+          </ul>
+          <a class="lx-btn lx-btn-primary lx-btn-block" href="https://app.lurvox.in/checkout?plan=3_months">Start for ₹1,999</a>
+        </article>
+        <article class="is-popular">
+          <p class="lx-kicker">6 months <span class="lx-tag">Most popular</span></p>
+          <h3>Fat loss + muscle gain</h3>
+          <p class="lx-plan-price">₹3,499<em>₹583 a month</em></p>
+          <ul class="lx-points">
+            <li>Everything in Fat loss</li>
+            <li>Updates every week</li>
+            <li>Cardio plan</li>
+            <li>Supplement plan</li>
+            <li>Plateau coaching after 90 days</li>
+          </ul>
+          <a class="lx-btn lx-btn-primary lx-btn-block" href="https://app.lurvox.in/checkout?plan=6_months">Start for ₹3,499</a>
+        </article>
+        <article class="is-best">
+          <p class="lx-kicker">12 months <span class="lx-tag">Lowest monthly</span></p>
+          <h3>Athletic body</h3>
+          <p class="lx-plan-price">₹5,999<em>₹500 a month</em></p>
+          <ul class="lx-points">
+            <li>Everything in Fat loss + muscle gain</li>
+            <li>Stamina coaching</li>
+            <li>Weekly updates for 12 months</li>
+            <li>Cardio and supplements, kept current</li>
+            <li>Plateau coaching through the year</li>
+            <li>Lowest rate, ₹500 a month</li>
+          </ul>
+          <a class="lx-btn lx-btn-primary lx-btn-block" href="https://app.lurvox.in/checkout?plan=12_months">Start for ₹5,999</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="lx-faq" id="faq">
+      <h2>Questions</h2>
+      <details><summary>What is LURVOX?</summary><p>Online fitness coaching. A personal workout, a personal diet, tracking, and a coach in the app.</p></details>
+      <details><summary>What do I receive?</summary><p>The plan for the goal you choose, check-ins, daily tracking, and coach chat. The 3-month plan updates every 14 days. The 6- and 12-month plans update every week.</p></details>
+      <details><summary>What is the training based on?</summary><p>Professional principles, backed by science. Not random workouts or diets.</p></details>
+      <details><summary>When do I receive my plan?</summary><p>After you finish onboarding. The first plan is prepared in 24 to 48 hours.</p></details>
+      <details><summary>Do I need a gym?</summary><p>No. The plan uses a gym, home, or a mix, based on what you have.</p></details>
+      <details><summary>Can I message my coach?</summary><p>Yes, in the app, once your coaching access is active.</p></details>
+      <details><summary>What happens during weekly check-ins?</summary><p>You submit the week, including photos when they are required. Your coach reviews it and the plan can change from that.</p></details>
+      <details><summary>What is the refund policy?</summary><p>Sales are final once payment is captured, except where the Terms say otherwise. The Terms are the only refund rules.</p></details>
+      <p class="lx-note"><a href="https://app.lurvox.in/terms#payments-refunds-guarantees">Read the Terms</a></p>
+    </section>
+
+    <section class="lx-final">
+      <div class="lx-final-copy">
+        <h2>Your next 90 days start here.</h2>
+        <p class="lx-price"><span>Starting from</span><strong>₹1,999</strong></p>
+        <a class="lx-btn lx-btn-primary" href="https://app.lurvox.in/checkout?plan=3_months">Start for ₹1,999</a>
+      </div>
+    </section>
+  </main>
+  <footer class="lx-footer">
+    <strong>LURVOX</strong>
+    <p>Online fitness coaching.</p>
+    <p>14, Sector 44, Golf Course Road, Gurugram, Haryana 122003</p>
+    <p><a href="mailto:hello@lurvox.in">hello@lurvox.in</a></p>
+    <p>
+      <a href="https://app.lurvox.in/terms">Terms</a>
+      <a href="https://app.lurvox.in/refund-policy">Refund policy</a>
+      <a href="https://app.lurvox.in/login">Log in</a>
+    </p>
+    <p>Secure payments via Razorpay. Results vary.</p>
+  </footer>
+  <div class="lx-sticky" id="lx-sticky">
+    <a class="lx-btn lx-btn-primary lx-btn-block" id="lx-sticky-cta" href="https://app.lurvox.in/checkout?plan=12_months">Start for ₹5,999</a>
+  </div>
+</div>
+
+<style>
+
+body:has(.lx-live),
+body:has(.lx-live) .gradient {
+  background: #f4efe6 !important;
+  background-image: none !important;
+  color: #1c1915;
+}
+body:has(.lx-live) main h1::before,
+body:has(.lx-live) main h2::before {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+}
+body:has(.lx-live) main a,
+body:has(.lx-live) main a:hover,
+body:has(.lx-live) main button,
+body:has(.lx-live) main button:hover {
+  text-shadow: none !important;
+}
+body:has(.lx-live) .header-group,
+body:has(.lx-live) .footer-group,
+body:has(.lx-live) #shopify-section-header,
+body:has(.lx-live) #shopify-section-footer,
+body:has(.lx-live) .announcement-bar-section,
+body:has(.lx-live) .shopify-section-group-header,
+body:has(.lx-live) .shopify-section-group-footer {
+  display: none !important;
+}
+body:has(.lx-live) .shopify-section:not(:has(.lx-live)) { display: none !important; }
+body:has(.lx-live) #lx-mchat { display: none !important; }
+.lx-live img {
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+.lx-live .lx-stage::before,
+.lx-live .lx-stage::after,
+.lx-live .lx-hero-photo::before,
+.lx-live .lx-hero-photo::after {
+  content: none !important;
+  display: none !important;
+  border: 0 !important;
+}
+.shopify-section:has(.lx-live) {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: none !important;
+}
+.landing {
+  --font-inter: "Manrope", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.landing [hidden] { display: none !important; }
+.landing button {
+  appearance: none;
+  font-family: inherit;
+}
+
+body:has(.landing) {
+  background: #f4efe6;
+  color: #1c1915;
+}
+
+.landing {
+  --bg: #f4efe6;
+  --card: #fffaf3;
+  --text: #1c1915;
+  --muted: #4e4942;
+  --dim: #6d675e;
+  --accent: #1e4d3d;
+  --ink: #f4efe6;
+  --line: rgba(28, 25, 21, 0.12);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter), Manrope, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+.landing * { box-sizing: border-box; }
+.landing h1, .landing h2, .landing h3 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+.landing h1 { font-size: 48px; font-weight: 800; line-height: 1; letter-spacing: 0; }
+.landing h2 { font-size: 32px; font-weight: 800; line-height: 1.08; letter-spacing: 0; }
+.landing h3 { font-size: 20px; font-weight: 800; letter-spacing: 0; line-height: 1.2; }
+.landing p { margin: 0; }
+.landing a { color: inherit; text-decoration: none; }
+.landing a:focus-visible, .landing summary:focus-visible, .landing button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.lx-bar {
+  margin: 0;
+  padding: 10px 16px;
+  background: var(--accent);
+  color: var(--ink);
+  text-align: center;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.lx-eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.lx-kicker {
+  margin: 0 0 8px;
+  color: var(--dim);
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.lx-lead {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  max-width: 36rem;
+}
+.lx-hero-copy .lx-lead { max-width: 34rem; margin-left: auto; margin-right: auto; }
+.lx-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+  color: var(--dim);
+  font-size: 0.95rem;
+}
+.lx-price strong {
+  color: var(--text);
+  font-size: 2.4rem;
+  letter-spacing: 0;
+  font-weight: 800;
+}
+.lx-price em { font-style: normal; }
+.lx-per-hero { margin-top: 6px; color: var(--dim); font-size: 0.95rem; }
+.lx-actions { margin-top: 18px; }
+
+.lx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 16px 28px;
+  border-radius: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-size: 1rem;
+  line-height: 1.2;
+  border: 0;
+}
+.landing a.lx-btn-primary { background: var(--accent); color: var(--ink); }
+.lx-btn-ghost {
+  background: transparent;
+  color: var(--text);
+  min-height: 44px;
+  padding: 0 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 0;
+}
+.lx-btn-block { width: min(100%, 420px); }
+.lx-login { letter-spacing: 0; }
+.lx-login { display: inline-flex; align-items: center; }
+
+.lx-header { position: sticky; top: 0; z-index: 20; background: var(--bg); }
+.lx-nav {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 16px;
+}
+.lx-logo {
+  grid-column: 2;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  font-size: 0.95rem;
+}
+.lx-nav-links { display: none; }
+.lx-nav-actions { grid-column: 3; display: flex; justify-content: flex-end; align-items: center; }
+.lx-menu { display: block; position: relative; }
+.lx-menu summary {
+  list-style: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.lx-menu summary::-webkit-details-marker { display: none; }
+.lx-menu a {
+  display: block;
+  padding: 12px 14px;
+  background: var(--card);
+  color: var(--text);
+  min-width: 180px;
+  border: 1px solid var(--line);
+}
+
+.lx-hero { background: var(--bg); padding-bottom: 8px; }
+.lx-hero-copy { text-align: center; padding: 24px 20px 0; max-width: 720px; margin: 0 auto; }
+.lx-hero .lx-eyebrow { margin-bottom: 8px; }
+.lx-hero h1 { font-size: 48px; font-weight: 800; line-height: 1; letter-spacing: 0; }
+.lx-hero .lx-lead { margin-top: 16px; margin-left: auto; margin-right: auto; font-size: 16px; line-height: 24px; }
+.lx-hero .lx-switch { margin-top: 16px; }
+.lx-hero .lx-price { margin-top: 16px; }
+.lx-hero .lx-actions { margin-top: 16px; }
+.lx-hero-photo {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  height: auto;
+  width: 100%;
+  margin: 16px 0 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #111;
+}
+.lx-cover { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lx-hero-photo img { object-position: center center; }
+
+.lx-switch {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 22px;
+}
+.lx-switch button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(30, 77, 61, 0.35);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lx-switch button.is-on {
+  background: var(--accent);
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.lx-marquee {
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 16px 0;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.lx-marquee-track {
+  display: flex;
+  gap: 28px;
+  width: max-content;
+  animation: lx-slide 36s linear infinite;
+}
+.lx-marquee span {
+  color: var(--muted);
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+.lx-marquee span::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateY(-1px);
+}
+@keyframes lx-slide {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.lx-bento {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 22px;
+}
+.lx-bento article {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 18px 16px 16px;
+  min-height: 132px;
+}
+.lx-bento .is-wide { grid-column: 1 / -1; }
+.lx-bento p { margin-top: 8px; color: var(--muted); line-height: 1.4; }
+
+.lx-plans article, .lx-band, .lx-bento article, .lx-coach-row a {
+  transition: transform 0.25s ease;
+}
+@media (hover: hover) {
+  .lx-plans article:hover, .lx-band:hover, .lx-bento article:hover, .lx-coach-row a:hover {
+    transform: translateY(-3px);
+  }
+}
+
+.lx-fail, .lx-statement, .lx-system, .lx-method, .lx-pricing, .lx-faq, .lx-manifesto {
+  padding: 56px 20px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.lx-statement { text-align: center; }
+.lx-statement h2 + h2 { margin-top: 0.35em; }
+.lx-statement p {
+  margin: 22px auto 0;
+  max-width: 34rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.125rem;
+  line-height: 1.5;
+}
+
+#goals { padding: 8px 16px 24px; max-width: 1100px; margin: 0 auto; display: grid; gap: 16px; }
+.lx-band {
+  background: var(--card);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.lx-band img { width: 100%; height: 240px; object-fit: cover; object-position: center 22%; background: #111; }
+.lx-band-copy { padding: 20px 18px 22px; }
+.lx-band-copy h2 { max-width: none; }
+.lx-band-copy .lx-lead { margin-top: 8px; font-size: 1.75rem; font-weight: 500; color: #fff; }
+.lx-band-copy .lx-btn { margin-top: 16px; }
+
+.lx-system { padding-top: 40px; }
+.lx-fail > .lx-eyebrow,
+.lx-system > .lx-eyebrow,
+.lx-method > .lx-eyebrow,
+.lx-pricing > .lx-eyebrow,
+.lx-coaches-copy .lx-eyebrow { margin: 0 0 14px; }
+.lx-system .lx-lead,
+.lx-fail > .lx-lead,
+.lx-method > .lx-lead,
+.lx-coaches-copy .lx-lead { margin-top: 16px; }
+.lx-coaches-copy { padding-bottom: 4px; }
+.lx-method > h2 { margin-bottom: 28px; }
+.lx-include {
+  display: grid;
+  gap: 12px;
+  margin: 20px auto 28px;
+  padding: 0;
+  list-style: none;
+  max-width: 40rem;
+}
+.lx-include li {
+  padding: 0;
+  border: 0;
+  color: var(--text);
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.lx-include li::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateY(-1px);
+}
+.lx-stage {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  width: min(100%, calc((100svh - 400px) * 3 / 2));
+  max-height: calc(100svh - 400px);
+  height: auto;
+  margin-inline: auto;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #111;
+}
+.lx-stage .lx-cover { object-position: center center; }
+.lx-stage > a { display: block; height: 100%; }
+.lx-coaches .lx-stage > a { position: absolute; inset: 0; z-index: 1; }
+.lx-coaches .lx-stage-copy { pointer-events: none; z-index: 2; }
+.lx-coaches .lx-stage {
+  aspect-ratio: 3 / 2;
+  width: 100%;
+  max-height: min(70vh, 720px);
+}
+.lx-coaches .lx-cover,
+.lx-coach-nav img { object-fit: cover; object-position: center 18%; }
+.lx-coaches .lx-coach-nav {
+  grid-template-columns: repeat(2, minmax(0, 180px));
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  max-width: none;
+  margin: 28px auto 0;
+  padding-top: 12px;
+}
+.lx-stage .lx-ui { object-position: top center; }
+.lx-stage-split { display: grid; grid-template-columns: 1fr 1fr; gap: 0; height: 100%; }
+.lx-stage-split img { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; display: block; border: 0; }
+.lx-thumb-split { display: grid; grid-template-columns: 1fr 1fr; height: 78px; }
+.lx-thumb-split img { height: 78px; }
+.lx-stage-copy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 40px 16px 16px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.88));
+}
+.lx-stage-copy,
+.lx-stage-copy h2,
+.lx-stage-copy h3 { color: #fff; }
+.lx-stage .lx-stage-copy p {
+  margin-top: 8px;
+  max-width: 34rem;
+  color: #fff;
+  font-size: 1.05rem;
+  line-height: 1.45;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.65);
+}
+.lx-stage-nav {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 12px;
+  align-items: end;
+}
+.lx-stage-nav button {
+  position: relative;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #171717;
+  color: #fff;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: none;
+}
+.lx-stage-nav button.is-on {
+  border: 0;
+  box-shadow: none;
+  transform: none;
+  z-index: 1;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.lx-stage-nav button.is-on span { color: #fff; }
+.lx-stage-nav img { width: 100%; height: 78px; object-fit: cover; object-position: center center; display: block; }
+.lx-stage-nav span { display: block; padding: 8px 10px 10px; font-size: 0.88rem; font-weight: 600; }
+.lx-stage-nav .lx-thumb-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  height: 78px;
+  padding: 0;
+}
+.lx-stage-nav .lx-thumb-split img { height: 78px; width: calc(100% + 1px); margin-right: -1px; object-position: center 18%; }
+.lx-stage-split img { width: calc(100% + 1px); margin-right: -1px; }
+
+.lx-system ul, .lx-method ol { list-style: none; margin: 22px 0 0; padding: 0; }
+.lx-system li, .lx-method li {
+  display: grid;
+  gap: 4px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+.lx-system li span { color: var(--muted); font-style: normal; line-height: 1.45; font-size: 1rem; }
+.lx-method span { color: var(--accent); letter-spacing: 0; font-size: 0.85rem; font-weight: 700; }
+
+.lx-coaches { padding: 56px 20px; max-width: 1120px; margin: 0 auto; }
+.lx-coaches-copy { padding: 12px 4px 18px; }
+.lx-coach-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.lx-coach-row a { background: var(--card); border-radius: 20px; overflow: hidden; }
+.lx-coach-row img { width: 100%; height: 280px; object-fit: cover; object-position: center 12%; background: #111; }
+.lx-coach-row span { display: flex; flex-direction: column; padding: 12px 12px 16px; }
+.lx-coach-row em { color: var(--dim); font-style: normal; }
+
+.lx-editorial {
+  max-width: 1100px;
+  margin: 0 auto 16px;
+  padding: 0 16px;
+}
+.lx-editorial img {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  object-position: center 30%;
+  border-radius: 16px;
+  background: #111;
+}
+.lx-editorial > div { padding: 18px 4px 28px; }
+.lx-editorial h2 { max-width: none; }
+.lx-editorial p:last-child { margin-top: 10px; color: var(--muted); line-height: 1.5; font-size: 1.05rem; max-width: 40rem; }
+
+.lx-method { padding-bottom: 32px; }
+.lx-method > h2 { max-width: none; }
+.lx-method-copy h3 { font-size: 20px; font-weight: 800; line-height: 1.2; }
+.lx-method .lx-stage {
+  aspect-ratio: 3 / 2;
+  width: min(100%, calc((100svh - 360px) * 3 / 2));
+  max-height: calc(100svh - 360px);
+  height: auto;
+  min-height: 0;
+}
+.lx-method-copy { padding: 14px 2px 4px; }
+.lx-method-copy p { margin-top: 6px; color: var(--muted); line-height: 1.45; }
+.lx-method-nav { grid-template-columns: repeat(2, 1fr); }
+.lx-pricing { padding-top: 32px; }
+
+.lx-shared { margin-top: 14px; max-width: 36rem; color: var(--muted); line-height: 1.5; font-size: 1.05rem; }
+.lx-plans { display: grid; gap: 14px; margin-top: 22px; }
+.lx-plans article {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 22px 20px 20px;
+  display: flex;
+  flex-direction: column;
+}
+.lx-plans .is-popular {
+  border: 2px solid var(--accent);
+  background: #fffaf3;
+}
+.lx-plans .is-best {
+  background: #1c1915;
+  color: var(--ink);
+  border-color: #1c1915;
+}
+.lx-plans .is-best .lx-kicker,
+.lx-plans .is-best .lx-plan-price em { color: rgba(244, 239, 230, 0.72); }
+.lx-plans .is-best .lx-points li { color: rgba(244, 239, 230, 0.9); }
+.lx-plans .is-best .lx-points li::before { background: #f4efe6; }
+.landing .lx-plans .is-best a.lx-btn-primary { background: var(--ink); color: #1c1915; }
+.lx-plans h3 { font-size: 22px; line-height: 1.15; }
+.lx-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+.lx-plans .is-best .lx-tag { background: #f4efe6; color: #1c1915; }
+.lx-plan-price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 12px 0 0;
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+}
+.lx-plan-price em {
+  font-style: normal;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--dim);
+}
+.lx-points {
+  list-style: none;
+  margin: 18px 0 20px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.lx-points li {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.35;
+}
+.lx-points li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.lx-plans .lx-btn { margin-top: auto; }
+
+.lx-faq details {
+  margin-top: 8px;
+  padding: 0 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.lx-faq summary {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+}
+.lx-faq summary::-webkit-details-marker { display: none; }
+.lx-faq summary::after { content: "+"; color: var(--accent); font-weight: 600; }
+.lx-faq details[open] summary::after { content: "–"; }
+.lx-faq details p { color: var(--muted); padding: 0 0 16px; line-height: 1.5; }
+.lx-note { margin-top: 18px; }
+.lx-note a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+
+.lx-final {
+  max-width: 720px;
+  margin: 8px 16px 28px;
+  padding: 36px 22px;
+  border-radius: 24px;
+  background: var(--accent);
+  color: var(--ink);
+  text-align: center;
+}
+.lx-final-copy { text-align: center; }
+.lx-final .lx-price,
+.lx-final .lx-price strong { color: var(--ink); justify-content: center; }
+.lx-final-copy .lx-btn { margin-top: 16px; width: min(100%, 420px); }
+.landing .lx-final a.lx-btn-primary { background: var(--ink); color: var(--accent); }
+
+.lx-footer {
+  padding: 28px 20px 110px;
+  color: var(--dim);
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.lx-footer strong { color: var(--text); letter-spacing: 0.14em; }
+.lx-footer a { margin-right: 14px; color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+
+.lx-sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(244, 239, 230, 0.94);
+}
+.lx-sticky.is-hidden { display: none; }
+
+@media (min-width: 900px) {
+  .lx-nav-links { display: flex; gap: 22px; grid-column: 1; color: var(--muted); font-size: 0.95rem; }
+  .lx-menu { display: none; }
+  .lx-hero-photo { margin: 20px 0 0; width: 100%; aspect-ratio: 16 / 9; height: auto; }
+  #goals { grid-template-columns: repeat(3, 1fr); padding: 8px 28px 32px; }
+  .lx-band img { height: 280px; }
+  .lx-editorial { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 28px; align-items: center; padding: 12px 28px; }
+  .lx-editorial-flip { grid-template-columns: 0.9fr 1.1fr; }
+  .lx-editorial-flip img { order: 2; }
+  .lx-editorial img { height: 320px; }
+  .lx-editorial > div { padding: 0; }
+  .lx-stage {
+    aspect-ratio: 16 / 9;
+    height: auto;
+    width: min(100%, calc((100svh - 360px) * 16 / 9));
+    max-height: calc(100svh - 360px);
+  }
+  .lx-stage-nav { grid-template-columns: repeat(6, 1fr); }
+  .lx-plans { grid-template-columns: repeat(3, 1fr); }
+  .lx-coaches { padding: 12px 28px; }
+  .lx-coach-row img { height: 420px; }
+  .lx-method ol { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
+  .lx-method li { border-top: 1px solid var(--line); }
+  .lx-final { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 28px; align-items: center; padding: 12px 28px 40px; }
+  .lx-final img { height: 360px; }
+  .lx-final-copy { text-align: center; padding: 0; }
+  .lx-final-copy .lx-price { justify-content: flex-start; }
+  .lx-hero h1 { font-size: 72px; line-height: 1; }
+  .landing h2 { font-size: 48px; line-height: 1.08; }
+  .lx-fail, .lx-statement, .lx-system, .lx-method, .lx-pricing, .lx-faq, .lx-manifesto { padding: 88px 28px; }
+  .lx-method { padding-bottom: 88px; }
+  .lx-method-nav { grid-template-columns: repeat(4, 1fr); }
+  .lx-pricing { padding-top: 88px; }
+  .lx-coaches { padding: 88px 28px; }
+  .lx-final { display: block; max-width: 720px; margin: 8px auto 40px; padding: 48px 28px; }
+  .lx-final-copy, .lx-final-copy .lx-price { text-align: center; justify-content: center; }
+}
+
+@media (min-width: 900px) {
+  .lx-bento { grid-template-columns: repeat(4, 1fr); }
+  .lx-bento .is-wide { grid-column: span 2; }
+}
+
+.lx-include li {
+  display: block;
+  padding: 0;
+  border-top: 0;
+}
+
+.lx-fail h2,
+.lx-manifesto h2 { max-width: none; }
+.lx-fail .lx-stage,
+.lx-manifesto .lx-stage { margin-top: 28px; }
+.lx-quad-nav { grid-template-columns: repeat(2, 1fr); }
+
+.lx-manifesto h2 { max-width: 12ch; }
+.lx-principles { list-style: none; margin: 40px 0 0; padding: 0; }
+.lx-principles li {
+  display: grid;
+  grid-template-columns: 4.25rem 1fr;
+  gap: 8px 16px;
+  padding: 28px 0;
+  border-top: 1px solid var(--line);
+}
+.lx-principles em {
+  font-style: normal;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--accent);
+}
+.lx-principles strong {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.lx-principles p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.55;
+  max-width: 36rem;
+}
+
+@media (min-width: 900px) {
+  .lx-quad-nav { grid-template-columns: repeat(4, 1fr); }
+  .lx-manifesto { display: block; }
+  .lx-include { grid-template-columns: 1fr 1fr; column-gap: 28px; }
+}
+
+.lx-hero,
+.lx-fail,
+.lx-coaches-copy,
+.lx-method-copy,
+.lx-final,
+.lx-final-copy,
+.lx-stage-copy,
+.lx-stage-copy h2,
+.lx-stage-copy h3,
+.lx-stage-copy p,
+.lx-system > .lx-eyebrow,
+.lx-system > h2,
+.lx-system > .lx-lead,
+.lx-method > .lx-eyebrow,
+.lx-method > h2,
+.lx-pricing > .lx-eyebrow,
+.lx-pricing > h2,
+.lx-pricing > .lx-shared,
+.lx-faq > h2 {
+  text-align: center;
+}
+.lx-hero h1,
+.lx-fail h2,
+.lx-system > h2,
+.lx-coaches h2,
+.lx-method > h2,
+.lx-method-copy h3,
+.lx-pricing > h2,
+.lx-faq > h2,
+.lx-final h2,
+.lx-stage-copy h2 {
+  max-width: 16em;
+  margin-left: auto;
+  margin-right: auto;
+}
+.lx-stage-nav button.is-on span { color: #fff; }
+.lx-stage-nav button:not(.is-on) span { color: rgba(255, 255, 255, 0.72); }
+
+@media (prefers-reduced-motion: reduce) {
+  .landing * { animation: none !important; transition: none !important; }
+  .lx-marquee-track { flex-wrap: wrap; width: auto; padding: 0 20px; }
+}
+
+.lx-phones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 28px;
+  text-align: center;
+}
+.lx-phones figure { margin: 0; }
+.lx-phones img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+.lx-phones figcaption {
+  margin-top: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.lx-system > h2,
+.lx-fail > h2,
+.lx-pricing > h2,
+.lx-coaches h2 { margin-bottom: 28px; }
+
+</style>
+
+<script>
+  (function () {
+    var plans = {
+      fat: { title: 'Your fat loss plan.', lead: 'Best for a 90-day fat-loss push. First plan in 24–48 hours.', price: '₹1,999', meta: '₹666 a month · 90 days', href: 'https://app.lurvox.in/checkout?plan=3_months', img: {{ 'lurvox-2026-hero-fat-loss.webp' | asset_url | json }}, alt: 'Man walking uphill on a treadmill in a private gym' },
+      muscle: { title: 'Fat loss and muscle.', lead: 'Best for losing fat while building muscle. First plan in 24–48 hours.', price: '₹3,499', meta: '₹583 a month · 6 months', href: 'https://app.lurvox.in/checkout?plan=6_months', img: {{ 'lurvox-2026-hero-muscle.webp' | asset_url | json }}, alt: 'Man in a heavy squat in a private studio' },
+      athletic: { title: 'An athletic body.', lead: 'Best for building an athletic body — fat loss, muscle gain, and stamina. First plan in 24–48 hours.', price: '₹5,999', meta: '₹500 a month · 12 months', href: 'https://app.lurvox.in/checkout?plan=12_months', img: {{ 'lurvox-2026-hero-athletic.webp' | asset_url | json }}, alt: 'Muscular man running in shorts along a waterfront at dawn' }
+    }
+    var system = {
+      workout: { title: 'Workout', body: 'Sessions for your goal, level, and equipment.', img: {{ 'lurvox-2026-training.webp' | asset_url | json }}, alt: 'Man performing a seated cable row', split: false },
+      diet: { title: 'Diet', body: 'Meals around your food and schedule.', img: {{ 'lurvox-2026-nutrition.webp' | asset_url | json }}, alt: 'A plated meal of chicken, rice, roti, and greens', split: false },
+      track: { title: 'Track', body: 'Log the workout and the meals, then leave.', img: {{ 'lurvox-2026-tracking.webp' | asset_url | json }}, alt: 'Woman reviewing her day on a phone after training', split: false },
+      coach: { title: 'Coach', body: 'Professional principles, backed by science. Not a random plan.', img: {{ 'lurvox-2026-coach-piyush-dark.webp' | asset_url | json }}, alt: 'Piyush Aggarwal, LURVOX coach', split: true },
+      checkin: { title: 'Check-in', body: 'Mid-week and weekly. Weight, measurements, and photos when they are required.', img: {{ 'lurvox-2026-checkin.webp' | asset_url | json }}, alt: 'Woman by a window during a weekly check-in', split: false },
+      progress: { title: 'Progress', body: 'Weight, photos, and the plan that follows.', img: {{ 'lurvox-2026-progress.webp' | asset_url | json }}, alt: 'Man leaving a private gym after training', split: false }
+    }
+    var steps = {
+      '1': { title: 'Tell us about you.', body: 'Goals, schedule, food, and where you train.', img: {{ 'lurvox-2026-intake.webp' | asset_url | json }}, alt: 'Woman with coffee and a gym bag before training' },
+      '2': { title: 'Get your plan.', body: 'Workout and diet, prepared for your case.', img: {{ 'lurvox-2026-plan.webp' | asset_url | json }}, alt: 'Man reading a phone after training' },
+      '3': { title: 'Do the work.', body: 'Train, eat, and log it in the app.', img: {{ 'lurvox-2026-method-work.webp' | asset_url | json }}, alt: 'Woman rowing in a quiet private studio' },
+      '4': { title: 'Adapt.', body: 'Check in. The plan changes from what you actually did.', img: {{ 'lurvox-2026-method-adapt.webp' | asset_url | json }}, alt: 'Man on a balcony after training, looking out at dusk' }
+    }
+    function mark(group, button) {
+      group.querySelectorAll('button').forEach(function (item) {
+        var on = item === button
+        item.classList.toggle('is-on', on)
+        item.setAttribute('aria-selected', on ? 'true' : 'false')
+      })
+    }
+    document.getElementById('lx-plans').addEventListener('click', function (event) {
+      var button = event.target.closest('button')
+      if (!button) return
+      var plan = plans[button.getAttribute('data-plan')]
+      if (!plan) return
+      mark(event.currentTarget, button)
+      document.getElementById('lx-title').textContent = plan.title
+      document.getElementById('lx-lead').textContent = plan.lead
+      document.getElementById('lx-price').textContent = plan.price
+      document.getElementById('lx-meta').textContent = plan.meta
+      var label = 'Start for ' + plan.price
+      var cta = document.getElementById('lx-cta')
+      var sticky = document.getElementById('lx-sticky-cta')
+      cta.textContent = label
+      cta.href = plan.href
+      sticky.textContent = label
+      sticky.href = plan.href
+      var photo = document.getElementById('lx-hero-photo')
+      photo.src = plan.img
+      photo.alt = plan.alt
+    })
+    var why = {
+      '1': { title: 'Your plan', body: 'The workout and the diet are built around your goal, schedule, food, and where you train.', img: {{ 'lurvox-2026-why-plan.webp' | asset_url | json }}, alt: 'Man at a kitchen table with a closed notebook before training' },
+      '2': { title: 'It keeps up', body: 'The 3-month plan updates every 14 days. The 6- and 12-month plans update every week.', img: {{ 'lurvox-2026-why-keeps.webp' | asset_url | json }}, alt: 'Man setting a dumbbell down beside a window after a week of training' },
+      '3': { title: 'Made with tested principles', body: 'The workout and diet follow professional principles, backed by science, then written for your case.', img: {{ 'lurvox-2026-why-principles.webp' | asset_url | json }}, alt: 'Woman holding a kettlebell in a careful hinge in an empty studio' },
+      '4': { title: 'The work is decided', body: 'What to train and what to eat is written. You are not left choosing it alone.', img: {{ 'lurvox-2026-why-work.webp' | asset_url | json }}, alt: 'Man standing ready in front of a loaded barbell' }
+    }
+    document.getElementById('lx-why-tabs').addEventListener('click', function (event) {
+      var button = event.target.closest('button')
+      if (!button) return
+      var item = why[button.getAttribute('data-why')]
+      if (!item) return
+      mark(event.currentTarget, button)
+      document.getElementById('lx-why-title').textContent = item.title
+      document.getElementById('lx-why-body').textContent = item.body
+      var photo = document.getElementById('lx-why-photo')
+      photo.hidden = false
+      photo.src = item.img
+      photo.alt = item.alt
+    })
+    document.getElementById('lx-system-tabs').addEventListener('click', function (event) {
+      var button = event.target.closest('button')
+      if (!button) return
+      var item = system[button.getAttribute('data-tab')]
+      if (!item) return
+      mark(event.currentTarget, button)
+      document.getElementById('lx-system-title').textContent = item.title
+      document.getElementById('lx-system-body').textContent = item.body
+      var photo = document.getElementById('lx-system-photo')
+      var split = document.getElementById('lx-system-split')
+      photo.hidden = !!item.split
+      split.hidden = !item.split
+      if (!item.split) {
+        photo.src = item.img
+        photo.alt = item.alt
+        photo.classList.toggle('is-fit', button.getAttribute('data-tab') === 'coach')
+      }
+    })
+    document.getElementById('lx-method-tabs').addEventListener('click', function (event) {
+      var button = event.target.closest('button')
+      if (!button) return
+      var item = steps[button.getAttribute('data-step')]
+      if (!item) return
+      mark(event.currentTarget, button)
+      document.getElementById('lx-method-title').textContent = item.title
+      document.getElementById('lx-method-body').textContent = item.body
+      var photo = document.getElementById('lx-method-photo')
+      photo.src = item.img
+      photo.alt = item.alt
+    })
+    var coachPeople = {
+      piyush: { name: 'Piyush Aggarwal', handle: '@maximusvault', href: 'https://www.instagram.com/maximusvault/', img: {{ 'lurvox-2026-coach-piyush-dark.webp' | asset_url | json }}, alt: 'Piyush Aggarwal, LURVOX coach' },
+      rakshit: { name: 'Rakshit Mohla', handle: '@rakshitmohla_', href: 'https://www.instagram.com/rakshitmohla_/', img: {{ 'lurvox-2026-coach-rakshit-dark.webp' | asset_url | json }}, alt: 'Rakshit Mohla, LURVOX coach' }
+    }
+    document.getElementById('lx-coach-tabs').addEventListener('click', function (event) {
+      var button = event.target.closest('button')
+      if (!button) return
+      var person = coachPeople[button.getAttribute('data-coach')]
+      if (!person) return
+      mark(event.currentTarget, button)
+      document.getElementById('lx-coach-name').textContent = person.name
+      document.getElementById('lx-coach-handle').textContent = person.handle
+      var photo = document.getElementById('lx-coach-photo')
+      photo.src = person.img
+      photo.alt = person.alt
+      document.getElementById('lx-coach-link').href = person.href
+    })
+    var pricing = document.getElementById('pricing')
+    var heroCta = document.querySelector('.lx-hero .lx-actions')
+    var bar = document.getElementById('lx-sticky')
+    if (pricing && heroCta && bar && 'IntersectionObserver' in window) {
+      var seen = { hero: true, pricing: false }
+      var sync = function () { bar.classList.toggle('is-hidden', seen.hero || seen.pricing) }
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.target === heroCta) seen.hero = entry.isIntersecting
+          if (entry.target === pricing) seen.pricing = entry.isIntersecting
+        })
+        sync()
+      }, { threshold: 0.35 })
+      observer.observe(heroCta)
+      observer.observe(pricing)
+      sync()
+    }
+  })()
+</script>
+
+{% schema %}
+{
+  "name": "LURVOX campaign",
+  "settings": []
+}
+{% endschema %}

@@ -132,7 +132,7 @@ export function planChangeChatInstruction(remainingToday: number): string {
   return [
     'PLAN EDITS FROM CHAT:',
     'Same-day food or exercise swaps that stay inside today\'s written plan: answer in chat. Do not propose a plan edit.',
-    'If they want the written diet or workout rewritten, summarise that edit in one or two lines, then ask them to reply YES to lock it into My Plan.',
+    'If they want the written diet or workout rewritten, summarise that edit in one or two lines, then ask them to reply YES to send it to their coach.',
     'Do not ask a question when their message, the injury note, and the current plan already say what to change.',
     'Ask one question only when a required detail is missing, such as which exercise or which meal, and that detail is not in the plan or this chat. Never put that question in the same reply as a YES lock.',
     'If they reject an edit and say what they want instead, propose only the new edit.',
@@ -143,7 +143,7 @@ export function planChangeChatInstruction(remainingToday: number): string {
     '{"action":"propose","scope":"diet|workout|both","requestText":"full edit in the client\'s words plus your clear summary"}',
     '>>>',
     'If you are not proposing a written-plan edit, omit the trailer.',
-    'Never claim the plan is already updated until the system confirms the lock-in.',
+    'Never claim the plan is already updated. A YES only sends the request to the coach. This chat does not rewrite the plan.',
   ].join('\n')
 }
 
@@ -152,6 +152,6 @@ export function withConfirmCue(visible: string, remainingToday: number): string 
   const left =
     remainingToday <= 0
       ? 'You are out of plan edits for today.'
-      : `Reply YES to lock this into My Plan (${remainingToday} left today). Reply NO to cancel.`
+      : `Reply YES to send this to your coach (${remainingToday} left today). Reply NO to cancel.`
   return `${visible}\n\n${left}`
 }

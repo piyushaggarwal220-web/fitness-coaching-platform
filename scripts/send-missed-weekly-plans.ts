@@ -1,9 +1,10 @@
 /**
- * Generate and publish weekly AI drafts for check-ins that only got a coach note.
+ * Generate and publish weekly plans for Sunday check-ins that never received one.
  *
  *   npx tsx --env-file=.env.local.txt scripts/send-missed-weekly-plans.ts
  */
 import { hasClientEntitlement } from '../src/lib/entitlements'
+import { seedPlannerCheckin } from '../src/lib/ai/client-planner'
 import { generateWeeklyPlanDraft } from '../src/lib/ai/weekly-plan-draft'
 import { sendNotification } from '../src/lib/notifications/service'
 import { activatePlan } from '../src/lib/plans'
@@ -27,10 +28,6 @@ type CheckinRow = {
   submitted_at: string
 }
 
-function isCreditError(message: string | null | undefined): boolean {
-  return /credit balance is too low/i.test(message ?? '')
-}
-
 async function mapPool<T>(
   items: T[],
   concurrency: number,
@@ -50,14 +47,6 @@ async function mapPool<T>(
 }
 
 async function main() {
-  if (process.env.AI_PLAN_PROVIDER?.trim().toLowerCase() === 'claude') {
-    throw new Error('AI_PLAN_PROVIDER=claude is disabled. Live generation is OpenAI-only.')
-  }
-  process.env.AI_PLAN_PROVIDER = 'openai'
-  if (!process.env.OPENAI_API_KEY?.trim()) {
-    throw new Error('OPENAI_API_KEY is empty. Pull it from Vercel production before sending plans.')
-  }
-  console.log(`provider=openai key_len=${process.env.OPENAI_API_KEY.trim().length}`)
   const admin = createAdminClient()
   const { data: checkins, error } = await admin
     .from('checkins')
@@ -128,7 +117,6 @@ async function main() {
 
   let sent = 0
   let failed = 0
-  let creditBlocked = false
 
   await mapPool(
     queued,
@@ -157,6 +145,16 @@ async function main() {
     }
 
     console.log(`GENERATE ${name} week ${checkin.coaching_week} checkin ${checkin.id}`)
+    try {
+      await seedPlannerCheckin(admin, {
+        clientId: checkin.client_id,
+        coachId: checkin.coach_id,
+        checkinId: checkin.id,
+      })
+    } catch (err) {
+      console.error(`planner seed failed ${name}: ${err instanceof Error ? err.message : err}`)
+    }
+
     const result = await generateWeeklyPlanDraft({
       clientId: checkin.client_id,
       coachId: checkin.coach_id,
@@ -164,14 +162,9 @@ async function main() {
       coachingWeek: checkin.coaching_week,
       trigger: 'retry',
     })
-
     if (result.error || !result.planId) {
       failed += 1
       console.error(`FAIL generate ${name}: ${result.error ?? 'no planId'}`)
-      if (isCreditError(result.error)) {
-        creditBlocked = true
-        console.error('STOP OpenAI credits empty — remaining clients left queued')
-      }
       return
     }
 
@@ -200,13 +193,11 @@ async function main() {
       idempotencyKey: `missed-weekly-plan:${checkin.id}`,
     })
     sent += 1
-    console.log(`SENT ${name} plan ${result.planId} in ${result.generationTimeMs}ms`)
-    },
-    () => creditBlocked
+    console.log(`SENT ${name} plan ${result.planId}`)
+    }
   )
 
   console.log(`DONE sent=${sent} failed=${failed} skipped=${skipped} queued=${queued.length}`)
-  if (creditBlocked) process.exitCode = 2
 }
 
 void main().catch((err) => {

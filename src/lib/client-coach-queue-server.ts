@@ -15,7 +15,7 @@ const EMPTY_INELIGIBLE: ClientCoachQueueView = {
   planDelivered: false,
   items: [],
   yourCall: null,
-  message: 'Weekly coach calls and the coach queue are included on the 12-month plan.',
+  message: 'Coach calls are on the 6-month plan, and on Athletic Body when you paid over ₹3,000.',
 }
 
 export async function loadClientCoachQueueView(
@@ -33,7 +33,7 @@ export async function loadClientCoachQueueView(
   if (!profile || !hasClientEntitlement(profile)) return EMPTY_INELIGIBLE
 
   const policy = await loadClientCallBookingPolicy(admin, clientId)
-  if (!policy.isGrandfatheredAthleticBody) return EMPTY_INELIGIBLE
+  if (!policy.isCallEligiblePlan) return EMPTY_INELIGIBLE
 
   if (!profile.coach_id) {
     return buildClientCoachQueueView({

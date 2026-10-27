@@ -630,7 +630,7 @@
   }
 
   .ai-transformation-plan-card-start-{{ ai_gen_id }} {
-    display: flex;
+    display: none !important;
     align-items: center;
     justify-content: center;
     position: relative;
@@ -1172,6 +1172,154 @@
         0 1px 0 rgba(255, 255, 255, 0.35) !important;
     }
   }
+
+  /* lurvox-price-stage-v2 — orange rim, dark metal cards, brushed price plates */
+  .ai-transformation-plan-{{ ai_gen_id }} {
+    background-color: #050505 !important;
+    background-image: radial-gradient(ellipse 78% 58% at 50% 38%, rgba(255, 98, 0, 0.2), transparent 68%) !important;
+  }
+
+  .ai-transformation-plan-container-{{ ai_gen_id }} {
+    position: relative;
+    max-width: 840px !important;
+    padding: 22px 14px 18px !important;
+    border-radius: 24px;
+    border: 1px solid #ff7a33;
+    background:
+      linear-gradient(180deg, rgba(255, 196, 140, 0.14) 0%, rgba(255, 98, 0, 0.04) 16%, rgba(8, 6, 5, 0) 42%),
+      linear-gradient(165deg, #1a120e 0%, #0c0a09 100%);
+    box-shadow:
+      0 0 0 1px rgba(255, 214, 170, 0.28),
+      0 0 56px rgba(255, 98, 0, 0.28),
+      inset 0 1px 0 rgba(255, 226, 196, 0.45);
+  }
+
+  .ai-transformation-plan-container-{{ ai_gen_id }}::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12%;
+    right: 12%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 236, 214, 0.95), transparent);
+    pointer-events: none;
+  }
+
+  .ai-transformation-plan-card-{{ ai_gen_id }},
+  .ai-transformation-plan-card-{{ ai_gen_id }}.selected {
+    border: 1.5px solid #ff6200 !important;
+    border-radius: 16px !important;
+    background:
+      linear-gradient(118deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 32%, rgba(255, 255, 255, 0.03) 68%, rgba(255, 140, 64, 0.1) 100%),
+      linear-gradient(180deg, #2a1c14 0%, #110e0c 100%) !important;
+    box-shadow:
+      0 0 0 1px rgba(255, 186, 120, 0.34),
+      0 0 26px rgba(255, 98, 0, 0.24),
+      inset 0 1px 0 rgba(255, 214, 170, 0.32),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .ai-transformation-plan-card-{{ ai_gen_id }}:hover,
+  .ai-transformation-plan-card-{{ ai_gen_id }}:active {
+    border-color: #ff8a3d !important;
+    box-shadow:
+      0 0 0 1px rgba(255, 214, 170, 0.5),
+      0 0 34px rgba(255, 98, 0, 0.38),
+      inset 0 1px 0 rgba(255, 230, 200, 0.4),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .ai-transformation-plan-card-right-{{ ai_gen_id }} {
+    align-self: center !important;
+    padding-left: 12px !important;
+    border-left: 1px solid rgba(255, 122, 48, 0.45);
+  }
+
+  .ai-transformation-plan-card-pricing-{{ ai_gen_id }} {
+    align-items: flex-end !important;
+    gap: 7px !important;
+  }
+
+  .ai-transformation-plan-card-price-{{ ai_gen_id }} {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative;
+    min-width: 7.4rem;
+    padding: 12px 14px 11px !important;
+    border-radius: 8px !important;
+    border: 1px solid #ff7a33 !important;
+    background-color: #e7c49a !important;
+    background-image:
+      repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.08) 24%, rgba(255, 255, 255, 0) 42%, rgba(110, 58, 18, 0.16) 100%),
+      linear-gradient(112deg, #f8efe4 0%, #e8c79a 28%, #fff8ee 47%, #d39a58 64%, #f3dec4 100%) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 rgba(140, 72, 24, 0.4),
+      0 0 18px rgba(255, 122, 48, 0.32) !important;
+    color: #1a100a !important;
+    font-size: 1.7rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.045em !important;
+    line-height: 1 !important;
+    font-variant-numeric: tabular-nums;
+    text-shadow: none !important;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .ai-transformation-plan-card-monthly-{{ ai_gen_id }},
+  .ai-transformation-plan-card-savings-{{ ai_gen_id }} {
+    text-shadow: none !important;
+    background: none !important;
+    padding: 0 !important;
+  }
+
+  .ai-transformation-plan-card-monthly-{{ ai_gen_id }} {
+    color: rgba(255, 236, 220, 0.82) !important;
+    font-size: 12px !important;
+    font-weight: 650 !important;
+    letter-spacing: 0.01em !important;
+  }
+
+  .ai-transformation-plan-card-savings-{{ ai_gen_id }} {
+    color: #e2b08a !important;
+    font-size: 11px !important;
+    font-weight: 650 !important;
+    letter-spacing: 0.01em !important;
+  }
+
+  @media screen and (min-width: 750px) {
+    .ai-transformation-plan-container-{{ ai_gen_id }} {
+      padding: 36px 28px 28px !important;
+      border-radius: 28px;
+    }
+
+    .ai-transformation-plan-card-price-{{ ai_gen_id }} {
+      min-width: 8.1rem;
+      padding: 14px 16px 13px !important;
+      font-size: 2rem !important;
+      border-radius: 8px !important;
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-transformation-plan-card-right-{{ ai_gen_id }} {
+      padding-left: 8px !important;
+    }
+
+    .ai-transformation-plan-card-price-{{ ai_gen_id }} {
+      min-width: 0;
+      padding: 8px 10px 7px !important;
+      font-size: 1.22rem !important;
+      border-radius: 8px !important;
+    }
+
+    .ai-transformation-plan-card-pricing-{{ ai_gen_id }} {
+      gap: 5px !important;
+    }
+  }
+  /* /lurvox-price-stage-v2 */
 {% endstyle %}
 
 <transformation-plan-selector-{{ ai_gen_id }}
@@ -1530,7 +1678,7 @@
       "type": "text",
       "id": "plan_2_price",
       "label": "Price",
-      "default": "599"
+      "default": "900"
     },
     {
       "type": "text",
@@ -1546,7 +1694,7 @@
       "type": "text",
       "id": "plan_2_monthly",
       "label": "Monthly equivalent",
-      "default": "≈ ₹200/month"
+      "default": "≈ ₹666/month"
     },
     {
       "type": "textarea",
@@ -1603,7 +1751,7 @@
       "type": "text",
       "id": "plan_3_price",
       "label": "Price",
-      "default": "999"
+      "default": "1500"
     },
     {
       "type": "text",
@@ -1619,7 +1767,7 @@
       "type": "text",
       "id": "plan_3_monthly",
       "label": "Monthly equivalent",
-      "default": "≈ ₹167/month"
+      "default": "≈ ₹583/month"
     },
     {
       "type": "textarea",
@@ -1676,7 +1824,7 @@
       "type": "text",
       "id": "plan_4_price",
       "label": "Price",
-      "default": "1699"
+      "default": "2300"
     },
     {
       "type": "text",
@@ -1692,7 +1840,7 @@
       "type": "text",
       "id": "plan_4_monthly",
       "label": "Monthly equivalent",
-      "default": "≈ ₹142/month"
+      "default": "≈ ₹500/month"
     },
     {
       "type": "textarea",

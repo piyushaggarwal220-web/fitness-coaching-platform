@@ -1,7 +1,7 @@
 /**
- * Deploy plan prices to the live storefront: ₹1,999 / ₹3,499 / ₹5,999
- * (monthly ₹666 / ₹583 / ₹500).
- * Uploads edited repo assets and fetch-patches theme-only JSON templates.
+ * Deploy plan prices to the live storefront: ₹900 / ₹1,500 / ₹2,300
+ * (monthly ₹300 / ₹250 / ₹192).
+ * Patches price strings on the live theme. Does not rewrite unrelated copy.
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -45,115 +45,58 @@ async function get(key) {
   return (await res.json()).asset?.value ?? null
 }
 
-// Price string replacements applied to live JSON templates (theme-only files).
+const PAIRS = [
+  ['₹5,999', '₹2,300'],
+  ['₹3,499', '₹1,500'],
+  ['₹1,999', '₹900'],
+  ['from ₹500/mo', 'from ₹192/mo'],
+  ['≈ ₹666/month', '≈ ₹300/month'],
+  ['≈ ₹583/month', '≈ ₹250/month'],
+  ['≈ ₹500/month', '≈ ₹192/month'],
+  ['≈ ₹666/mo', '≈ ₹300/mo'],
+  ['≈ ₹583/mo', '≈ ₹250/mo'],
+  ['≈ ₹500/mo', '≈ ₹192/mo'],
+  ['₹666 a month', '₹300 a month'],
+  ['₹583 a month', '₹250 a month'],
+  ['₹500 a month', '₹192 a month'],
+  ['₹666/mo', '₹300/mo'],
+  ['₹583/mo', '₹250/mo'],
+  ['₹500/mo', '₹192/mo'],
+  ['data-value="5999"', 'data-value="2300"'],
+  ['data-value="3499"', 'data-value="1500"'],
+  ['data-value="1999"', 'data-value="900"'],
+  ['listPaise: 599900', 'listPaise: 230000'],
+  ['salePaise: 599900', 'salePaise: 230000'],
+  ['listPaise: 349900', 'listPaise: 150000'],
+  ['salePaise: 349900', 'salePaise: 150000'],
+  ['listPaise: 199900', 'listPaise: 90000'],
+  ['salePaise: 199900', 'salePaise: 90000'],
+  ['"default": "5999"', '"default": "2300"'],
+  ['"default": "3499"', '"default": "1500"'],
+  ['"default": "1999"', '"default": "900"'],
+  ["strongs[0].textContent = '₹1,999'", "strongs[0].textContent = '₹900'"],
+  ["strongs[1].textContent = '₹3,499'", "strongs[1].textContent = '₹1,500'"],
+  ["strongs[2].textContent = '₹5,999'", "strongs[2].textContent = '₹2,300'"],
+]
+
 function patchPrices(text) {
-  return text
-    .replace(/"plan_2_price": "\d+"/g, '"plan_2_price": "1999"')
-    .replace(/"plan_3_price": "\d+"/g, '"plan_3_price": "3499"')
-    .replace(/"plan_4_price": "\d+"/g, '"plan_4_price": "5999"')
-    .replace(/"plan_2_original_price": "[^"]*"/g, '"plan_2_original_price": ""')
-    .replace(/"plan_3_original_price": "[^"]*"/g, '"plan_3_original_price": ""')
-    .replace(/"plan_4_original_price": "[^"]*"/g, '"plan_4_original_price": ""')
-    .replace(/"plan_2_savings": "[^"]*"/g, '"plan_2_savings": ""')
-    .replace(/"plan_3_savings": "[^"]*"/g, '"plan_3_savings": ""')
-    .replace(/"plan_4_savings": "[^"]*"/g, '"plan_4_savings": ""')
-    .replace(/"plan_2_badge": "[^"]*"/g, '"plan_2_badge": "Debloat"')
-    .replace(/"plan_3_badge": "[^"]*"/g, '"plan_3_badge": "Recomp"')
-    .replace(/"plan_4_badge": "[^"]*"/g, '"plan_4_badge": "Complete transformation"')
-    .replace(/"plan_2_monthly": "[^"]*"/g, '"plan_2_monthly": "≈ ₹666/month"')
-    .replace(/"plan_3_monthly": "[^"]*"/g, '"plan_3_monthly": "≈ ₹583/month"')
-    .replace(/"plan_4_monthly": "[^"]*"/g, '"plan_4_monthly": "≈ ₹500/month"')
-    .replace(/Per month with WELCOME60/g, 'Per month')
-    .replace(/WELCOME60 applied at checkout/g, 'One-time payment')
-    .replace(/One-time payment with WELCOME60/g, 'One-time payment')
-    .replace(/START — Rs \d+/g, 'START — Rs 666')
-    .replace(/₹1,799 · ₹600\\?\/mo/g, '₹1,999 · ₹666/mo')
-    .replace(/₹2,799 · ₹467\\?\/mo/g, '₹3,499 · ₹583/mo')
-    .replace(/₹4,499 · ₹375\\?\/mo/g, '₹5,999 · ₹500/mo')
-    .replace(/"col_1_price": "₹1,799"/g, '"col_1_price": "₹1,999"')
-    .replace(/"col_2_price": "₹2,799"/g, '"col_2_price": "₹3,499"')
-    .replace(/"col_3_price": "₹4,499"/g, '"col_3_price": "₹5,999"')
-    .replace(/₹1,499 · ₹500\\?\/mo/g, '₹1,999 · ₹666/mo')
-    .replace(/₹2,699 · ₹450\\?\/mo/g, '₹3,499 · ₹583/mo')
-    .replace(/₹999 · ₹333\\?\/mo/g, '₹1,999 · ₹666/mo')
-    .replace(/₹1,699 · ₹283\\?\/mo/g, '₹3,499 · ₹583/mo')
-    .replace(/₹2,999 · ₹333\\?\/mo/g, '₹5,999 · ₹500/mo')
-    .replace(/₹1,299 · ₹433\\?\/mo/g, '₹1,999 · ₹666/mo')
-    .replace(/₹2,099 · ₹350\\?\/mo/g, '₹3,499 · ₹583/mo')
-    .replace(/₹3,499 · ₹292\\?\/mo/g, '₹5,999 · ₹500/mo')
-    .replace(/"col_1_price": "₹1,499"/g, '"col_1_price": "₹1,999"')
-    .replace(/"col_2_price": "₹2,699"/g, '"col_2_price": "₹3,499"')
-    .replace(/"col_1_price": "₹999"/g, '"col_1_price": "₹1,999"')
-    .replace(/"col_2_price": "₹1,699"/g, '"col_2_price": "₹3,499"')
-    .replace(/"col_3_price": "₹2,999"/g, '"col_3_price": "₹5,999"')
-    .replace(/"col_1_price": "₹1,299[^"]*"/g, '"col_1_price": "₹1,999 · ₹666/mo"')
-    .replace(/"col_2_price": "₹2,099[^"]*"/g, '"col_2_price": "₹3,499 · ₹583/mo"')
-    .replace(/"plan_3_text": "₹600"/g, '"plan_3_text": "₹666"')
-    .replace(/"plan_6_text": "₹467"/g, '"plan_6_text": "₹583"')
-    .replace(/"plan_12_text": "₹375"/g, '"plan_12_text": "₹500"')
-    .replace(/"plan_3_text": "₹500"/g, '"plan_3_text": "₹666"')
-    .replace(/"plan_6_text": "₹450"/g, '"plan_6_text": "₹583"')
-    .replace(/"plan_3_text": "₹333"/g, '"plan_3_text": "₹666"')
-    .replace(/"plan_6_text": "₹283"/g, '"plan_6_text": "₹583"')
-    .replace(/"plan_12_text": "₹333"/g, '"plan_12_text": "₹500"')
-    .replace(/"plan_3_text": "₹433"/g, '"plan_3_text": "₹666"')
-    .replace(/"plan_6_text": "₹350"/g, '"plan_6_text": "₹583"')
-    .replace(/"plan_12_text": "₹292"/g, '"plan_12_text": "₹500"')
-    .replace(/data-plan-price=\\"1799\\"/g, 'data-plan-price=\\"1999\\"')
-    .replace(/data-plan-price=\\"2799\\"/g, 'data-plan-price=\\"3499\\"')
-    .replace(/data-plan-price=\\"4499\\"/g, 'data-plan-price=\\"5999\\"')
-    .replace(/data-plan-price=\\"1499\\"/g, 'data-plan-price=\\"1999\\"')
-    .replace(/data-plan-price=\\"2699\\"/g, 'data-plan-price=\\"3499\\"')
-    .replace(/data-plan-price=\\"3999\\"/g, 'data-plan-price=\\"5999\\"')
-    .replace(/data-plan-price=\\"1299\\"/g, 'data-plan-price=\\"1999\\"')
-    .replace(/data-plan-price=\\"2099\\"/g, 'data-plan-price=\\"3499\\"')
-    .replace(/₹4,499/g, '₹5,999')
-    .replace(/₹2,799/g, '₹3,499')
-    .replace(/₹1,799/g, '₹1,999')
-    .replace(/₹7,499/g, '₹5,999')
-    .replace(/₹4,249/g, '₹3,499')
-    .replace(/₹2,499/g, '₹1,999')
-    .replace(/₹2,099/g, '₹3,499')
-    .replace(/₹1,299/g, '₹1,999')
-    .replace(/₹4499/g, '₹5999')
-    .replace(/₹2799/g, '₹3499')
-    .replace(/₹1799/g, '₹1999')
-    .replace(/₹7499/g, '₹5999')
-    .replace(/₹4249/g, '₹3499')
-    .replace(/₹2499/g, '₹1999')
-    .replace(/₹2099/g, '₹3499')
-    .replace(/₹1299/g, '₹1999')
-    .replace(/60% OFF[^"]*/g, '')
-    .replace(/&code=WELCOME60/g, '')
-    .replace(/WELCOME60 = 60% off/g, '')
-    .replace(/\. WELCOME60[^"]*/g, '.')
+  let next = text
+    .replace(/"plan_2_price": "\d+"/g, '"plan_2_price": "900"')
+    .replace(/"plan_3_price": "\d+"/g, '"plan_3_price": "1500"')
+    .replace(/"plan_4_price": "\d+"/g, '"plan_4_price": "2300"')
+    .replace(/"plan_2_monthly": "[^"]*"/g, '"plan_2_monthly": "≈ ₹300/month"')
+    .replace(/"plan_3_monthly": "[^"]*"/g, '"plan_3_monthly": "≈ ₹250/month"')
+    .replace(/"plan_4_monthly": "[^"]*"/g, '"plan_4_monthly": "≈ ₹192/month"')
+    .replace(/"col_1_price": "₹[^"]*"/g, '"col_1_price": "₹900"')
+    .replace(/"col_2_price": "₹[^"]*"/g, '"col_2_price": "₹1,500"')
+    .replace(/"col_3_price": "₹[^"]*"/g, '"col_3_price": "₹2,300"')
+    .replace(/"plan_3_text": "₹(?:666|600|500|433|333)"/g, '"plan_3_text": "₹300"')
+    .replace(/"plan_6_text": "₹(?:583|467|450|350|283)"/g, '"plan_6_text": "₹250"')
+    .replace(/"plan_12_text": "₹(?:500|375|333|292)"/g, '"plan_12_text": "₹192"')
+  for (const [from, to] of PAIRS) next = next.split(from).join(to)
+  return next
 }
 
-function patchBestFor(text) {
-  return text
-    .replace(/"plan_3_text": "90 day reset"/g, '"plan_3_text": "Lean for a big day. Short-term only."')
-    .replace(/"plan_6_text": "Fat down, muscle up"/g, '"plan_6_text": "Already training. Recomp block."')
-    .replace(/"plan_12_text": "Lifestyle change"/g, '"plan_12_text": "Beginners and intermediates who have plateaued, or want to start fresh."')
-    .replace(/"plan_3_text": "Lose fat \/ tone up"/g, '"plan_3_text": "Lean for a big day. Short-term only."')
-    .replace(/"plan_6_text": "Fat down \+ muscle up"/g, '"plan_6_text": "Already training. Recomp block."')
-    .replace(/"plan_12_text": "Finished aesthetic look"/g, '"plan_12_text": "Beginners and intermediates who have plateaued, or want to start fresh."')
-    .replace(/"plan_3_text": "Looking lean for a big day\. Not recommended for long-term results\."/g, '"plan_3_text": "Lean for a big day. Short-term only."')
-    .replace(/"plan_6_text": "Advanced athletes already under 12% body fat, with good muscle\."/g, '"plan_6_text": "Already training. Recomp block."')
-}
-
-function patchFunnel(text) {
-  return text
-    .replace(
-      /"plan_1_link": "https:\\\/\\\/app\.lurvox\.in\\\/checkout\?plan=1_week_trial"/g,
-      '"plan_1_link": "https:\\/\\/app.lurvox.in\\/plans\\/12-months"'
-    )
-    .replace(
-      /"lurvox_hide_1month_cl": \{\s*\n\s*"type": "custom-liquid",/g,
-      '"lurvox_hide_1month_cl": {\n          "type": "custom-liquid",\n          "disabled": true,'
-    )
-}
-
-// 1) Edited repo assets uploaded verbatim.
 const repoFiles = [
   ['sections/lurvox-plan-finder.liquid', 'scripts/shopify-assets/sections-lurvox-plan-finder.liquid'],
   ['sections/lurvox-plan-finder-v3.liquid', 'scripts/shopify-assets/sections-lurvox-plan-finder-v3.liquid'],
@@ -161,16 +104,27 @@ const repoFiles = [
   ['snippets/lurvox-plan-compare-inline.liquid', 'scripts/shopify-assets/snippets-lurvox-plan-compare-inline.liquid'],
   ['snippets/lurvox-conversion-boost.liquid', 'scripts/shopify-assets/snippets-lurvox-conversion-boost.liquid'],
   ['snippets/lurvox-what-you-get.liquid', 'scripts/shopify-assets/snippets-lurvox-what-you-get.liquid'],
+  ['snippets/lurvox-sales-closer.liquid', 'scripts/shopify-assets/snippets-lurvox-sales-closer.liquid'],
+  ['snippets/lurvox-plan-cards.liquid', 'scripts/shopify-assets/snippets-lurvox-plan-cards.liquid'],
+  ['snippets/lurvox-physique-preview.liquid', 'scripts/shopify-assets/snippets-lurvox-physique-preview.liquid'],
+  ['snippets/lurvox-marketing-chat.liquid', 'scripts/shopify-assets/snippets-lurvox-marketing-chat.liquid'],
+  ['snippets/lurvox-find-float.liquid', 'scripts/shopify-assets/snippets-lurvox-find-float.liquid'],
+  ['snippets/lurvox-athletic-float.liquid', 'scripts/shopify-assets/snippets-lurvox-athletic-float.liquid'],
+  ['snippets/lurvox-fitness-quiz.liquid', 'scripts/shopify-assets/snippets-lurvox-fitness-quiz.liquid'],
+  ['snippets/lurvox-instant-intro.liquid', 'scripts/shopify-assets/snippets-lurvox-instant-intro.liquid'],
+  ['snippets/lurvox-home-quiz.liquid', 'scripts/shopify-assets/snippets-lurvox-home-quiz.liquid'],
   ['sections/lurvox-ad-landing.liquid', 'scripts/shopify-assets/sections-lurvox-ad-landing.liquid'],
   ['sections/lurvox-hide-1month.liquid', 'scripts/shopify-assets/sections-lurvox-hide-1month.liquid'],
   ['sections/lurvox-plan-compare.liquid', 'scripts/shopify-assets/sections-lurvox-plan-compare.liquid'],
   ['sections/lurvox-cart-builder.liquid', 'scripts/shopify-assets/sections-lurvox-cart-builder.liquid'],
   ['sections/lurvox-talk-to-coach.liquid', 'scripts/shopify-assets/sections-lurvox-talk-to-coach.liquid'],
+  ['sections/lurvox-campaign.liquid', 'scripts/shopify-assets/sections-lurvox-campaign.liquid'],
+  ['sections/lurvox-new-offer.liquid', 'scripts/shopify-assets/sections-lurvox-new-offer.liquid'],
+  ['sections/lurvox-home-redesign.liquid', 'scripts/shopify-assets/sections-lurvox-home-redesign.liquid'],
   ['blocks/ai_gen_block_361650c.liquid', 'scripts/shopify-assets/blocks-ai_gen_block_361650c.liquid'],
   ['assets/lurvox-tap-plan.js', 'scripts/shopify-assets/assets/lurvox-tap-plan.js'],
 ]
 
-// 2) Theme-only JSON templates: fetch live, patch prices, re-upload.
 const themeOnly = [
   'templates/index.json',
   'templates/page.json',
@@ -178,54 +132,111 @@ const themeOnly = [
   'templates/page.compare-detail.json',
   'templates/page.compare-short.json',
   'templates/page.compare-stair.json',
+  'templates/page.find-your-plan.json',
+  'templates/page.talk-to-a-coach.json',
+  'config/settings_data.json',
 ]
+
+async function upsert(files) {
+  if (!files.length) return
+  const res = await fetch(GQL, {
+    method: 'POST',
+    headers: H,
+    body: JSON.stringify({
+      query: `mutation themeFilesUpsert($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
+        themeFilesUpsert(themeId: $themeId, files: $files) {
+          upsertedThemeFiles { filename }
+          userErrors { field message }
+        }
+      }`,
+      variables: { themeId: `gid://shopify/OnlineStoreTheme/${THEME}`, files },
+    }),
+  })
+  const json = await res.json()
+  if (json.errors) throw new Error(JSON.stringify(json.errors, null, 2))
+  if (json.data.themeFilesUpsert.userErrors?.length) {
+    throw new Error(JSON.stringify(json.data.themeFilesUpsert.userErrors, null, 2))
+  }
+  console.log('upserted', json.data.themeFilesUpsert.upsertedThemeFiles.map((f) => f.filename).join(', '))
+}
 
 const files = []
 for (const [key, rel] of repoFiles) {
   files.push({ filename: key, body: { type: 'TEXT', value: read(rel) } })
 }
+for (let i = 0; i < files.length; i += 6) {
+  await upsert(files.slice(i, i + 6))
+}
+
 for (const key of themeOnly) {
   const live = await get(key)
   if (!live) {
     console.log('skip missing', key)
     continue
   }
-  const patched = patchFunnel(patchBestFor(patchPrices(live)))
+  const patched = patchPrices(live)
   if (patched !== live) {
-    files.push({ filename: key, body: { type: 'TEXT', value: patched } })
+    await upsert([{ filename: key, body: { type: 'TEXT', value: patched } }])
     console.log('patched', key)
   } else {
     console.log('no change', key)
   }
 }
 
-// Cache-bust the layout so storefront HTML cache refreshes.
+const listed = await fetch(`${REST}/themes/${THEME}/assets.json`, {
+  headers: { 'X-Shopify-Access-Token': token },
+})
+const assetJson = await listed.json()
+const uploaded = new Set([...repoFiles.map(([key]) => key), ...themeOnly, 'layout/theme.liquid'])
+for (const asset of assetJson.assets || []) {
+  if (!/\.(liquid|json|js)$/.test(asset.key)) continue
+  if (uploaded.has(asset.key)) continue
+  if (asset.key.startsWith('locales/')) continue
+  if (!/lurvox|templates\/|blocks\/ai_gen|config\/settings_data/.test(asset.key)) continue
+  const live = await get(asset.key)
+  if (!live) continue
+  const patched = patchPrices(live)
+  if (patched === live) continue
+  await upsert([{ filename: asset.key, body: { type: 'TEXT', value: patched } }])
+  console.log('patched extra', asset.key)
+}
+
 let layout = await get('layout/theme.liquid')
 if (!layout) throw new Error('layout/theme.liquid missing')
 const stamp = Date.now()
 layout = /<!-- lurvox-cache-bust \d+ -->/.test(layout)
   ? layout.replace(/<!-- lurvox-cache-bust \d+ -->/, `<!-- lurvox-cache-bust ${stamp} -->`)
   : layout.replace('</head>', `<!-- lurvox-cache-bust ${stamp} -->\n</head>`)
-files.push({ filename: 'layout/theme.liquid', body: { type: 'TEXT', value: layout } })
+await upsert([{ filename: 'layout/theme.liquid', body: { type: 'TEXT', value: layout } }])
 
-const res = await fetch(GQL, {
+const pages = await fetch(GQL, {
   method: 'POST',
   headers: H,
   body: JSON.stringify({
-    query: `mutation themeFilesUpsert($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
-      themeFilesUpsert(themeId: $themeId, files: $files) {
-        upsertedThemeFiles { filename }
-        userErrors { field message }
-      }
-    }`,
-    variables: { themeId: `gid://shopify/OnlineStoreTheme/${THEME}`, files },
+    query: `{ pages(first: 80) { nodes { id handle body } } }`,
   }),
-})
-const json = await res.json()
-if (json.errors) throw new Error(JSON.stringify(json.errors, null, 2))
-if (json.data.themeFilesUpsert.userErrors?.length) {
-  throw new Error(JSON.stringify(json.data.themeFilesUpsert.userErrors, null, 2))
+}).then((r) => r.json())
+for (const page of pages.data?.pages?.nodes || []) {
+  const body = page.body || ''
+  const next = patchPrices(body)
+  if (!body || next === body) continue
+  const updated = await fetch(GQL, {
+    method: 'POST',
+    headers: H,
+    body: JSON.stringify({
+      query: `mutation pageUpdate($id: ID!, $page: PageUpdateInput!) {
+        pageUpdate(id: $id, page: $page) {
+          page { handle }
+          userErrors { field message }
+        }
+      }`,
+      variables: { id: page.id, page: { body: next } },
+    }),
+  }).then((r) => r.json())
+  if (updated.data?.pageUpdate?.userErrors?.length) {
+    throw new Error(`${page.handle}: ${JSON.stringify(updated.data.pageUpdate.userErrors)}`)
+  }
+  console.log('patched page', page.handle)
 }
-console.log('upserted', json.data.themeFilesUpsert.upsertedThemeFiles.map((f) => f.filename))
+
 console.log('home', `https://www.lurvox.in/?v=${stamp}`)
-console.log('quiz', `https://www.lurvox.in/pages/find-your-plan?v=${stamp}`)

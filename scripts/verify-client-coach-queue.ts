@@ -76,7 +76,7 @@ const view = buildClientCoachQueueView({
 assert('eligible 12-month view', view.eligible)
 assert('your call is first among calls', view.yourCall?.position === 1 && view.yourCall.aheadCount === 0)
 assert('message has no call time', !view.message.includes('11:00') && !view.message.includes('Sep'))
-assert('message says coach will call', view.message.includes('will call you this week'))
+assert('message says coach will call', view.message.includes('will call you'))
 assert('does not leak other client names', !view.message.includes('Rahul') && !view.items.some((row) => row.label.includes('Rahul')))
 assert('hides non-call work from the client', view.items.every((row) => row.type === 'call_request'))
 

@@ -188,6 +188,16 @@ async function handlePlanChange(
     }
   }
 
+  if (existing.status === 'awaiting_planner') {
+    return {
+      taskId: task.id,
+      type: task.type,
+      clientName: task.clientName,
+      status: 'skipped',
+      detail: 'coach planner owns this request',
+    }
+  }
+
   if (existing.status === 'generating' || (!existing.draft_plan_id && existing.status !== 'failed')) {
     try {
       await processPlanChangeRequest(requestId)

@@ -23,8 +23,6 @@ import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import {
   createLockedPlanChangeRequest,
   getPlanChangeQuota,
-  processPlanChangeRequest,
-  publishReadyPlanChange,
 } from '@/lib/plan-change-requests'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -214,26 +212,15 @@ export async function lockAndProcessPlanChangeFromChat(input: {
     activePlanId: activePlan.id,
     requestText: input.pending.requestText,
     scope: input.pending.scope,
+    queueForPlanner: true,
   })
   if (!created.ok) {
     return { ok: false, message: created.error }
   }
 
-  try {
-    await processPlanChangeRequest(created.request.id)
-    await publishReadyPlanChange(created.request.id)
-  } catch (error) {
-    console.error('[ai-coach-plan-change] process failed', error)
-    return {
-      ok: false,
-      message:
-        'I locked the request, but the rewrite is still running. Open My Plan in a minute to check it.',
-    }
-  }
-
   const quota = await getPlanChangeQuota(input.clientId)
   return {
     ok: true,
-    message: `Done — I locked that into My Plan and published the update (${input.pending.scope}). You have ${quota.remainingToday} edit${quota.remainingToday === 1 ? '' : 's'} left today. Open My Plan to read it.`,
+    message: `Sent to your coach. They will update your ${input.pending.scope} plan from this request. You have ${quota.remainingToday} edit${quota.remainingToday === 1 ? '' : 's'} left today. The written plan stays as it is until that update is in My Plan.`,
   }
 }

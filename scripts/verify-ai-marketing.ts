@@ -21,6 +21,7 @@ import {
   analyticsFindingSchema,
 } from '../src/lib/ai-marketing/validation/schemas'
 import { classifyCreative } from '../src/lib/ai-marketing/creative-performance'
+import { extractPurchasesAndRevenue } from '../src/lib/ai-marketing/meta/client'
 import type { MarketingFunnel } from '../src/lib/ai-marketing/types'
 
 function testMetrics() {
@@ -145,6 +146,39 @@ function testValidation() {
   console.log('✓ validation schemas')
 }
 
+function testMetaPurchaseExtractionDoesNotTripleCount() {
+  const overlapping = extractPurchasesAndRevenue({
+    spend: '6230.67',
+    actions: [
+      { action_type: 'purchase', value: '17' },
+      { action_type: 'omni_purchase', value: '17' },
+      { action_type: 'offsite_conversion.fb_pixel_purchase', value: '17' },
+      { action_type: 'add_to_cart', value: '51' },
+    ],
+    action_values: [
+      { action_type: 'purchase', value: '8239.6' },
+      { action_type: 'omni_purchase', value: '8239.6' },
+      { action_type: 'offsite_conversion.fb_pixel_purchase', value: '8239.6' },
+      { action_type: 'initiate_checkout', value: '136538.2' },
+    ],
+  })
+  assert.equal(overlapping.purchases, 17)
+  assert.equal(overlapping.revenue, 8239.6)
+  assert.equal(calcRoas(overlapping.revenue, 6230.67)?.toFixed(2), '1.32')
+
+  const pixelOnly = extractPurchasesAndRevenue({
+    actions: [{ action_type: 'offsite_conversion.fb_pixel_purchase', value: '4' }],
+    action_values: [{ action_type: 'offsite_conversion.fb_pixel_purchase', value: '800' }],
+  })
+  assert.equal(pixelOnly.purchases, 4)
+  assert.equal(pixelOnly.revenue, 800)
+
+  const empty = extractPurchasesAndRevenue({})
+  assert.equal(empty.purchases, 0)
+  assert.equal(empty.revenue, 0)
+  console.log('✓ meta purchase extraction uses one overlapping type')
+}
+
 function testFunnelEconomicsSeparation() {
   // Simulated: never share thresholds
   const funnel99 = { price: 99, target_cpa: 45, max_cpa: 80 }
@@ -258,6 +292,7 @@ testMetrics()
 testGuardrails()
 testAutonomy()
 testValidation()
+testMetaPurchaseExtractionDoesNotTripleCount()
 testFunnelEconomicsSeparation()
 testCreativeClassification()
 console.log('\nAll AI Marketing unit checks passed.')

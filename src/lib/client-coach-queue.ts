@@ -117,7 +117,7 @@ export function buildClientCoachQueueView(input: {
       planDelivered: false,
       items: [],
       yourCall: null,
-      message: 'You can book a weekly coach call from Home after your first plan is delivered.',
+      message: 'You can book a coach call from Home after your first plan is delivered.',
     }
   }
 
@@ -133,7 +133,7 @@ export function buildClientCoachQueueView(input: {
       planDelivered: true,
       items: items,
       yourCall,
-      message: `${place} Your coach will call you this week — you do not pick a time.`,
+      message: `${place} Your coach will call you — you do not pick a time.`,
     }
   }
 
@@ -144,6 +144,6 @@ export function buildClientCoachQueueView(input: {
     planDelivered: true,
     items: [],
     yourCall: null,
-    message: 'There is no weekly call. If you have an issue, message the coaches on Instagram.',
+    message: 'Book your coach call from Home when you are ready.',
   }
 }

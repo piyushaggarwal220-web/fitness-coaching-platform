@@ -1,6 +1,6 @@
 {% comment %}
   LURVOX: hide retired trial / 1-month only.
-  Do NOT hide ₹599 — that is the current 3-month Fat loss price.
+  Do NOT hide ₹1,999 — that is the current 3-month Fat loss price.
 {% endcomment %}
 <style id="lurvox-hide-1month-style">
   /* lurvox-hide-retired-plans-v3 */
@@ -25,10 +25,13 @@
   [data-plan-link*="6_months"],
   [data-plan-link*="12_months"],
   /* Current plan prices */
+  [data-plan-price="900"],
+  [data-plan-price="1500"],
+  [data-plan-price="2300"],
+  /* Previous prices (keep visible for cached HTML) */
   [data-plan-price="599"],
   [data-plan-price="999"],
   [data-plan-price="1699"],
-  /* Legacy prices (keep visible for cached HTML) */
   [data-plan-price="1999"],
   [data-plan-price="3499"],
   [data-plan-price="5999"],
@@ -62,7 +65,7 @@
         }
         if (
           /3_months|6_months|12_months/i.test(link) ||
-          /^(599|999|1699|1999|3499|5999|1299|2099|1799|2799|4499|2999)$/.test(
+          /^(900|1500|2300|599|999|1699|1999|3499|5999|1299|2099|1799|2799|4499|2999)$/.test(
             card.getAttribute('data-plan-price') || ''
           )
         ) {

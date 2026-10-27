@@ -188,9 +188,9 @@ export async function getCoachWorkQueue(
       .eq('coach_id', coachId),
     supabase
       .from('plan_change_requests')
-      .select('id, client_id, status, draft_plan_id, scope, locked_at, draft_ready_at, error_message')
+      .select('id, client_id, status, draft_plan_id, scope, locked_at, draft_ready_at, error_message, request_text')
       .eq('coach_id', coachId)
-      .in('status', ['generating', 'draft_ready', 'in_review'])
+      .in('status', ['generating', 'draft_ready', 'in_review', 'awaiting_planner'])
       .order('locked_at', { ascending: true }),
     supabase
       .from('checkins')
@@ -459,29 +459,47 @@ export async function getCoachWorkQueue(
     if (change.status === 'generating') continue
     const name = clientNameById.get(change.client_id) ?? aiPlanChangeNames.get(change.client_id)
     if (!name) continue
+    const forPlanner = change.status === 'awaiting_planner'
     const ready = change.status === 'draft_ready' || change.status === 'in_review'
+    const requestLine = typeof change.request_text === 'string' ? change.request_text.trim() : ''
     tasks.push({
       id: `plan-change-${change.id}`,
       type: 'plan_change_request',
-      title: ready
-        ? 'Client plan change ready for review'
-        : change.status === 'generating'
-          ? 'Client plan change generating'
-          : 'Client plan change request',
-      subtitle: `${name} · ${change.scope}${change.error_message ? ` · ${change.error_message}` : ''}`,
-      href: change.draft_plan_id
-        ? `/coach/plan/${change.draft_plan_id}`
-        : `/coach/client/${change.client_id}`,
+      title: forPlanner
+        ? change.error_message
+          ? 'Plan check failed'
+          : 'Client plan change'
+        : ready
+          ? 'Client plan change ready for review'
+          : change.status === 'generating'
+            ? 'Client plan change generating'
+            : 'Client plan change request',
+      subtitle: `${name} · ${change.scope}${requestLine ? ` · ${requestLine.slice(0, 80)}` : ''}${change.error_message ? ` · ${change.error_message}` : ''}`,
+      href: forPlanner
+        ? `/coach/client/${change.client_id}/planner?request=${change.id}`
+        : change.draft_plan_id
+          ? `/coach/plan/${change.draft_plan_id}`
+          : `/coach/client/${change.client_id}`,
       clientId: change.client_id,
       clientName: name,
       priority: QUEUE_PRIORITY,
       createdAt: change.locked_at ?? change.draft_ready_at ?? new Date().toISOString(),
-      coachNextSteps: manualPlanDelivery
-        ? [
-            'Open the draft, review changes, and add a coach note.',
-            'Deliver from the plan page. Mark complete only clears the queue after delivery.',
-          ]
-        : undefined,
+      coachNextSteps: forPlanner
+        ? change.error_message
+          ? [
+              'The planner failed its check 3 times. Nothing was published.',
+              'Open the planner and describe the change again.',
+            ]
+          : [
+              'Open the planner for this client. Their request is already in the chat.',
+              'Tell the planner what to change. It publishes after its own check passes.',
+            ]
+        : manualPlanDelivery
+          ? [
+              'Open the draft, review changes, and add a coach note.',
+              'Deliver from the plan page. Mark complete only clears the queue after delivery.',
+            ]
+          : undefined,
     })
   }
 
@@ -581,9 +599,7 @@ export async function getCoachWorkQueue(
         : checkin.checkin_type === 'mid_week'
           ? 'Review Mid-Week Check-in'
           : 'Review Weekly Check-in',
-      subtitle: readyDraft
-        ? `${name} · open the draft, then deliver when ready`
-        : name,
+      subtitle: readyDraft ? `${name} · open the draft, then deliver when ready` : name,
       href: readyDraft ? `/coach/plan/${readyDraft.id}` : `/coach/checkin/${checkin.id}`,
       clientId: checkin.client_id,
       clientName: name,
