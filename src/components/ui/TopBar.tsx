@@ -75,8 +75,8 @@ export function TopBar({ title, showProfile = true, onMenuClick }: TopBarProps) 
             onClick={() => router.push('/profile')}
             aria-label="Profile"
             style={{
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
               borderRadius: '50%',
               backgroundColor: colors.accentMuted,
               border: `1px solid ${colors.borderSubtle}`,

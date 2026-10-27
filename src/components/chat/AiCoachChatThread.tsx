@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { ImageIcon, Send, Settings } from 'lucide-react'
 import { StorageImage } from '@/components/ui/StorageImage'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
@@ -46,7 +46,8 @@ export function AiCoachChatThread() {
   const [language, setLanguage] = useState<ChatLanguage>('hinglish')
   const [mood, setMood] = useState<ChatMood>('auto')
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const bottomRef = useRef<HTMLDivElement | null>(null)
+  const listRef = useRef<HTMLDivElement | null>(null)
+  const stickToLatestRef = useRef(true)
   const settingsRef = useRef<HTMLDivElement | null>(null)
   const pauseRef = useRef<number | null>(null)
   const sendingRef = useRef(false)
@@ -84,9 +85,23 @@ export function AiCoachChatThread() {
     }
   }, [])
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, sending, coachTyping])
+  useLayoutEffect(() => {
+    const list = listRef.current
+    if (!list || loading || !stickToLatestRef.current) return
+    const pin = () => {
+      const el = listRef.current
+      if (!el || !stickToLatestRef.current) return
+      el.scrollTop = el.scrollHeight
+    }
+    pin()
+    const frame = window.requestAnimationFrame(pin)
+    const observer = new ResizeObserver(pin)
+    for (const child of Array.from(list.children)) observer.observe(child)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
+  }, [loading, messages, sending, coachTyping, imagePreview])
 
   useEffect(() => {
     if (loading) return
@@ -192,6 +207,7 @@ export function AiCoachChatThread() {
   const send = async () => {
     const text = draft.trim()
     if ((!text && !imagePreview) || sendingRef.current) return
+    stickToLatestRef.current = true
     sendingRef.current = true
     setSending(true)
     setError('')
@@ -277,6 +293,7 @@ export function AiCoachChatThread() {
       return
     }
     if (sendingRef.current) return
+    stickToLatestRef.current = true
     sendingRef.current = true
     setSending(true)
     setError('')
@@ -330,12 +347,14 @@ export function AiCoachChatThread() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+    <div className="client-chat-thread" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div
         ref={settingsRef}
         style={{
-          position: 'relative',
+          position: 'sticky',
+          top: 0,
           zIndex: 5,
+          flexShrink: 0,
           display: 'flex',
           alignItems: 'flex-start',
           justifyContent: 'space-between',
@@ -457,7 +476,15 @@ export function AiCoachChatThread() {
           </div>
         )}
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: spacing[4], display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div
+        ref={listRef}
+        className="client-chat-messages"
+        onScroll={(event) => {
+          const el = event.currentTarget
+          stickToLatestRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+        }}
+        style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: spacing[4], display: 'flex', flexDirection: 'column', gap: 10 }}
+      >
         {loading && (
           <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>Loading coach chat…</p>
         )}
@@ -519,7 +546,6 @@ export function AiCoachChatThread() {
             <span style={{ color: colors.textMuted, fontSize: 12 }}>Coach is typing</span>
           </div>
         )}
-        <div ref={bottomRef} />
       </div>
       {error && (
         <p style={{ margin: `0 ${spacing[4]}px ${spacing[2]}px`, color: colors.danger, fontSize: 13 }}>
@@ -551,6 +577,7 @@ export function AiCoachChatThread() {
       )}
       <div
         style={{
+          flexShrink: 0,
           display: 'flex',
           gap: 8,
           alignItems: 'flex-end',

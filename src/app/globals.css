@@ -59,8 +59,8 @@
   --text-4xl: 2.25rem;
 
   /* Layout */
-  --bottom-nav-height: 72px;
-  --top-bar-height: 56px;
+  --bottom-nav-height: 56px;
+  --top-bar-height: 48px;
   --max-width: 480px;
   --max-width-wide: 800px;
 
@@ -135,8 +135,8 @@ html.lx-phone-viewport .client-container {
 }
 
 html.has-checkin-due-banner .lx-checkin-banner-gap {
-  min-height: var(--lx-checkin-banner-h, 110px);
-  margin-bottom: var(--lx-checkin-banner-gap, 16px);
+  min-height: var(--lx-checkin-banner-h, 56px);
+  margin-bottom: var(--lx-checkin-banner-gap, 8px);
 }
 
 html.has-demo-tour-bar #lx-checkin-due-banner {
@@ -628,11 +628,14 @@ button, a[role="button"], input[type="submit"] {
   .coach-portal-chat .coach-chat-detail {
     max-width: 800px;
     margin: 0 auto;
-    padding: 24px 16px;
+    padding: 16px 16px 12px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    min-height: calc(100vh - 80px);
+    height: calc(100dvh - 72px);
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
   }
 }
 
@@ -680,6 +683,15 @@ html.client-chat-page body {
 
 .client-chat-viewport--no-topbar {
   top: env(safe-area-inset-top, 0px);
+}
+
+.client-chat-column {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 @media (min-width: 900px) {
@@ -828,9 +840,12 @@ html.client-chat-page body {
 
   .coach-chat-detail-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 6;
     min-height: 48px;
     padding: 8px 12px;
     border-bottom: 1px solid var(--divider);
@@ -893,6 +908,11 @@ html.client-chat-page body {
 
   .coach-chat-detail-desktop-title {
     display: block !important;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    flex-shrink: 0;
+    background: var(--bg-primary);
   }
 
   .coach-chat-detail-viewport {
@@ -900,7 +920,7 @@ html.client-chat-page body {
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    height: min(640px, calc(100dvh - 200px - env(safe-area-inset-top, 0px)));
+    height: auto;
     border-radius: 16px;
     overflow: hidden;
     border: 1px solid var(--border-subtle);

@@ -218,8 +218,8 @@ export function DrawerMenuButton({
       aria-label={label}
       className="btn-press"
       style={{
-        width: 40,
-        height: 40,
+        width: 36,
+        height: 36,
         borderRadius: 12,
         border: `1px solid ${palette.borderSubtle}`,
         backgroundColor: palette.bgElevated,

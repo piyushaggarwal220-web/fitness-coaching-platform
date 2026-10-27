@@ -11,15 +11,15 @@ export const mobileStyles = {
     backgroundColor: 'transparent',
     padding: `${spacing[3]}px`,
     // Match TopBar height (bar + notch) so the first screen content is never tucked under it.
-    paddingTop: `calc(${layout.topBarHeight}px + ${spacing[3]}px + env(safe-area-inset-top, 0px))`,
-    paddingBottom: `calc(${layout.bottomNavHeight}px + ${spacing[3]}px + env(safe-area-inset-bottom))`,
+    paddingTop: `calc(${layout.topBarHeight}px + 8px + env(safe-area-inset-top, 0px))`,
+    paddingBottom: `calc(${layout.bottomNavHeight}px + 8px + env(safe-area-inset-bottom))`,
   } satisfies CSSProperties,
 
   pageNoNav: {
     minHeight: '100dvh',
     backgroundColor: 'transparent',
     padding: `${spacing[3]}px`,
-    paddingTop: `calc(${layout.topBarHeight}px + ${spacing[3]}px + env(safe-area-inset-top, 0px))`,
+    paddingTop: `calc(${layout.topBarHeight}px + 8px + env(safe-area-inset-top, 0px))`,
     paddingBottom: `max(${spacing[3]}px, env(safe-area-inset-bottom))`,
   } satisfies CSSProperties,
 

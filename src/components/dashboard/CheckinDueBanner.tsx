@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { getCheckinTypeDisplayName, describeCheckinWindow, type ScheduledCheckin } from '@/lib/checkin-schedule'
-import { clientColors as colors, layout, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, layout } from '@/lib/design-tokens'
 import { usePublicDemo } from '@/hooks/usePublicDemo'
 
 type Props = {
@@ -15,8 +15,8 @@ type Props = {
   countdownLabel?: string | null
 }
 
-/** Keeps page content clear of the fixed banner (icon row + 3 text lines + padding). */
-export const CHECKIN_DUE_BANNER_HEIGHT = 110
+/** Keeps page content clear of the fixed banner (one compact row). */
+export const CHECKIN_DUE_BANNER_HEIGHT = 56
 
 /**
  * Fixed top-of-homescreen check-in status.
@@ -50,7 +50,7 @@ export function CheckinDueBanner({
       const next = Math.max(CHECKIN_DUE_BANNER_HEIGHT, Math.ceil(height))
       root.classList.add('has-checkin-due-banner')
       root.style.setProperty('--lx-checkin-banner-h', `${next}px`)
-      root.style.setProperty('--lx-checkin-banner-gap', '16px')
+      root.style.setProperty('--lx-checkin-banner-gap', '8px')
     }
     applyHeight(CHECKIN_DUE_BANNER_HEIGHT)
     const node = document.getElementById('lx-checkin-due-banner')
@@ -81,19 +81,19 @@ export function CheckinDueBanner({
     zIndex: 90,
     display: 'flex',
     alignItems: 'center',
-    gap: spacing[3],
+    gap: 10,
     width: '100%',
     maxWidth: layout.maxWidthWide,
     marginLeft: 'auto',
     marginRight: 'auto',
     minHeight: CHECKIN_DUE_BANNER_HEIGHT,
-    padding: `${spacing[3]}px ${spacing[4]}px`,
+    padding: '6px 12px',
     border: 'none',
     borderBottom: isDue ? `2px solid ${colors.warning}` : `2px solid ${colors.accent}`,
     background: colors.bgSecondary,
     color: colors.textPrimary,
     textAlign: 'left',
-    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
+    boxShadow: 'none',
   }
 
   const icon = isDue ? (
@@ -106,9 +106,9 @@ export function CheckinDueBanner({
     <>
       <div
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 10,
           backgroundColor: colors.accentMuted,
           display: 'flex',
           alignItems: 'center',
@@ -131,15 +131,23 @@ export function CheckinDueBanner({
         >
           {isDue ? 'Check-in due' : 'Next check-in'}
         </p>
-        <p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>
+        <p
+          style={{
+            margin: '1px 0 0',
+            fontSize: 13,
+            fontWeight: 700,
+            color: colors.textPrimary,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
           {typeLabel} · Week {checkin.coachingWeek}
-        </p>
-        <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textSecondary }}>
           {isDue
-            ? `Available now (${describeCheckinWindow(checkin.type)}) · tap to start`
+            ? ` · ${describeCheckinWindow(checkin.type)}`
             : countdownLabel?.trim()
-              ? `Available in ${countdownLabel.trim()}`
-              : 'Next check-in coming up'}
+              ? ` · in ${countdownLabel.trim()}`
+              : ''}
         </p>
       </div>
       {isDue ? (

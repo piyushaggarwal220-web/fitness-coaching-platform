@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type WheelEvent } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type WheelEvent } from 'react'
 import type { CallRequest, CallRequestStatus, ConversationMessage } from '@/types/database'
 import { readApiJson } from '@/lib/api-response'
 import { formatMessageTime } from '@/lib/coach-chat-ui'
@@ -164,7 +164,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sendingRef = useRef(false)
   const stickToBottomRef = useRef(true)
-  const scrollBehaviorRef = useRef<'auto' | 'smooth'>('auto')
   const animatedIdsRef = useRef<Set<string>>(new Set(initialMessages.map((m) => m.id)))
   const historyReadyRef = useRef(initialMessages.length > 0)
   const fetchSeqRef = useRef(0)
@@ -230,9 +229,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       const latestPeerId = latestPeer?.id ?? 'none'
       if (lastPeerMessageIdRef.current !== null && latestPeer && lastPeerMessageIdRef.current !== latestPeerId) {
         playNotificationSound()
-        if (stickToBottomRef.current) {
-          scrollBehaviorRef.current = 'smooth'
-        }
       }
       lastPeerMessageIdRef.current = latestPeerId
       setMessages((prev) => {
@@ -395,14 +391,21 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     el.scrollTop = el.scrollHeight
   }, [])
 
-  useEffect(() => {
-    if (!stickToBottomRef.current) return
-    const behavior = scrollBehaviorRef.current
-    scrollBehaviorRef.current = 'smooth'
-    const frame = window.requestAnimationFrame(() => {
-      scrollThreadToBottom(behavior)
-    })
-    return () => window.cancelAnimationFrame(frame)
+  useLayoutEffect(() => {
+    const el = threadRef.current
+    if (!el || !stickToBottomRef.current) return
+    const pin = () => {
+      if (!stickToBottomRef.current) return
+      scrollThreadToBottom('auto')
+    }
+    pin()
+    const frame = window.requestAnimationFrame(pin)
+    const observer = new ResizeObserver(pin)
+    for (const child of Array.from(el.children)) observer.observe(child)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
   }, [messages, imagePreview, peerTyping, localCoachTyping, scrollThreadToBottom])
 
   useEffect(() => {
@@ -462,7 +465,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 
     sendingRef.current = true
     stickToBottomRef.current = true
-    scrollBehaviorRef.current = 'auto'
     setMessages((prev) => [...prev, optimistic])
     setSending(true)
     setError('')
@@ -1005,6 +1007,9 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 12,
     flexWrap: 'wrap',
     flexShrink: 0,
+    position: 'sticky',
+    top: 0,
+    zIndex: 4,
   },
   bookCallBtn: {
     display: 'inline-flex',

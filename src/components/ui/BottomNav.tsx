@@ -68,10 +68,10 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 4,
-              minWidth: 48,
-              minHeight: 56,
-              padding: `${spacing[1]}px`,
+              gap: 2,
+              minWidth: 44,
+              minHeight: 44,
+              padding: `2px ${spacing[1]}px`,
               color: active ? colors.accent : colors.textMuted,
               textDecoration: 'none',
               transition: 'color 150ms ease',
@@ -81,7 +81,7 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
             data-tour={tour}
           >
             <span style={{ position: 'relative', display: 'flex' }}>
-              <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+              <Icon size={20} strokeWidth={active ? 2.5 : 2} />
               {href === '/client/chat' && unreadChats > 0 && (
                 <span
                   style={{

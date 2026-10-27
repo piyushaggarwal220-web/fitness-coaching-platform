@@ -29,11 +29,16 @@ function DualChatSwitcher({
 }) {
   return (
     <div
+      className="client-chat-switcher"
       style={{
         display: 'flex',
         gap: 8,
-        padding: '10px 12px 0',
+        padding: '10px 12px 8px',
         flexShrink: 0,
+        position: 'sticky',
+        top: 0,
+        zIndex: 8,
+        background: colors.bgPrimary,
       }}
     >
       <a
@@ -327,8 +332,10 @@ function ClientChatPageInner() {
   if (aiMode) {
     return (
       <ClientShell title={chatTitle} hideBottomNav fullHeight>
-        {dualMode ? <DualChatSwitcher mode="smart" coachName={coachName} /> : null}
-        <AiCoachChatThread />
+        <div className="client-chat-column">
+          {dualMode ? <DualChatSwitcher mode="smart" coachName={coachName} /> : null}
+          <AiCoachChatThread />
+        </div>
       </ClientShell>
     )
   }
@@ -363,6 +370,7 @@ function ClientChatPageInner() {
 
   return (
     <ClientShell title={chatTitle} hideBottomNav fullHeight>
+      <div className="client-chat-column">
       {dualMode ? <DualChatSwitcher mode="piyush" coachName={coachName} /> : null}
       {connecting && !conversation && (
         <div
@@ -443,6 +451,7 @@ function ClientChatPageInner() {
           />
         </div>
       )}
+      </div>
     </ClientShell>
   )
 }

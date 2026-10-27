@@ -100,8 +100,8 @@ export const radius = {
 } as const
 
 export const layout = {
-  bottomNavHeight: 72,
-  topBarHeight: 56,
+  bottomNavHeight: 56,
+  topBarHeight: 48,
   maxWidth: 480,
   maxWidthWide: 800,
 } as const
