@@ -443,32 +443,45 @@ export async function generateWeeklyPlanDraft(input: {
         null
       )
     } else {
-      const dietResult = await generatePlan({
-        profile: profileTyped,
-        latestCheckin: checkinTyped,
-        actionId: 'review_update_diet',
-        activePlan: active,
-        validationMode: 'nutrition_focus',
-        clientJourney,
-        coachInstructions: buildActionCoachInstructions('review_update_diet', {
+      try {
+        const dietResult = await generatePlan({
+          profile: profileTyped,
+          latestCheckin: checkinTyped,
+          actionId: 'review_update_diet',
           activePlan: active,
-          checkin: checkinTyped,
-          coachNote,
-        }),
-      })
-      sections.push({
-        action: 'review_update_diet',
-        model: dietResult.model,
-        inputTokens: dietResult.inputTokens,
-        outputTokens: dietResult.outputTokens,
-      })
-      dietForm = generatedDietFormData(dietResult.generatedPlan, input.clientId)
-      updatedDietContext = buildUpdatedDietPlanForPrompt(
-        active,
-        dietForm.nutrition_plan,
-        null,
-        null
-      )
+          validationMode: 'nutrition_focus',
+          clientJourney,
+          coachInstructions: buildActionCoachInstructions('review_update_diet', {
+            activePlan: active,
+            checkin: checkinTyped,
+            coachNote,
+          }),
+        })
+        sections.push({
+          action: 'review_update_diet',
+          model: dietResult.model,
+          inputTokens: dietResult.inputTokens,
+          outputTokens: dietResult.outputTokens,
+        })
+        dietForm = generatedDietFormData(dietResult.generatedPlan, input.clientId)
+        updatedDietContext = buildUpdatedDietPlanForPrompt(
+          active,
+          dietForm.nutrition_plan,
+          null,
+          null
+        )
+      } catch (error) {
+        if (!active?.nutrition_plan?.trim()) throw error
+        const message = error instanceof Error ? error.message : 'diet rewrite failed'
+        console.warn('[weekly-plan] kept the current diet after a failed rewrite', message.slice(0, 240))
+        dietForm = dietFormFromActive(input.clientId, active)
+        updatedDietContext = buildUpdatedDietPlanForPrompt(
+          active,
+          dietForm.nutrition_plan,
+          null,
+          null
+        )
+      }
     }
 
     let workoutForm: PlanFormData
