@@ -39,6 +39,7 @@ import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptio
 import { CheckinDueBanner } from '@/components/dashboard/CheckinDueBanner';
 import { MembershipRenewalBanner } from '@/components/dashboard/MembershipRenewalBanner';
 import { GoalUpgradeCard } from '@/components/dashboard/GoalUpgradeCard';
+import { WeeklyCallHomeCard } from '@/components/dashboard/WeeklyCallHomeCard';
 import { TodayFocus } from '@/components/dashboard/TodayFocus';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
 import { isPublicDemoEmail, PUBLIC_DEMO_CLIENT_NAME } from '@/lib/public-demo';
@@ -510,6 +511,11 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      <WeeklyCallHomeCard
+        hidden={isPublicDemoEmail(user?.email)}
+        planSlug={purchase?.plan_slug}
+      />
 
       <TodayFocus
         firstName={firstName}

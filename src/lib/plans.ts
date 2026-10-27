@@ -342,7 +342,7 @@ export async function activatePlan(
     })
   }
 
-  // No client can book a coach call. Open requests are closed by the weekly-call job.
+  // 6-month and 12-month clients book their own weekly call from Home.
 
   return { error: null }
 }
