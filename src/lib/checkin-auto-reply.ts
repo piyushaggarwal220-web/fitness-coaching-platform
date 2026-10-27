@@ -9,6 +9,7 @@ import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
 import { generateMidWeekAnalysis, loadCachedMidWeekPack } from '@/lib/ai/midweek-analysis'
 import { OPENAI_BILLING_HOLD_MS } from '@/lib/ai/openai-quota'
 import { openAiBillingHoldUntil, probeOpenAiBilling } from '@/lib/ai/openai-quota-guard'
+import { seedPlannerCheckin } from '@/lib/ai/client-planner'
 import { findAiDraftForCheckin, generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
 import { sendNotification } from '@/lib/notifications/dispatcher'
@@ -56,12 +57,20 @@ async function resolveReply(
     const alreadyPublished = await loadPlanPublishedForCheckin(supabase, checkin)
     if (alreadyPublished) return alreadyPublished
 
+    try {
+      await seedPlannerCheckin(supabase, {
+        clientId: checkin.client_id,
+        coachId: checkin.coach_id,
+        checkinId: checkin.id,
+      })
+    } catch (err) {
+      console.error('[checkin-auto-reply] planner seed failed', err)
+    }
+
     const planSlug = await fetchCapturedPlanSlug(checkin.client_id)
     const week = checkin.coaching_week
     const draftExpected =
       typeof week === 'number' && shouldAutoGenerateWeeklyPlanDraft(planSlug, week)
-    // Keep signalling draft_not_ready even past 48h so we regenerate instead of
-    // abandoning with a note-only reply. Sweep age cap (7d) still bounds retries.
     if (draftExpected) {
       return { error: 'draft_not_ready' }
     }
@@ -179,7 +188,6 @@ export async function sendCheckinAutoReply(
         return { status: 'skipped', reason: 'openai_billing_hold' }
       }
 
-      // Self-heal: kick draft generation again, then retry auto-reply later.
       void persistDraftGenerationStarted({
         clientId: checkin.client_id,
         coachId: checkin.coach_id,
@@ -191,8 +199,7 @@ export async function sendCheckinAutoReply(
         clientId: checkin.client_id,
         coachId: checkin.coach_id,
         checkinId: checkin.id,
-        coachingWeek:
-          typeof checkin.coaching_week === 'number' ? checkin.coaching_week : 1,
+        coachingWeek: typeof checkin.coaching_week === 'number' ? checkin.coaching_week : 1,
         trigger: 'retry',
       }).catch((err) => console.error('[checkin-auto-reply] draft regenerate failed:', err))
 

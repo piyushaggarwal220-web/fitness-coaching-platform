@@ -540,6 +540,8 @@ export type Checkin = {
    * Weekly: keep | change_system | full_body | upper_lower | ppl
    */
   workout_split_preference: string | null
+  /** Weekly: keep | easier | moderate | hard */
+  workout_difficulty: string | null
 }
 
 export type JourneyEntry = {
@@ -637,6 +639,8 @@ export type WeeklyCheckinFormData = {
   additional_notes: string
   /** keep | change_system | full_body | upper_lower | ppl */
   workout_split_preference: string
+  /** keep | easier | moderate | hard */
+  workout_difficulty: string
 }
 
 export type CoachCheckinResponse = {

@@ -138,6 +138,12 @@ export default function CoachClientDetailPage() {
           </button>
           <button
             style={styles.actionBtn}
+            onClick={() => router.push(`/coach/client/${client.id}/planner`)}
+          >
+            AI planner
+          </button>
+          <button
+            style={styles.actionBtn}
             disabled={messaging}
             onClick={() => {
               void (async () => {

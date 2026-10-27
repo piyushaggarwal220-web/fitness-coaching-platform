@@ -1,4 +1,4 @@
-import { formatStickySplitGuidance } from '@/lib/ai/workout-split'
+import { formatStickySplitGuidance, formatWorkoutFitGuidance } from '@/lib/ai/workout-split'
 import type { OnboardingProfile } from '@/types/database'
 
 /** Mesocycle helpers for monthly volume ramps within a sticky workout split. */
@@ -19,7 +19,7 @@ export type MesocycleContext = {
 }
 
 const VOLUME_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
-  1: 'BASE volume: lowest of the month. 2 to 3 working sets per exercise for every experience level, about 5 to 7 working exercises per session. Leave 2 to 3 reps in reserve on compounds.',
+  1: 'Opening week volume follows Workout fit, not a blanket beginner template. Beginners: 3 working sets. Intermediate and advanced: 4 on main lifts. Drop to 2 sets only when this week\'s difficulty is Easier. About 5 to 7 working exercises per session.',
   2: 'BUILD volume: beginners stay at 2 to 3 working sets and add load or reps. Intermediate and advanced use 3 working sets on main compounds and 2 to 3 on accessories. Never 5 or more working sets.',
   3: 'PUSH volume: beginners stay at 3 working sets and add load or tighter reps in reserve. Intermediate and advanced use 4 working sets on main compounds only and 3 on accessories. Never 5 or more working sets.',
   4: 'PEAK volume: keep the week 3 set counts. Progress with load and tighter reps in reserve, not more sets. Beginners stay at 3. Intermediate and advanced stay at 4 on main compounds and 3 on accessories. Never 5 or more working sets.',
@@ -75,9 +75,9 @@ export function formatMesocyclePromptSection(
     `- Volume target: ${meso.volumeGuidance}`,
     `- Calorie target (hold flat unless coach asks): ${meso.calorieGuidance}`,
     meso.isMesocycleWeek1Refresh
-      ? `- Split rule: KEEP the sticky split. New month week 1 = refresh exercises within that same day structure at BASE volume (2 to 3 working sets). Do NOT invent a different split template. HOLD calories unless CALORIE METHOD gives a new target — raise steps/cardio if fat loss is the goal. Do not replace that target with an 1800 floor.`
+      ? `- Split rule: KEEP the sticky split. New month week 1 = refresh exercises within that same day structure. Volume follows Workout fit (experienced lifters are not given a 2-set week). Do NOT invent a different split template. HOLD calories unless CALORIE METHOD gives a new target — raise steps/cardio if fat loss is the goal. Do not replace that target with an 1800 floor.`
       : '- Split rule: KEEP the sticky split. Progress with the volume target for this week (load, reps, reps in reserve, and the allowed set count). HOLD calories flat. Do not invent a new split.',
-    '- Cycle rule: week 1 is 2 to 3 working sets for everyone. Weeks 2 to 4 follow the volume target (beginners stay lower; intermediate and advanced may reach 4 sets on main compounds). Never 5 or more working sets. Calories stay flat. Do NOT auto-increase calories week to week. Raise or lower food ONLY when the coach specifically asks. New month (exercise refresh + base volume, same sticky split) still HOLDS calories and raises steps if fat loss needs more output.',
+    '- Cycle rule: week 1 follows Workout fit. Weeks 2 to 4 progress from that (beginners stay at 3 sets; intermediate and advanced may use 4 on main compounds, or 4 to 5 only when difficulty is Hard). Never a mixed gym-and-home week. Calories stay flat. Do NOT auto-increase calories week to week. Raise or lower food ONLY when the coach specifically asks. New month still HOLDS calories and raises steps if fat loss needs more output.',
     '',
     stickySplitGuidance?.trim() ||
       formatStickySplitGuidance({}),
@@ -96,6 +96,7 @@ export function buildMesocyclePromptBlock(opts: {
     'fitness_goal' | 'training_experience' | 'onboarding_data'
   > | null
   checkinSplitPreference?: string | null
+  workoutDifficulty?: string | null
 }): string {
   const meso = resolveMesocycle(opts.coachingWeek)
   const prior = summarizePriorSplit(opts.priorWorkout)
@@ -104,5 +105,10 @@ export function buildMesocyclePromptBlock(opts: {
     profile: opts.profile,
     checkinSplitPreference: opts.checkinSplitPreference,
   })
-  return formatMesocyclePromptSection(meso, prior, sticky)
+  const fit = formatWorkoutFitGuidance({
+    difficulty: opts.workoutDifficulty,
+    location: opts.profile?.onboarding_data?.training?.location,
+    experience: opts.profile?.training_experience,
+  })
+  return [formatMesocyclePromptSection(meso, prior, sticky), '', fit].join('\n')
 }

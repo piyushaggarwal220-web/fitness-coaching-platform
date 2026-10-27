@@ -169,12 +169,29 @@ const syncedMismatch = syncStoredDietText(headerMealMismatch, {
 })
 assert(
   'syncs header to food totals even when preserveCalories (AI bumped portions)',
-  parseHeaderCalories(syncedMismatch) === 2023
+  parseHeaderCalories(syncedMismatch) === 2045
 )
 assert(
   'rewrites stale 1806 prose after sync',
   !/about 1806 calories/i.test(syncedMismatch)
 )
+
+const wrongProtein = `Calories: 900
+Protein: 20g
+Carbs: 10g
+Fat: 5g
+Day 1 (Monday)
+Breakfast
+(P: 30g | C: 40g | F: 10g | ~370 kcal)
+Lunch
+(P: 40g | C: 50g | F: 12g | ~468 kcal)
+Daily Total: P: 20g | C: 10g | F: 5g | ~900 kcal`
+const syncedProtein = syncStoredDietText(wrongProtein)
+assert(
+  'daily protein matches the meals, not the wrong total',
+  /Daily Total: P: 70g/.test(syncedProtein)
+)
+assert('header protein matches the meals', /Protein:\s*70g/i.test(syncedProtein))
 
 const lowFoodHighHeader = `Calories: 1800
 Protein: 55g

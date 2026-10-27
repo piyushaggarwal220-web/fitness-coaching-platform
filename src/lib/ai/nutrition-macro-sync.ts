@@ -240,6 +240,150 @@ function clampCaloriesToWeeklyBand(
   return Math.min(Math.max(target, min), max)
 }
 
+const MEAL_MACRO_ONE =
+  /\(P:\s*(\d+)\s*g\s*\|\s*C:\s*(\d+)\s*g\s*\|\s*F:\s*(\d+)\s*g\s*\|\s*~?\s*(\d+)\s*kcal\)/i
+
+const DAILY_TOTAL_NUMBERS =
+  /P:\s*\d+\s*g\s*\|\s*C:\s*\d+\s*g\s*\|\s*F:\s*\d+\s*g\s*\|\s*~?\s*\d+\s*kcal/i
+
+const WEEKLY_AVERAGE_NUMBERS =
+  /~?\s*\d+\s*kcal\s*\|\s*P:\s*\d+\s*g\s*\|\s*C:\s*\d+\s*g\s*\|\s*F:\s*\d+\s*g/i
+
+function isDayHeaderLine(line: string): boolean {
+  const t = line.replace(/^\*{1,2}|#{1,3}\s*/, '').trim()
+  return /^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(t)
+}
+
+function isSwapMarker(line: string): boolean {
+  return /^(or|swap|alternative|option\s*[2-9])\b/i.test(line.trim())
+}
+
+function isWeeklyAverageLine(line: string): boolean {
+  return /daily\s+averages?/i.test(line) && !/daily\s+totals?/i.test(line)
+}
+
+function kcalFromMacros(protein: number, carbs: number, fat: number, stated: number): number {
+  const math = 4 * protein + 4 * carbs + 9 * fat
+  if (math < 50 || stated <= 0) return stated
+  const gap = Math.abs(math - stated)
+  if (gap > 80 && gap / stated > 0.2) return math
+  return stated
+}
+
+function averageDayTotals(days: MacroTotals[]): MacroTotals | null {
+  return averageMacros(days)
+}
+
+/**
+ * Make the numbers the client reads match the primary meals.
+ * Swap lines are ignored. A daily total that disagrees with those meals is rewritten,
+ * and the weekly average is the mean of the day totals.
+ */
+export function alignDietShownTotals(text: string | null | undefined): string {
+  const raw = (text ?? '').replace(/^\uFEFF/, '')
+  if (!raw.trim()) return raw
+
+  const lines = raw.split(/\r?\n/)
+  type DayBucket = { meals: MacroTotals[]; totalIndex: number | null }
+  const days: DayBucket[] = []
+  let day: DayBucket = { meals: [], totalIndex: null }
+  let skipNextMeal = false
+  const weeklyIndexes: number[] = []
+
+  const startDay = () => {
+    days.push(day)
+    day = { meals: [], totalIndex: null }
+    skipNextMeal = false
+  }
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i]!
+    if (isDayHeaderLine(line)) {
+      startDay()
+      continue
+    }
+    if (isWeeklyAverageLine(line)) {
+      weeklyIndexes.push(i)
+      continue
+    }
+    if (isSwapMarker(line)) {
+      if (!MEAL_MACRO_ONE.test(line)) skipNextMeal = true
+      continue
+    }
+    if (isDailyTotalOrAverageLine(line)) {
+      day.totalIndex = i
+      continue
+    }
+
+    const match = line.match(MEAL_MACRO_ONE)
+    if (!match) continue
+    const protein = parseInt(match[1]!, 10)
+    const carbs = parseInt(match[2]!, 10)
+    const fat = parseInt(match[3]!, 10)
+    const stated = parseInt(match[4]!, 10)
+    const calories = kcalFromMacros(protein, carbs, fat, stated)
+    if (calories !== stated) {
+      lines[i] = line.replace(/~?\s*\d+\s*kcal/i, `~${calories} kcal`)
+    }
+    if (skipNextMeal) {
+      skipNextMeal = false
+      continue
+    }
+    day.meals.push({ protein, carbs, fat, calories })
+  }
+  days.push(day)
+
+  const resolved: MacroTotals[] = []
+  for (const bucket of days) {
+    const fromMeals = bucket.meals.length >= 2 ? sumMacros(bucket.meals) : null
+    if (fromMeals && bucket.totalIndex != null) {
+      lines[bucket.totalIndex] = lines[bucket.totalIndex]!.replace(
+        DAILY_TOTAL_NUMBERS,
+        `P: ${fromMeals.protein}g | C: ${fromMeals.carbs}g | F: ${fromMeals.fat}g | ~${fromMeals.calories} kcal`
+      )
+    }
+    if (fromMeals) {
+      resolved.push(fromMeals)
+      continue
+    }
+    if (bucket.totalIndex == null) continue
+    const parsed = lines[bucket.totalIndex]!.match(
+      /P:\s*(\d+)\s*g\s*\|\s*C:\s*(\d+)\s*g\s*\|\s*F:\s*(\d+)\s*g\s*\|\s*~?\s*(\d+)\s*kcal/i
+    )
+    if (!parsed) continue
+    resolved.push({
+      protein: parseInt(parsed[1]!, 10),
+      carbs: parseInt(parsed[2]!, 10),
+      fat: parseInt(parsed[3]!, 10),
+      calories: parseInt(parsed[4]!, 10),
+    })
+  }
+
+  const weekly = averageDayTotals(resolved)
+  if (weekly) {
+    for (const index of weeklyIndexes) {
+      lines[index] = lines[index]!.replace(
+        WEEKLY_AVERAGE_NUMBERS,
+        `~${weekly.calories} kcal | P: ${weekly.protein}g | C: ${weekly.carbs}g | F: ${weekly.fat}g`
+      )
+    }
+  }
+
+  return lines.join('\n')
+}
+
+function sumMacros(meals: MacroTotals[]): MacroTotals {
+  return meals.reduce(
+    (acc, meal) => ({
+      calories: acc.calories + meal.calories,
+      protein: acc.protein + meal.protein,
+      carbs: acc.carbs + meal.carbs,
+      fat: acc.fat + meal.fat,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+  )
+}
+
 /** Leading Calories/Protein/Carbs/Fat lines at the top of a diet plan. */
 const LEADING_MACRO_HEADER_LINE = /^\s*(calories|protein|carbs|fat)\s*:\s*.+$/i
 
@@ -271,7 +415,7 @@ export function stripLeadingDietMacroHeader(text: string | null | undefined): st
  * Clients still see per-meal and daily-total lines in the plan body.
  */
 export function clientFacingDietPlanText(text: string | null | undefined): string {
-  return stripLeadingDietMacroHeader(text)
+  return stripLeadingDietMacroHeader(alignDietShownTotals(text))
 }
 
 /** Read the "Calories: NNNN" header from a stored plan's nutrition string. */
@@ -580,7 +724,7 @@ export function stabilizeDietCaloriesAfterEdit(
   text: string,
   opts: StabilizeDietCaloriesOptions = {}
 ): string {
-  const trimmed = text.trim()
+  const trimmed = alignDietShownTotals(text).trim()
   if (!trimmed) return trimmed
 
   const floorKcal = opts.floorKcal ?? DIET_FLOOR_TARGET_KCAL

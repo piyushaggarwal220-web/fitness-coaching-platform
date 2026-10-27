@@ -1,9 +1,10 @@
 import { after, NextResponse } from 'next/server'
+import { seedPlannerCheckin } from '@/lib/ai/client-planner'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
 import { openAiBillingHoldUntil } from '@/lib/ai/openai-quota-guard'
+import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
-import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { sendNotification } from '@/lib/notifications/service'
 import { activatePlan } from '@/lib/plans'
@@ -96,6 +97,16 @@ async function sendOneCheckin(checkinId: string) {
     new Date(active.delivered_at).getTime() >= new Date(checkin.submitted_at).getTime()
   ) {
     return { checkinId, name, status: 'SKIP' as const, error: 'already updated', planId: active.id }
+  }
+
+  try {
+    await seedPlannerCheckin(admin, {
+      clientId: checkin.client_id,
+      coachId: checkin.coach_id,
+      checkinId: checkin.id,
+    })
+  } catch (err) {
+    console.error('[cron/send-missed-weekly-plans] planner seed failed', err)
   }
 
   const result = await generateWeeklyPlanDraft({
@@ -252,9 +263,7 @@ async function runBatch(limit: number) {
       coachId: row.coach_id,
       checkinId: row.id,
       trigger: 'retry',
-    }).catch((err) =>
-      console.error('[cron/send-missed-weekly-plans] draft start log failed:', err)
-    )
+    }).catch((err) => console.error('[cron/send-missed-weekly-plans] draft start log failed:', err))
 
     const checkinId = row.id
     after(() =>
@@ -365,21 +374,6 @@ export async function POST(request: Request) {
     const preview = await statusOneCheckin(checkinId)
     if (preview.status === 'SENT') {
       return NextResponse.json({ ...preview, error: 'already updated' })
-    }
-
-    const admin = createAdminClient()
-    const { data: checkin } = await admin
-      .from('checkins')
-      .select('client_id, coach_id, coaching_week')
-      .eq('id', checkinId)
-      .maybeSingle()
-    if (checkin) {
-      await persistDraftGenerationStarted({
-        clientId: checkin.client_id,
-        coachId: checkin.coach_id,
-        checkinId,
-        trigger: 'retry',
-      })
     }
 
     after(() =>

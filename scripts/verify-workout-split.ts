@@ -6,6 +6,8 @@ import {
   normalizeOnboardingSplitPreference,
   normalizeCheckinSplitPreference,
   formatStickySplitGuidance,
+  formatWorkoutFitGuidance,
+  normalizeWorkoutDifficulty,
 } from '../src/lib/ai/workout-split'
 
 const pplProse = `Day 1 (Monday) — Push
@@ -78,5 +80,17 @@ const guidance = formatStickySplitGuidance({
 assert.match(guidance, /Sticky workout split/i)
 assert.match(guidance, /KEEP/i)
 assert.doesNotMatch(guidance, /\bAI picks\b/i)
+
+assert.equal(normalizeWorkoutDifficulty('easy'), 'easier')
+assert.equal(normalizeWorkoutDifficulty('nope'), null)
+const hard = formatWorkoutFitGuidance({
+  difficulty: 'hard',
+  location: 'both',
+  experience: 'intermediate',
+})
+assert.match(hard, /GYM only/)
+assert.match(hard, /Never a mixed gym-and-home/)
+assert.match(hard, /HARD/)
+assert.doesNotMatch(hard, /HOME only/)
 
 console.log('All workout-split checks passed')

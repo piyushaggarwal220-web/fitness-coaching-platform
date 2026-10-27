@@ -1,10 +1,11 @@
 import { NextResponse, after } from 'next/server'
 import { requireEntitledClientApiUser } from '@/lib/client-entitlement-guard'
 import { logApiDev } from '@/lib/api-dev-log'
+import { seedPlannerCheckin } from '@/lib/ai/client-planner'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
+import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { openAiBillingHoldUntil } from '@/lib/ai/openai-quota-guard'
 import { generateMidWeekAnalysis } from '@/lib/ai/midweek-analysis'
-import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
 import { shouldBypassCheckinScheduleServer } from '@/lib/config'
 import {
@@ -26,7 +27,7 @@ import { sendNotification, NotificationTemplates } from '@/lib/notifications/dis
 import { createAdminClient } from '@/lib/supabase/admin'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { parseAdherenceDays } from '@/lib/checkin-adherence-days'
-import { normalizeCheckinSplitPreference } from '@/lib/ai/workout-split'
+import { normalizeCheckinSplitPreference, normalizeWorkoutDifficulty } from '@/lib/ai/workout-split'
 import { areProgressPhotosOptional } from '@/lib/checkin'
 import { coachIdHasClientChat } from '@/lib/coach-service'
 import type { CheckinType } from '@/types/database'
@@ -74,6 +75,7 @@ type WeeklyBody = {
   cardio_completed?: string | null
   additional_notes?: string | null
   workout_split_preference?: string | null
+  workout_difficulty?: string | null
   progress_photo_front?: string | null
   progress_photo_side?: string | null
   progress_photo_back?: string | null
@@ -124,6 +126,9 @@ function validateBody(body: SubmitBody, options?: { gender?: string | null }): s
   if (!body.progress_notes?.trim()) return 'Progress notes are required.'
   if (!normalizeCheckinSplitPreference(body.workout_split_preference)) {
     return 'Choose whether to keep or change your workout split.'
+  }
+  if (!normalizeWorkoutDifficulty(body.workout_difficulty)) {
+    return 'Choose how hard next week\'s workouts should be.'
   }
   if (!areProgressPhotosOptional(options?.gender)) {
     if (!body.progress_photo_front || !body.progress_photo_side || !body.progress_photo_back) {
@@ -311,6 +316,7 @@ export async function POST(request: Request) {
         cardio_completed: body.cardio_completed ?? null,
         notes: body.additional_notes ?? null,
         workout_split_preference: normalizeCheckinSplitPreference(body.workout_split_preference),
+        workout_difficulty: normalizeWorkoutDifficulty(body.workout_difficulty),
         progress_photo_front: body.progress_photo_front ?? null,
         progress_photo_side: body.progress_photo_side ?? null,
         progress_photo_back: body.progress_photo_back ?? null,
@@ -448,8 +454,18 @@ export async function POST(request: Request) {
         !coachRequiresManualPlanDelivery(profile.coach_id)
       planUpdateScheduled = autoUpdate
 
+      if (profile.coach_id) {
+        const admin = createAdminClient()
+        after(() =>
+          seedPlannerCheckin(admin, {
+            clientId: user.id,
+            coachId: profile.coach_id,
+            checkinId: inserted.id,
+          }).catch((err) => console.error('[checkin-submit] planner seed failed:', err))
+        )
+      }
+
       if (autoUpdate && !(await openAiBillingHoldUntil())) {
-        // Mark in-flight before the response returns so coaches see Generating immediately.
         void persistDraftGenerationStarted({
           clientId: user.id,
           coachId: profile.coach_id,

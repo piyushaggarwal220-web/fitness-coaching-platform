@@ -34,6 +34,16 @@ export const CHECKIN_SPLIT_PREFERENCE_OPTIONS = [
   { value: 'ppl', label: 'Switch to push / pull / legs' },
 ] as const
 
+/** Sunday check-in and coach input. There is no mixed gym-and-home option. */
+export const WORKOUT_DIFFICULTY_OPTIONS = [
+  { value: 'keep', label: 'Keep the current difficulty' },
+  { value: 'easier', label: 'Easier — fewer sets, more left in the tank' },
+  { value: 'moderate', label: 'Moderate — matched to my level' },
+  { value: 'hard', label: 'Hard — heavier, fuller sets' },
+] as const
+
+export type WorkoutDifficulty = (typeof WORKOUT_DIFFICULTY_OPTIONS)[number]['value']
+
 const SPLIT_LABEL: Record<Exclude<WorkoutSplitKind, 'unknown'>, string> = {
   ppl: 'Push / Pull / Legs (PPL)',
   upper_lower: 'Upper / Lower',
@@ -260,11 +270,77 @@ export function formatStickySplitGuidance(opts: {
           ? `- Client onboarding preference: ${label}. Use this split.`
           : `- No established split on file — system default for this client: ${label}${days != null ? ` (${days} training days/week)` : ''}.`,
     sticky.mode === 'keep'
-      ? '- Mesocycle week 1 (new month): KEEP the same split. Refresh exercise selection and reset to BASE volume within that split. Do NOT open a different template unless the weekly check-in asked to change.'
-      : '- Because the client asked to change split, a new proven template is required this week. Still use BASE volume if this is mesocycle week 1.',
+      ? '- Mesocycle week 1 (new month): KEEP the same split. Refresh exercise selection. Volume follows Workout fit, not a beginner 2-set week. Do NOT open a different template unless the weekly check-in asked to change.'
+      : '- Because the client asked to change split, a new proven template is required this week. Volume still follows Workout fit.',
     '- Low sleep, fatigue, stress, or low adherence: cut load, sets, or leave more reps in reserve. That alone is NOT a reason to change the split.',
     '- Ignore silent full-body swaps. Only change structure when this check-in/onboarding preference (or an explicit coach remake) says so.',
   ]
 
   return lines.filter((line): line is string => Boolean(line)).join('\n')
+}
+
+export function normalizeWorkoutDifficulty(value: unknown): WorkoutDifficulty | null {
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : ''
+  if (raw === 'easy') return 'easier'
+  if (WORKOUT_DIFFICULTY_OPTIONS.some((option) => option.value === raw)) {
+    return raw as WorkoutDifficulty
+  }
+  return null
+}
+
+export function workoutDifficultyLabel(value: string | null | undefined): string {
+  const normalized = normalizeWorkoutDifficulty(value)
+  const match = WORKOUT_DIFFICULTY_OPTIONS.find((option) => option.value === normalized)
+  return match?.label ?? 'Keep the current difficulty'
+}
+
+export function formatTrainingChoiceNote(
+  split: string | null | undefined,
+  difficulty: string | null | undefined
+): string {
+  return [
+    `Workout split: ${checkinSplitPreferenceLabel(split)}.`,
+    `Workout difficulty: ${workoutDifficultyLabel(difficulty)}.`,
+    'One place only for the whole week, gym or home. Do not write a mixed gym-and-home plan.',
+  ].join(' ')
+}
+
+/**
+ * Hard workout rules for generation. Difficulty and place come from the coach
+ * input or the Sunday check-in. A "both" location is gym only — never a mix.
+ */
+export function formatWorkoutFitGuidance(opts: {
+  difficulty?: string | null
+  location?: string | null
+  experience?: string | null
+}): string {
+  const difficulty = normalizeWorkoutDifficulty(opts.difficulty) ?? 'keep'
+  const experience = (opts.experience ?? '').trim().toLowerCase()
+  const experienced = experience === 'intermediate' || experience === 'advanced'
+  const location = (opts.location ?? '').trim().toLowerCase()
+  const place =
+    location === 'home'
+      ? 'HOME only. Every working day uses their home equipment. Do not add gym machines.'
+      : 'GYM only. Every working day is a gym session. Do not add a separate home program.'
+
+  const volume =
+    difficulty === 'easier'
+      ? 'EASIER, as they asked: 2 working sets, leave about 3 reps in reserve, and do not add load this week.'
+      : difficulty === 'hard'
+        ? 'HARD, as they asked: 4 working sets on main lifts and 3 on accessories. Leave 1 to 2 reps in reserve. Loads must suit someone who already trains. Do not write a light intro week.'
+        : difficulty === 'moderate'
+          ? experienced
+            ? 'MODERATE and matched to them: they are intermediate or advanced, so use 4 working sets on main lifts and 3 on accessories. Do not give them a beginner 2-set plan.'
+            : 'MODERATE and matched to them: they are a beginner, so use 3 working sets and leave 2 to 3 reps in reserve.'
+          : experienced
+            ? 'KEEP the current difficulty, but they are intermediate or advanced. Do not drop them onto a beginner 2-set week. Use at least 4 working sets on main lifts unless they asked for easier.'
+            : 'KEEP the current difficulty. A beginner stays at 3 working sets. Do not write a plan that feels empty.'
+
+  return [
+    '### Workout fit (hard)',
+    `- Place: ${place} Never a mixed gym-and-home plan.`,
+    `- Difficulty: ${volume}`,
+    '- Split: use the sticky split above. Do not invent a mixed split or a chest-back-arms bro split.',
+    '- If the coach note names a difficulty or a split, that choice wins.',
+  ].join('\n')
 }

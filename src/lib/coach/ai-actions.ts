@@ -1,6 +1,6 @@
 import type { Checkin, Plan, PlanFormData } from '@/types/database'
 import { formatAdherenceDaysForPrompt } from '@/lib/checkin-adherence-days'
-import { checkinSplitPreferenceLabel } from '@/lib/ai/workout-split'
+import { checkinSplitPreferenceLabel, workoutDifficultyLabel } from '@/lib/ai/workout-split'
 
 export type CoachAiActionId =
   | 'initial_diet'
@@ -159,6 +159,7 @@ function checkinContext(checkin: Checkin): string {
     checkin.digestion?.trim() ? `Digestion: ${checkin.digestion.trim()}` : null,
     checkin.notes?.trim() ? `Additional notes: ${checkin.notes.trim()}` : null,
     `Workout split preference: ${checkinSplitPreferenceLabel(checkin.workout_split_preference)}`,
+    `Workout difficulty: ${workoutDifficultyLabel(checkin.workout_difficulty)}`,
   ]
     .filter(Boolean)
     .join('\n')
@@ -198,7 +199,7 @@ export function buildActionCoachInstructions(
         [
           'Generate a personalized workout plan for this client.',
           'Opening mesocycle week 1: use the sticky-split default for this client (full body, upper/lower, or push/pull/legs from goal/days/experience). Personalise the exercises. Do not invent a novelty split, and do not default to a chest, back, and arms bro-split.',
-          'Use BASE volume for week 1: 2 to 3 working sets per exercise for every experience level.',
+          'Volume follows Workout fit: match their experience and the chosen difficulty. Do not give an intermediate or advanced client a beginner 2-set week. Never write a mixed gym-and-home plan.',
           'Follow Metabolic Flux Bias for session density and daily step targets within hard day/duration caps.',
           'Prioritize workout_plan only (strength / resistance training).',
           'Do NOT include a Cardio, Steps, Conditioning, or Supplements section in the workout text.',
@@ -266,7 +267,7 @@ export function buildActionCoachInstructions(
           'CRITICAL: Address every client request, struggle, pain note, and check-in flag with concrete exercise/volume/split changes.',
           'Do NOT return a near-copy of the current workout. Opening lines must name what changed; day lists must show the edits.',
           'If the client asked for easier/harder sessions, different exercises, home vs gym, or injury workarounds — those must appear in the days.',
-          'Obey sticky-split + mesocycle rules: week 1 of a month = KEEP the established split, refresh exercises at base volume; weeks 2 to 4 = the same split with the mesocycle set progression; after week 4 reset volume only. Never silently swap PPL/upper-lower/full-body for sleep or fatigue — cut load/RIR instead. Change structure only if the client or coach explicitly asks.',
+          'Obey sticky-split + mesocycle rules and Workout fit. Keep the split they chose. Volume matches their difficulty and experience: easier means fewer sets, hard means fuller sets, and an experienced lifter is never given a light beginner week. Never a mixed gym-and-home plan. Never silently swap PPL/upper-lower/full-body for sleep or fatigue — cut load only if they asked for easier. Change structure only if the client or coach explicitly asks.',
           'Open the workout with a short training-tips block based on days trained (deload/simplify volume if low, progress if high). Include a Sleep recovery note that does NOT change the split.',
           'The plan header MAY show Week N. Do not write Welcome to week N in exercise lists.',
           'Adjust workout_plan only (strength / resistance training).',

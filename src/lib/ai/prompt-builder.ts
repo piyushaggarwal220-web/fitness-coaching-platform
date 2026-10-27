@@ -5,6 +5,7 @@ import { buildMesocyclePromptBlock } from '@/lib/ai/mesocycle'
 import {
   checkinSplitPreferenceLabel,
   onboardingSplitPreferenceLabel,
+  workoutDifficultyLabel,
 } from '@/lib/ai/workout-split'
 import { buildMetabolicFluxSection, shouldApplyHighFluxRules } from '@/lib/ai/metabolic-flux'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
@@ -247,6 +248,7 @@ function buildCheckinSection(checkin: Checkin): string {
     `- Cardio completed: ${hasMeaningfulText(checkin.cardio_completed) ? checkin.cardio_completed!.trim() : 'None'}`,
     `- Questions for coach: ${hasMeaningfulText(checkin.questions_for_coach) ? checkin.questions_for_coach!.trim() : 'None'}`,
     `- Workout split preference: ${checkinSplitPreferenceLabel(checkin.workout_split_preference)}`,
+    `- Workout difficulty: ${workoutDifficultyLabel(checkin.workout_difficulty)}`,
     `- Notes: ${hasMeaningfulText(checkin.notes) ? checkin.notes!.trim() : 'None'}`,
   ]
   return lines.join('\n')
@@ -262,6 +264,7 @@ function buildMesocycleSection(
     priorWorkout: activePlan?.workout_plan,
     profile,
     checkinSplitPreference: checkin?.workout_split_preference,
+    workoutDifficulty: checkin?.workout_difficulty,
   })
 }
 

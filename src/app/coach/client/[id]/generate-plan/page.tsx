@@ -19,6 +19,11 @@ import { aiActionStyles as s } from '@/components/coach/ai-actions/styles'
 import type { Coach, OnboardingProfile, Plan } from '@/types/database'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
+import {
+  CHECKIN_SPLIT_PREFERENCE_OPTIONS,
+  WORKOUT_DIFFICULTY_OPTIONS,
+  formatTrainingChoiceNote,
+} from '@/lib/ai/workout-split'
 import { profileBlocksAiPlanWork } from '@/lib/complexity/input-guards'
 import type { InitialPlanGenerationJob } from '@/lib/initial-plan-generation'
 
@@ -35,6 +40,8 @@ export default function CoachGeneratePlanPage() {
   const [client, setClient] = useState<OnboardingProfile | null>(null)
   const [plans, setPlans] = useState<Plan[]>([])
   const [coachNote, setCoachNote] = useState('')
+  const [splitChoice, setSplitChoice] = useState('keep')
+  const [difficultyChoice, setDifficultyChoice] = useState('moderate')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<CoachAiActionId | 'complete' | null>(null)
   const [status, setStatus] = useState<string | null>(null)
@@ -183,7 +190,7 @@ export default function CoachGeneratePlanPage() {
       const message = await queueBackgroundJob({
         clientId: client.id,
         action: actionId,
-        coachNote,
+        coachNote: noteForGeneration(),
         async: true,
       })
       setStatus(message)
@@ -192,6 +199,11 @@ export default function CoachGeneratePlanPage() {
       setError(err instanceof Error ? err.message : 'Generation failed.')
     }
   }
+
+  const noteForGeneration = () =>
+    [formatTrainingChoiceNote(splitChoice, difficultyChoice), coachNote.trim()]
+      .filter(Boolean)
+      .join('\n')
 
   const runCompletePlan = async () => {
     if (!client || !coach) return
@@ -206,7 +218,7 @@ export default function CoachGeneratePlanPage() {
         clientId: client.id,
         complete: true,
         async: true,
-        coachNote,
+        coachNote: noteForGeneration(),
       })
       setStatus(message)
     } catch (err) {
@@ -404,6 +416,34 @@ export default function CoachGeneratePlanPage() {
           <ClientOnboardingBrief client={client} />
 
           <p style={s.sectionLabel}>Initial planning</p>
+          <label style={{ display: 'block', marginBottom: 12, fontSize: 14 }}>
+            Workout difficulty
+            <select
+              value={difficultyChoice}
+              onChange={(event) => setDifficultyChoice(event.target.value)}
+              style={{ display: 'block', width: '100%', marginTop: 6, padding: '8px 10px' }}
+            >
+              {WORKOUT_DIFFICULTY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={{ display: 'block', marginBottom: 12, fontSize: 14 }}>
+            Workout split
+            <select
+              value={splitChoice}
+              onChange={(event) => setSplitChoice(event.target.value)}
+              style={{ display: 'block', width: '100%', marginTop: 6, padding: '8px 10px' }}
+            >
+              {CHECKIN_SPLIT_PREFERENCE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <OptionalCoachNote mode="discussion" value={coachNote} onChange={setCoachNote} />
           {INITIAL_PLAN_ACTIONS.map((action) => (
             <ActionCard
