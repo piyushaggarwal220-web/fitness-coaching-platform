@@ -170,6 +170,7 @@ export function CheckinDueBanner({
       type="button"
       onClick={() => router.push(checkin.href)}
       aria-label={`${typeLabel} check-in is due. Start now.`}
+      className="lx-sheen-gold"
       style={{ ...sharedShell, cursor: 'pointer' }}
     >
       {body}
@@ -179,6 +180,7 @@ export function CheckinDueBanner({
       id="lx-checkin-due-banner"
       role="status"
       aria-label={`${typeLabel} check-in available in ${countdownLabel?.trim() || 'some time'}`}
+      className="lx-sheen-gold"
       style={{ ...sharedShell, cursor: 'default' }}
     >
       {body}

@@ -101,6 +101,11 @@ export default function Dashboard() {
   const { locked: instantLocked } = useInstantLockState();
 
   useEffect(() => {
+    document.documentElement.classList.add('client-dashboard')
+    return () => document.documentElement.classList.remove('client-dashboard')
+  }, [])
+
+  useEffect(() => {
     if (!user || isPublicDemoEmail(user.email) || !clientHasCoachChat(profile)) return;
     const refreshUnread = () => {
       void countVisibleClientChatUnread(supabase, user.id, profile).then(setUnreadMessages);

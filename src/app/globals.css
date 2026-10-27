@@ -1109,6 +1109,86 @@ html.client-portal nav.client-chrome {
   color: #1c1915;
 }
 
+/* Same silver and gold rims as the beige marketing page. Dashboard only. */
+@keyframes lx-silver-sheen {
+  from { background-position: 0% 50%; }
+  to { background-position: 200% 50%; }
+}
+
+html.client-dashboard header.client-chrome,
+html.client-dashboard nav.client-chrome {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  background-image:
+    linear-gradient(rgba(244, 239, 230, 0.96), rgba(244, 239, 230, 0.96)),
+    linear-gradient(90deg, #6a6660 0%, #f7f4ee 16%, #ffffff 28%, #b7b2a8 42%, #8c8881 58%, #ffffff 72%, #f4f1eb 84%, #6a6660 100%) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, border-box !important;
+  background-size: 100% 100%, 200% 100% !important;
+  animation: lx-silver-sheen 4.8s linear infinite;
+}
+
+html.client-dashboard .motion-card-enter,
+html.client-dashboard .lx-dash-silver,
+html.client-dashboard .lx-dash-gold,
+html.client-dashboard button.lx-sheen-gold,
+html.client-dashboard #lx-checkin-due-banner.lx-sheen-gold {
+  position: relative;
+  border-color: transparent !important;
+}
+
+html.client-dashboard .motion-card-enter::after,
+html.client-dashboard .lx-dash-silver::after,
+html.client-dashboard .lx-dash-gold::after,
+html.client-dashboard button.lx-sheen-gold::after,
+html.client-dashboard #lx-checkin-due-banner.lx-sheen-gold::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background-size: 200% 100%;
+  background-repeat: repeat;
+  animation: lx-silver-sheen 4.8s linear infinite;
+  pointer-events: none;
+  z-index: 3;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+html.client-dashboard .motion-card-enter::after,
+html.client-dashboard .lx-dash-silver::after {
+  background-image: linear-gradient(
+    90deg,
+    #6a6660 0%,
+    #f7f4ee 16%,
+    #ffffff 28%,
+    #b7b2a8 42%,
+    #8c8881 58%,
+    #ffffff 72%,
+    #f4f1eb 84%,
+    #6a6660 100%
+  );
+}
+
+html.client-dashboard .lx-dash-gold::after,
+html.client-dashboard button.lx-sheen-gold::after,
+html.client-dashboard #lx-checkin-due-banner.lx-sheen-gold::after {
+  background-image: linear-gradient(
+    90deg,
+    #8a6a2a 0%,
+    #f6e7b2 16%,
+    #fff8e4 28%,
+    #d4b15a 42%,
+    #a68432 58%,
+    #fff6d6 72%,
+    #f3e2a8 84%,
+    #8a6a2a 100%
+  );
+}
+
 .lx-today-grid {
   display: grid;
   gap: 12px;

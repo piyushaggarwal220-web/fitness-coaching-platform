@@ -79,7 +79,7 @@ export function Button({
     <button
       type="button"
       disabled={isDisabled}
-      className={`btn-press ${success ? 'btn-press--success' : ''} ${className ?? ''}`.trim()}
+      className={`btn-press ${variant === 'primary' ? 'lx-sheen-gold' : ''} ${success ? 'btn-press--success' : ''} ${className ?? ''}`.trim()}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

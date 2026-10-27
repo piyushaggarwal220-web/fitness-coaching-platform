@@ -18,6 +18,7 @@ export function MembershipRenewalBanner({ prompt }: Props) {
     <button
       type="button"
       onClick={() => router.push(prompt.href)}
+      className="lx-dash-silver"
       aria-label={`${prompt.title}. ${prompt.ctaLabel}.`}
       style={{
         display: 'flex',

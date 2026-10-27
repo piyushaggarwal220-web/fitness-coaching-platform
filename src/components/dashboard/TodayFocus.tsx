@@ -170,6 +170,7 @@ export function TodayFocus({
 
           {rest.length > 0 && (
             <div
+              className="lx-dash-silver"
               style={{
                 borderRadius: 16,
                 border: `1px solid ${colors.borderSubtle}`,
@@ -217,6 +218,7 @@ export function TodayFocus({
           {nextCheckin && (
             <button
               type="button"
+              className="lx-dash-silver"
               onClick={() => router.push(nextCheckin.href)}
               style={{
                 display: 'flex',
@@ -246,6 +248,7 @@ export function TodayFocus({
           {showChat && (
             <button
               type="button"
+              className="lx-dash-silver"
               onClick={() => router.push('/client/chat')}
               style={{
                 display: 'flex',
@@ -318,6 +321,7 @@ function ActionCard({
 }) {
   return (
     <div
+      className={primary ? 'lx-dash-gold' : 'lx-dash-silver'}
       style={{
         padding: primary ? 20 : 16,
         borderRadius: 16,
