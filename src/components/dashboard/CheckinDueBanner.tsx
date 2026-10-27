@@ -4,7 +4,7 @@ import { Calendar, ChevronRight, Timer } from 'lucide-react'
 import { useEffect, useLayoutEffect, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
-import { getCheckinTypeDisplayName, describeCheckinWindow, type ScheduledCheckin } from '@/lib/checkin-schedule'
+import { getCheckinTypeDisplayName, type ScheduledCheckin } from '@/lib/checkin-schedule'
 import { clientColors as colors, layout } from '@/lib/design-tokens'
 import { usePublicDemo } from '@/hooks/usePublicDemo'
 
@@ -15,8 +15,8 @@ type Props = {
   countdownLabel?: string | null
 }
 
-/** Keeps page content clear of the fixed banner (one compact row). */
-export const CHECKIN_DUE_BANNER_HEIGHT = 56
+/** Keeps page content clear of the fixed one-line check-in bar. */
+export const CHECKIN_DUE_BANNER_HEIGHT = 44
 
 /**
  * Fixed top-of-homescreen check-in status.
@@ -86,8 +86,12 @@ export function CheckinDueBanner({
     maxWidth: layout.maxWidthWide,
     marginLeft: 'auto',
     marginRight: 'auto',
+    height: CHECKIN_DUE_BANNER_HEIGHT,
     minHeight: CHECKIN_DUE_BANNER_HEIGHT,
-    padding: '6px 12px',
+    maxHeight: CHECKIN_DUE_BANNER_HEIGHT,
+    padding: '0 12px',
+    overflow: 'hidden',
+    boxSizing: 'border-box',
     border: 'none',
     borderBottom: isDue ? `2px solid ${colors.warning}` : `2px solid ${colors.accent}`,
     background: colors.bgSecondary,
@@ -106,9 +110,9 @@ export function CheckinDueBanner({
     <>
       <div
         style={{
-          width: 32,
-          height: 32,
-          borderRadius: 10,
+          width: 28,
+          height: 28,
+          borderRadius: 8,
           backgroundColor: colors.accentMuted,
           display: 'flex',
           alignItems: 'center',
@@ -118,38 +122,29 @@ export function CheckinDueBanner({
       >
         {icon}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: colors.accent,
-          }}
-        >
-          {isDue ? 'Check-in due' : 'Next check-in'}
-        </p>
-        <p
-          style={{
-            margin: '1px 0 0',
-            fontSize: 13,
-            fontWeight: 700,
-            color: colors.textPrimary,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {typeLabel} · Week {checkin.coachingWeek}
-          {isDue
-            ? ` · ${describeCheckinWindow(checkin.type)}`
-            : countdownLabel?.trim()
-              ? ` · in ${countdownLabel.trim()}`
-              : ''}
-        </p>
-      </div>
+      <p
+        style={{
+          flex: 1,
+          minWidth: 0,
+          margin: 0,
+          fontSize: 14,
+          fontWeight: 700,
+          lineHeight: 1.2,
+          color: colors.textPrimary,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {isDue ? 'Check-in due' : 'Next check-in'}
+        {' · '}
+        Week {checkin.coachingWeek}
+        {isDue
+          ? ` · ${checkin.type === 'weekly' ? 'Sun–Tue' : '48h'}`
+          : countdownLabel?.trim()
+            ? ` · ${countdownLabel.trim()}`
+            : ''}
+      </p>
       {isDue ? (
         <span
           style={{

@@ -135,7 +135,7 @@ html.lx-phone-viewport .client-container {
 }
 
 html.has-checkin-due-banner .lx-checkin-banner-gap {
-  min-height: var(--lx-checkin-banner-h, 56px);
+  min-height: var(--lx-checkin-banner-h, 44px);
   margin-bottom: var(--lx-checkin-banner-gap, 8px);
 }
 
