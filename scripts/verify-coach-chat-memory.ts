@@ -10,6 +10,7 @@ import {
 import { coachReplyRequest } from '../src/lib/ai/coach-chat-persona'
 import { chatTextForModel, encodeChatVoice } from '../src/lib/chat-reply-pause'
 import { chatLanguageDirective, explicitChatLanguage } from '../src/lib/ai/coach-chat-language'
+import { chatMoodDirective, parseChatMood } from '../src/lib/ai/coach-chat-mood'
 
 assert.equal(shouldAskBeforeAdvising('my hand is paining'), true)
 assert.equal(
@@ -39,6 +40,10 @@ assert.equal(explicitChatLanguage('please reply in hindi letters'), 'hindi_scrip
 assert.equal(explicitChatLanguage('sirf english'), 'english')
 assert.match(chatLanguageDirective('hinglish'), /English letters only/)
 assert.match(chatLanguageDirective('hindi_script'), /Devanagari/)
+assert.equal(parseChatMood('calm'), 'calm')
+assert.equal(parseChatMood('nope'), null)
+assert.match(chatMoodDirective('short'), /one or two short lines/)
+assert.match(chatMoodDirective('fired_up'), /More energy/)
 assert.match(readClientMood(['yaar bhai kya karu']).note, /Do not switch into Hindi script/)
 assert.doesNotMatch(readClientMood(['मेरा हाथ दर्द कर रहा है']).note, /Reply in Hindi/)
 

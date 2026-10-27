@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { ImageIcon, Send } from 'lucide-react'
+import { ImageIcon, Send, Settings } from 'lucide-react'
 import { StorageImage } from '@/components/ui/StorageImage'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
@@ -18,6 +18,7 @@ import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import { markSmartCoachRead } from '@/lib/smart-coach-unread'
 import { aiCoachImageStoragePath } from '@/lib/ai/ai-coach-photo-path'
 import { CHAT_LANGUAGES, parseChatLanguage, type ChatLanguage } from '@/lib/ai/coach-chat-language'
+import { CHAT_MOODS, parseChatMood, type ChatMood } from '@/lib/ai/coach-chat-mood'
 import { convertHeicFileToJpeg, isHeicLike } from '@/lib/photo'
 
 type Msg = { id?: string; role: 'user' | 'assistant'; content: string; created_at?: string }
@@ -43,7 +44,10 @@ export function AiCoachChatThread() {
   const [error, setError] = useState('')
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null)
   const [language, setLanguage] = useState<ChatLanguage>('hinglish')
+  const [mood, setMood] = useState<ChatMood>('auto')
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+  const settingsRef = useRef<HTMLDivElement | null>(null)
   const pauseRef = useRef<number | null>(null)
   const sendingRef = useRef(false)
   const replyEpoch = useRef(0)
@@ -66,6 +70,7 @@ export function AiCoachChatThread() {
         if (!active) return
         setMessages((data?.messages as Msg[]) ?? [])
         setLanguage(parseChatLanguage(data?.replyLanguage) ?? 'hinglish')
+        setMood(parseChatMood(data?.replyMood) ?? 'auto')
         setLoading(false)
       } catch {
         if (!active) return
@@ -99,6 +104,33 @@ export function AiCoachChatThread() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!settingsOpen) return
+    const close = (event: MouseEvent) => {
+      if (!settingsRef.current?.contains(event.target as Node)) setSettingsOpen(false)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSettingsOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [settingsOpen])
+
+  const saveSettings = (next: { language?: ChatLanguage; mood?: ChatMood }) => {
+    if (next.language) setLanguage(next.language)
+    if (next.mood) setMood(next.mood)
+    void fetch('/api/client/ai-chat', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(next),
+    })
+  }
+
   const revealCoachMessage = async (epoch: number, message: Msg) => {
     const needed = coachTypingDurationMs(chatTextForModel(message.content))
     const started = typingSince.current ?? Date.now()
@@ -123,7 +155,7 @@ export function AiCoachChatThread() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ replyNow: true, language }),
+        body: JSON.stringify({ replyNow: true, language, mood }),
       })
       const data = await res.json().catch(() => null)
       if (!res.ok) {
@@ -300,50 +332,130 @@ export function AiCoachChatThread() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       <div
+        ref={settingsRef}
         style={{
+          position: 'relative',
+          zIndex: 5,
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 12,
           padding: `${spacing[3]}px ${spacing[4]}px`,
           borderBottom: `1px solid ${colors.divider}`,
           background: colors.bgGlass,
         }}
       >
-        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>Smart Coach</p>
-        <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
-          Ask about your plan. A voice note works too.
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }} role="group" aria-label="Chat language">
-          {CHAT_LANGUAGES.map((option) => {
-            const selected = language === option.id
-            return (
-              <button
-                key={option.id}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => {
-                  setLanguage(option.id)
-                  void fetch('/api/client/ai-chat', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ language: option.id }),
-                  })
-                }}
-                style={{
-                  minHeight: 32,
-                  padding: '0 12px',
-                  borderRadius: 999,
-                  border: `1px solid ${selected ? colors.accent : colors.borderSubtle}`,
-                  background: selected ? colors.accent : colors.bgCard,
-                  color: selected ? colors.textInverse : colors.textPrimary,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                {option.label}
-              </button>
-            )
-          })}
+        <div style={{ minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>Smart Coach</p>
+          <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
+            Ask about your plan. A voice note works too.
+          </p>
         </div>
+        <button
+          type="button"
+          aria-expanded={settingsOpen}
+          aria-controls="coach-chat-settings"
+          onClick={() => setSettingsOpen((open) => !open)}
+          style={{
+            flexShrink: 0,
+            minHeight: 36,
+            padding: '0 12px',
+            borderRadius: 999,
+            border: `1px solid ${settingsOpen ? colors.accent : colors.borderSubtle}`,
+            background: settingsOpen ? colors.accent : colors.bgCard,
+            color: settingsOpen ? colors.textInverse : colors.textPrimary,
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <Settings size={15} />
+          Settings
+        </button>
+        {settingsOpen && (
+          <div
+            id="coach-chat-settings"
+            role="dialog"
+            aria-label="Coach chat settings"
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 8px)',
+              right: spacing[4],
+              left: spacing[4],
+              zIndex: 6,
+              padding: 12,
+              borderRadius: radius.md,
+              border: `1px solid ${colors.borderSubtle}`,
+              background: colors.bgCard,
+              boxShadow: '0 16px 40px rgba(28, 25, 21, 0.16)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}
+          >
+            <div>
+              <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 800, color: colors.textMuted }}>Language</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }} role="group" aria-label="Chat language">
+                {CHAT_LANGUAGES.map((option) => {
+                  const selected = language === option.id
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => saveSettings({ language: option.id })}
+                      style={{
+                        minHeight: 32,
+                        padding: '0 12px',
+                        borderRadius: 999,
+                        border: `1px solid ${selected ? colors.accent : colors.borderSubtle}`,
+                        background: selected ? colors.accent : colors.bgCard,
+                        color: selected ? colors.textInverse : colors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div>
+              <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 800, color: colors.textMuted }}>Mood</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }} role="group" aria-label="Coach mood">
+                {CHAT_MOODS.map((option) => {
+                  const selected = mood === option.id
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => saveSettings({ mood: option.id })}
+                      style={{
+                        minHeight: 32,
+                        padding: '0 12px',
+                        borderRadius: 999,
+                        border: `1px solid ${selected ? colors.accent : colors.borderSubtle}`,
+                        background: selected ? colors.accent : colors.bgCard,
+                        color: selected ? colors.textInverse : colors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: spacing[4], display: 'flex', flexDirection: 'column', gap: 10 }}>
         {loading && (
@@ -351,7 +463,7 @@ export function AiCoachChatThread() {
         )}
         {!loading && messages.length === 0 && (
           <p style={{ margin: 0, color: colors.textSecondary, fontSize: 14, lineHeight: 1.5 }}>
-            Start a conversation with Smart Coach. Hinglish is the usual choice, and it uses English letters. Pick Hindi letters only if you want Hindi script.
+            Start a conversation with Smart Coach. Open Settings if you want a different language or mood.
           </p>
         )}
         {messages.map((msg, index) => {

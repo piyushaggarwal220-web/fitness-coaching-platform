@@ -23,6 +23,7 @@ import {
   parseChatLanguage,
   type ChatLanguage,
 } from '@/lib/ai/coach-chat-language'
+import { chatMoodDirective, parseChatMood, type ChatMood } from '@/lib/ai/coach-chat-mood'
 import { ownVoicePath, transcribeChatVoice } from '@/lib/ai/transcribe-chat-voice'
 import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
 import {
@@ -112,42 +113,53 @@ async function earlierCoachThread(
 async function loadCoachMemory(
   admin: ReturnType<typeof createAdminClient>,
   clientId: string
-): Promise<{ summary: string; replyLanguage: ChatLanguage; summarizedThrough: string | null }> {
+): Promise<{
+  summary: string
+  replyLanguage: ChatLanguage
+  replyMood: ChatMood
+  summarizedThrough: string | null
+}> {
   const { data, error } = await admin
     .from('ai_coach_memory')
-    .select('summary, reply_language, summarized_through')
+    .select('summary, reply_language, reply_mood, summarized_through')
     .eq('client_id', clientId)
     .maybeSingle()
-  if (error || !data) return { summary: '', replyLanguage: 'hinglish', summarizedThrough: null }
+  if (error || !data) {
+    return { summary: '', replyLanguage: 'hinglish', replyMood: 'auto', summarizedThrough: null }
+  }
   return {
     summary: data.summary?.trim() ?? '',
     replyLanguage: parseChatLanguage(data.reply_language) ?? 'hinglish',
+    replyMood: parseChatMood(data.reply_mood) ?? 'auto',
     summarizedThrough: data.summarized_through ?? null,
   }
 }
 
-async function saveReplyLanguage(
+async function saveChatSettings(
   admin: ReturnType<typeof createAdminClient>,
   clientId: string,
-  language: ChatLanguage
+  settings: { language?: ChatLanguage; mood?: ChatMood }
 ): Promise<void> {
+  const patch: { reply_language?: ChatLanguage; reply_mood?: ChatMood; updated_at: string } = {
+    updated_at: new Date().toISOString(),
+  }
+  if (settings.language) patch.reply_language = settings.language
+  if (settings.mood) patch.reply_mood = settings.mood
   const { data } = await admin
     .from('ai_coach_memory')
     .select('client_id')
     .eq('client_id', clientId)
     .maybeSingle()
   if (data) {
-    await admin
-      .from('ai_coach_memory')
-      .update({ reply_language: language, updated_at: new Date().toISOString() })
-      .eq('client_id', clientId)
+    await admin.from('ai_coach_memory').update(patch).eq('client_id', clientId)
     return
   }
   await admin.from('ai_coach_memory').insert({
     client_id: clientId,
     summary: '',
     mood: 'plain',
-    reply_language: language,
+    reply_language: settings.language ?? 'hinglish',
+    reply_mood: settings.mood ?? 'auto',
   })
 }
 
@@ -266,6 +278,7 @@ export async function GET() {
     coachFirstName,
     coachId: profile.coach_id,
     replyLanguage: memory.replyLanguage,
+    replyMood: memory.replyMood,
   })
 }
 
@@ -273,7 +286,7 @@ export async function POST(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response
 
-  let body: { message?: string; replyNow?: boolean; language?: string }
+  let body: { message?: string; replyNow?: boolean; language?: string; mood?: string }
   try {
     body = await request.json()
   } catch {
@@ -283,7 +296,8 @@ export async function POST(request: Request) {
   const message = (body.message || '').trim()
   const replyNow = body.replyNow === true
   const requestedLanguage = parseChatLanguage(body.language)
-  if (!message && !replyNow && !requestedLanguage) {
+  const requestedMood = parseChatMood(body.mood)
+  if (!message && !replyNow && !requestedLanguage && !requestedMood) {
     return NextResponse.json({ error: 'Message required' }, { status: 400 })
   }
   if (message.length > MAX_MESSAGE_LEN) {
@@ -305,9 +319,15 @@ export async function POST(request: Request) {
   if (denied) return denied
 
   const admin = createAdminClient()
-  if (requestedLanguage && !message && !replyNow) {
-    await saveReplyLanguage(admin, auth.user.id, requestedLanguage)
-    return NextResponse.json({ replyLanguage: requestedLanguage })
+  if ((requestedLanguage || requestedMood) && !message && !replyNow) {
+    await saveChatSettings(admin, auth.user.id, {
+      language: requestedLanguage ?? undefined,
+      mood: requestedMood ?? undefined,
+    })
+    return NextResponse.json({
+      replyLanguage: requestedLanguage ?? undefined,
+      replyMood: requestedMood ?? undefined,
+    })
   }
 
   const now = new Date().toISOString()
@@ -393,9 +413,14 @@ export async function POST(request: Request) {
   const latestClientText = pendingText || chatTextForModel(storedMessage || message)
   const replyLanguage =
     explicitChatLanguage(latestClientText) ?? requestedLanguage ?? memory.replyLanguage
-  if (replyLanguage !== memory.replyLanguage) {
-    await saveReplyLanguage(admin, auth.user.id, replyLanguage).catch(() => undefined)
+  const replyMood = requestedMood ?? memory.replyMood
+  if (replyLanguage !== memory.replyLanguage || replyMood !== memory.replyMood) {
+    await saveChatSettings(admin, auth.user.id, {
+      language: replyLanguage !== memory.replyLanguage ? replyLanguage : undefined,
+      mood: replyMood !== memory.replyMood ? replyMood : undefined,
+    }).catch(() => undefined)
   }
+  const moodNote = replyMood === 'auto' ? mood.note : chatMoodDirective(replyMood)
 
   const pendingChange = await loadPendingPlanChange(admin, auth.user.id)
   const pendingProfile = await loadPendingProfileChange(admin, auth.user.id)
@@ -516,7 +541,7 @@ export async function POST(request: Request) {
     checkinLine: thread.checkinLine,
     situationLine: thread.situationLine,
     memorySummary: memory.summary,
-    moodNote: mood.note,
+    moodNote,
     languageNote: chatLanguageDirective(replyLanguage),
     mode: 'ai_thread',
   })
