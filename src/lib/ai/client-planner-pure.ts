@@ -1,5 +1,7 @@
 import { extractStepCount } from '@/lib/ai/cardio-steps'
+import { assessDietFollowsRequest } from '@/lib/ai/diet-update-check'
 import { extractPlanDayLabels } from '@/lib/ai/plan-completeness'
+import { assessWorkoutStructure } from '@/lib/ai/workout-structure'
 
 /** Working memory for one client's planner chat. */
 export const PLANNER_CONTEXT_TOKENS = 128_000
@@ -227,6 +229,8 @@ export function crosscheckPlannerSections(input: {
   supplements: string
   sleep?: string
   previousWorkoutDays: number
+  previousWorkout?: string | null
+  previousNutrition?: string | null
   changed: PlannerSection[]
   instruction: string
 }): string[] {
@@ -236,6 +240,12 @@ export function crosscheckPlannerSections(input: {
     if (got < 7) {
       errors.push(`Diet plan is incomplete: need all 7 days labeled Day 1 (Monday) through Day 7 (Sunday). Found ${got}.`)
     }
+    const dietMiss = assessDietFollowsRequest(
+      input.nutrition,
+      input.instruction,
+      input.previousNutrition
+    )
+    if (dietMiss) errors.push(dietMiss)
   }
   if (input.changed.includes('workout')) {
     const need = Math.max(input.previousWorkoutDays, 1)
@@ -243,6 +253,7 @@ export function crosscheckPlannerSections(input: {
     if (got < need) {
       errors.push(`Workout plan is incomplete: need ${need} labeled training day${need === 1 ? '' : 's'}. Found ${got}.`)
     }
+    errors.push(...assessWorkoutStructure(input.workout, input.previousWorkout, input.instruction))
   }
   if (input.changed.includes('cardio') && extractStepCount(input.cardio) == null) {
     errors.push('Cardio plan must be a daily step count, such as 8000 steps.')

@@ -40,6 +40,8 @@ import {
   syncNutritionPlanMacros,
 } from '@/lib/ai/nutrition-macro-sync'
 import { formatCalorieGuidanceBlock, resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
+import { assessDietFollowsRequest } from '@/lib/ai/diet-update-check'
+import { assessWorkoutStructure } from '@/lib/ai/workout-structure'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   DAY_HEADER_PROMPT_RULES,
@@ -391,6 +393,36 @@ function isNumber(value: unknown): value is number {
 
 function isArray(value: unknown): value is unknown[] {
   return Array.isArray(value)
+}
+
+function workoutProse(plan: { workout_plan: { overview: string; days: unknown[] } }): string {
+  const days = plan.workout_plan.days
+    .map((day) => {
+      if (typeof day === 'string') return day
+      if (!isRecord(day)) return ''
+      const head = [day.day, day.name, day.focus, day.title]
+        .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+        .join(' ')
+      const exercises = Array.isArray(day.exercises)
+        ? day.exercises
+            .map((exercise) => (typeof exercise === 'string' ? exercise : formatExerciseFallback(exercise)))
+            .filter(Boolean)
+            .join('\n')
+        : ''
+      return [head, exercises].filter(Boolean).join('\n')
+    })
+    .filter(Boolean)
+    .join('\n')
+  return [plan.workout_plan.overview, days].filter(Boolean).join('\n')
+}
+
+function formatExerciseFallback(exercise: unknown): string {
+  if (!isRecord(exercise)) return ''
+  const name = [exercise.name, exercise.exercise, exercise.movement].find((part) => typeof part === 'string')
+  const sets = exercise.sets
+  const reps = exercise.reps
+  if (typeof name === 'string' && sets != null && reps != null) return `${name}: ${sets} sets x ${reps} reps`
+  return typeof name === 'string' ? name : ''
 }
 
 export { profileToComplexityInput } from '@/lib/complexity/profile-input'
@@ -876,6 +908,61 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       if (!completeness.ok) {
         lastValidationError = completeness.error ?? 'Plan incomplete.'
         completenessHint = completeness.error
+        continue
+      }
+    }
+
+    if (
+      !supportSection &&
+      providerMode !== 'mock' &&
+      input.actionId === 'review_update_workout' &&
+      (validationMode === 'workout_focus' || validationMode === 'full')
+    ) {
+      const checkinNote = [
+        input.latestCheckin?.progress_notes,
+        input.latestCheckin?.notes,
+        input.latestCheckin?.questions_for_coach,
+        input.latestCheckin?.adherence_struggles,
+        input.latestCheckin?.pain_injuries,
+        input.latestCheckin?.digestion,
+      ]
+        .filter((part) => typeof part === 'string' && part.trim())
+        .join('\n')
+      const structure = assessWorkoutStructure(
+        workoutProse(plan),
+        input.activePlan?.workout_plan,
+        checkinNote
+      )
+      if (structure.length > 0) {
+        lastValidationError = structure[0] ?? 'Workout structure failed.'
+        completenessHint = structure.join(' ')
+        continue
+      }
+    }
+
+    if (
+      !supportSection &&
+      providerMode !== 'mock' &&
+      input.actionId === 'review_update_diet' &&
+      (validationMode === 'nutrition_focus' || validationMode === 'full')
+    ) {
+      const requestText = [
+        input.latestCheckin?.progress_notes,
+        input.latestCheckin?.notes,
+        input.latestCheckin?.questions_for_coach,
+        input.latestCheckin?.adherence_struggles,
+        input.latestCheckin?.digestion,
+      ]
+        .filter((part) => typeof part === 'string' && part.trim())
+        .join('\n')
+      const dietMiss = assessDietFollowsRequest(
+        collectDietProse(plan.nutrition_plan.meals),
+        requestText,
+        input.activePlan?.nutrition_plan
+      )
+      if (dietMiss) {
+        lastValidationError = dietMiss
+        completenessHint = dietMiss
         continue
       }
     }

@@ -169,11 +169,13 @@ export const EDIT_EXPENDITURE_FIRST_RULES = [
 ].join('\n')
 
 export const WORKOUT_VOLUME_PROMPT_RULES = [
-  'TRAINING VOLUME (non-negotiable — follow the Training Mesocycle week):',
-  '- Week 1 (BASE): 2 to 3 working sets per exercise for every experience level. About 5 to 7 working exercises. Leave 2 to 3 reps in reserve on compounds.',
-  '- Week 2 (BUILD): beginners stay at 2 to 3 working sets and add load or reps. Intermediate and advanced use 3 working sets on main compounds and 2 to 3 on accessories.',
+  'TRAINING VOLUME (non-negotiable — follow Workout fit and the Training Mesocycle week):',
+  '- A new month is not a new split and not a beginner week. Keep the current split, the current training days, and the muscle groups those days already train.',
+  '- Week 1 (BASE): beginners use 3 working sets. Intermediate and advanced use 4 on main lifts and 3 on accessories. Drop to 2 sets only when this week\'s difficulty is Easier. About 5 to 7 working exercises. Leave 2 to 3 reps in reserve on compounds.',
+  '- Week 2 (BUILD): beginners stay at 3 working sets and add load or reps. Intermediate and advanced use 3 to 4 working sets on main compounds and 3 on accessories.',
   '- Weeks 3 and 4: beginners stay at 3 working sets and add load or tighter reps in reserve. Intermediate and advanced use 4 working sets on main compounds only and 3 on accessories.',
   '- Never prescribe 5 or more working sets on an exercise. Warm-up sets are extra and do not count as working sets.',
+  '- Do not copy the same two or three working lifts onto the next calendar day. Keep a curl and a triceps exercise in any week that trains the upper body. Keep a squat or leg press plus a hinge in any week that trains legs.',
   '- About 5 to 7 working exercises per session, not counting warm-up or cooldown stretches. One core finisher per training day (2 max on a dedicated core day).',
   '- Reps by experience: beginners 8 to 15 on compounds. Intermediate 6 to 12. Advanced or strength-focused: 3 to 6 on main compounds only, 8 to 15 on accessories.',
   '- Fit the stated session duration. Prefer the mesocycle set count over junk volume.',

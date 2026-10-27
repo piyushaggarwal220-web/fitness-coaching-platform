@@ -21,6 +21,7 @@ import {
   type PlannerSection,
   type PlannerUpdate,
 } from '@/lib/ai/client-planner-pure'
+import { inferPlanChangeScope } from '@/lib/ai/ai-coach-plan-change-pure'
 import { activatePlan, persistAiPlanDraft } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile } from '@/types/database'
@@ -331,6 +332,8 @@ async function applyUpdate(input: {
     supplements: next.supplements,
     sleep: next.sleep,
     previousWorkoutDays: labeledDayCount(input.plan?.workout_plan ?? ''),
+    previousWorkout: input.plan?.workout_plan,
+    previousNutrition: input.plan?.nutrition_plan,
     changed,
     instruction: input.update.instruction,
   })
@@ -740,7 +743,7 @@ export async function runPlannerTurn(input: {
   const systemPrompt = [
     'You are this client\'s planner. Only the coach is in this chat. The client cannot see it.',
     'Discuss the plan. Ask a short question when a required detail is missing.',
-    'When the coach has described the change, end the reply with this trailer and nothing after it. The plan is then written, checked, and delivered. Do not wait for a second confirmation:',
+    'When the message is a finished client summary, or the coach has described the whole change, end the reply with this trailer and nothing after it. The plan is then written, checked, and delivered. Do not wait for a second confirmation. Do not publish from a fragment if they say more is coming:',
     '<<<PLANNER',
     '{"update":{"sections":["nutrition"],"instruction":"what to change, in the coach\'s words","clientNote":"one or two sentences the client will read"},"closeRequest":false}',
     '>>>',
@@ -771,7 +774,9 @@ export async function runPlannerTurn(input: {
       systemPrompt,
       userPrompt: [
         modelTranscript(messages),
-        'If the coach described what to change, include the PLANNER trailer. If they are only asking a question, omit it.',
+        message.startsWith('Client summary of the full edit.')
+          ? 'This message is the complete client edit. Include the PLANNER trailer now and cover every numbered point. Do not ask a follow-up.'
+          : 'If the coach described what to change, include the PLANNER trailer. If they are only asking a question, omit it.',
         'Write the next reply to the coach.',
       ].join('\n\n'),
       model: MODELS.GPT_LUNA,
@@ -790,7 +795,21 @@ export async function runPlannerTurn(input: {
     return threadState(admin, input.clientId, [...messages, saved])
   }
 
-  const decision = parsePlannerDecision(decisionText)
+  let decision = parsePlannerDecision(decisionText)
+  if (message.startsWith('Client summary of the full edit.') && !decision.update && !decision.closeRequest) {
+    const scope = inferPlanChangeScope(message)
+    const sections: PlannerSection[] =
+      scope === 'diet' ? ['nutrition'] : scope === 'workout' ? ['workout'] : ['nutrition', 'workout']
+    decision = {
+      reply: decision.reply || 'Applying the full list.',
+      closeRequest: false,
+      update: {
+        sections,
+        instruction: message,
+        clientNote: 'Your requested plan edit is in. Open My Plan.',
+      },
+    }
+  }
   let reply = decision.reply
   let publishedPlanId: string | null = null
 
@@ -873,4 +892,25 @@ export async function runPlannerTurn(input: {
   })
   const latest = await loadMessages(admin, input.clientId)
   return threadState(admin, input.clientId, latest.length > 0 ? latest : [...messages, saved])
+}
+
+/** The client's chat summary is the whole edit. Check it and publish. */
+export async function runPlannerFromClientSummary(input: {
+  clientId: string
+  coachId: string
+  requestId: string
+  summary: string
+}): Promise<void> {
+  const admin = createAdminClient()
+  await seedPlannerRequest(admin, {
+    clientId: input.clientId,
+    coachId: input.coachId,
+    requestId: input.requestId,
+  })
+  await runPlannerTurn({
+    clientId: input.clientId,
+    coachId: input.coachId,
+    requestId: input.requestId,
+    message: `Client summary of the full edit. Apply every point, check the plan, and publish. Do not ask for the rest of the message.\n\n${input.summary}`,
+  })
 }

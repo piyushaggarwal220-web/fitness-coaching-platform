@@ -5,9 +5,10 @@
  * Never auto-publishes and never posts the check-in into client chat.
  */
 import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
-import { generatePlan } from '@/lib/ai/generate-plan'
+import { GeneratePlanError, generatePlan } from '@/lib/ai/generate-plan'
 import { loadClientJourneySnapshot } from '@/lib/ai/client-journey'
-import { dietTextHasCalorieConflict } from '@/lib/ai/nutrition-macro-sync'
+import { clientRequestedDietChange } from '@/lib/ai/diet-update-check'
+import { dietTextHasCalorieConflict, prepareNutritionPlanForSave } from '@/lib/ai/nutrition-macro-sync'
 import {
   logDraftWorkflow,
   persistDraftGenerationLog,
@@ -91,6 +92,7 @@ function shouldSkipSupportPlanRefresh(checkin: Checkin, active: Plan | null): bo
   return isStableWeeklyCheckin(checkin)
 }
 
+
 /** Skip diet/workout AI when active plan has both and check-in is stable. */
 function shouldSkipCorePlanRefresh(checkin: Checkin, active: Plan | null): boolean {
   const hasNutrition = Boolean(active?.nutrition_plan?.trim())
@@ -121,7 +123,7 @@ function dietFormFromActive(clientId: string, active: Plan): PlanFormData {
     title: 'Diet Plan (Draft)',
     phase: active.phase ?? '',
     workout_plan: '',
-    nutrition_plan: active.nutrition_plan?.trim() || '',
+    nutrition_plan: prepareNutritionPlanForSave(active.nutrition_plan) || '',
     cardio_plan: '',
     supplement_plan: '',
     coach_notes: '',
@@ -424,11 +426,15 @@ export async function generateWeeklyPlanDraft(input: {
     const sections: DraftSectionUsage[] = []
     const skipCoreRefresh = false
     const skipSupportRefresh = false
+    const skipDietRefresh =
+      Boolean(active?.nutrition_plan?.trim()) &&
+      !clientRequestedDietChange(checkinTyped) &&
+      !dietTextHasCalorieConflict(active?.nutrition_plan)
 
     let dietForm: PlanFormData
     let updatedDietContext: Plan | null
 
-    if (skipCoreRefresh && active) {
+    if (skipDietRefresh && active) {
       dietForm = dietFormFromActive(input.clientId, active)
       updatedDietContext = buildUpdatedDietPlanForPrompt(
         active,
@@ -469,27 +475,37 @@ export async function generateWeeklyPlanDraft(input: {
     if (skipCoreRefresh && active) {
       workoutForm = workoutFormFromActive(input.clientId, active)
     } else {
-      const workoutResult = await generatePlan({
-        profile: profileTyped,
-        latestCheckin: checkinTyped,
-        actionId: 'review_update_workout',
-        activePlan: active,
-        updatedDietPlan: updatedDietContext,
-        validationMode: 'workout_focus',
-        clientJourney,
-        coachInstructions: buildActionCoachInstructions('review_update_workout', {
+      try {
+        const workoutResult = await generatePlan({
+          profile: profileTyped,
+          latestCheckin: checkinTyped,
+          actionId: 'review_update_workout',
           activePlan: active,
-          checkin: checkinTyped,
-          coachNote,
-        }),
-      })
-      sections.push({
-        action: 'review_update_workout',
-        model: workoutResult.model,
-        inputTokens: workoutResult.inputTokens,
-        outputTokens: workoutResult.outputTokens,
-      })
-      workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, input.clientId)
+          updatedDietPlan: updatedDietContext,
+          validationMode: 'workout_focus',
+          clientJourney,
+          coachInstructions: buildActionCoachInstructions('review_update_workout', {
+            activePlan: active,
+            checkin: checkinTyped,
+            coachNote,
+          }),
+        })
+        sections.push({
+          action: 'review_update_workout',
+          model: workoutResult.model,
+          inputTokens: workoutResult.inputTokens,
+          outputTokens: workoutResult.outputTokens,
+        })
+        workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, input.clientId)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : ''
+        const structureFailed =
+          error instanceof GeneratePlanError &&
+          /back-to-back|Arm work is too low|Leg work is too low|working exercise/i.test(message)
+        if (!structureFailed || !active?.workout_plan?.trim()) throw error
+        console.warn('[weekly-plan] kept the current workout after a broken rewrite', message.slice(0, 240))
+        workoutForm = workoutFormFromActive(input.clientId, active)
+      }
     }
 
     // Persist a publishable core draft before optional cardio/supplement calls.

@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
+import { runPlannerFromClientSummary } from '@/lib/ai/client-planner'
 import { requireApiUser } from '@/lib/api-auth'
 import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
@@ -28,16 +29,20 @@ import { ownVoicePath, transcribeChatVoice } from '@/lib/ai/transcribe-chat-voic
 import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
 import {
   blocksPlanChangeLock,
+  continuesPlanEdit,
   dropStaleYesPrompt,
   extractPlanChangeProposal,
+  inferPlanChangeScope,
   isPlanChangeCancel,
   isPlanChangeConfirm,
   loadPendingPlanChange,
   lockAndProcessPlanChangeFromChat,
+  mergePlanChangeFragments,
   pendingPlanChangeDirective,
   planChangeChatInstruction,
   replacesPendingPlanChange,
   savePendingPlanChange,
+  showRunningEditSummary,
   stripPlanChangeTrailer,
   wantsPlanChangeAppliedNow,
   withConfirmCue,
@@ -422,7 +427,7 @@ export async function POST(request: Request) {
   }
   const moodNote = replyMood === 'auto' ? mood.note : chatMoodDirective(replyMood)
 
-  const pendingChange = await loadPendingPlanChange(admin, auth.user.id)
+  let pendingChange = await loadPendingPlanChange(admin, auth.user.id)
   const pendingProfile = await loadPendingProfileChange(admin, auth.user.id)
   const quota = await getPlanChangeQuota(auth.user.id)
   const ownPhotoPath = (raw: string | null | undefined): string | null => {
@@ -493,36 +498,61 @@ export async function POST(request: Request) {
     return saveAssistant(`${result.message}${planStillWaiting}`)
   }
 
-  if (pendingChange && isPlanChangeConfirm(latestClientText)) {
-    const result = await lockAndProcessPlanChangeFromChat({
-      clientId: auth.user.id,
-      profile,
-      pending: pendingChange,
-    })
-    await savePendingPlanChange(admin, auth.user.id, null)
-    return saveAssistant(result.message)
-  }
-
-  if (!pendingChange && wantsPlanChangeAppliedNow(latestClientText) && !datedPlanRequestDirective(latestClientText)) {
-    const transcript = [...earlier.slice(-8), ...history]
-      .map((turn) => `${turn.role === 'user' ? 'Client' : 'Coach'}: ${chatTextForModel(turn.content)}`)
-      .join('\n')
-    const extracted = await extractPlanChangeProposal({
-      clientText: latestClientText,
-      transcript,
-    })
-    if (extracted) {
+  const readyToPublish =
+    (pendingChange && isPlanChangeConfirm(latestClientText)) ||
+    (wantsPlanChangeAppliedNow(latestClientText) && !datedPlanRequestDirective(latestClientText))
+  if (readyToPublish) {
+    let toLock = pendingChange
+    if (!toLock) {
+      const transcript = [...earlier.slice(-8), ...history]
+        .map((turn) => `${turn.role === 'user' ? 'Client' : 'Coach'}: ${chatTextForModel(turn.content)}`)
+        .join('\n')
+      toLock = await extractPlanChangeProposal({
+        clientText: latestClientText,
+        transcript,
+      })
+    } else if (!isPlanChangeConfirm(latestClientText)) {
+      toLock = mergePlanChangeFragments(pendingChange, {
+        scope: inferPlanChangeScope(latestClientText),
+        requestText: latestClientText.trim(),
+        createdAt: new Date().toISOString(),
+      })
+    }
+    if (toLock) {
       const result = await lockAndProcessPlanChangeFromChat({
         clientId: auth.user.id,
         profile,
-        pending: extracted,
+        pending: toLock,
       })
       await savePendingPlanChange(admin, auth.user.id, null)
+      if (result.ok) {
+        const published = result
+        after(() => {
+          void runPlannerFromClientSummary({
+            clientId: auth.user.id,
+            coachId: published.coachId,
+            requestId: published.requestId,
+            summary: published.summary,
+          }).catch((error) => {
+            console.error('[ai-chat] planner publish failed', error)
+          })
+        })
+      }
       return saveAssistant(result.message)
     }
   }
 
   const dated = datedPlanRequestDirective(latestClientText)
+  let collectedThisTurn = false
+  if (pendingChange && continuesPlanEdit(latestClientText)) {
+    pendingChange = mergePlanChangeFragments(pendingChange, {
+      scope: inferPlanChangeScope(latestClientText),
+      requestText: latestClientText.trim(),
+      createdAt: new Date().toISOString(),
+    })
+    await savePendingPlanChange(admin, auth.user.id, pendingChange)
+    collectedThisTurn = true
+  }
   const systemPrompt = buildNamedCoachSystemPrompt({
     coachFirstName,
     name: profile.name,
@@ -614,10 +644,20 @@ export async function POST(request: Request) {
       }
     }
     if (stripped.propose && !dated && !blocksPlanChangeLock(stripped.visible)) {
-      await savePendingPlanChange(admin, auth.user.id, stripped.propose)
-      replyText = withConfirmCue(replyText, quota.remainingToday)
+      const merged = mergePlanChangeFragments(pendingChange, stripped.propose)
+      await savePendingPlanChange(admin, auth.user.id, merged)
+      pendingChange = merged
+      replyText = withConfirmCue(showRunningEditSummary(replyText, merged), quota.remainingToday)
+    } else if (collectedThisTurn && pendingChange) {
+      replyText = withConfirmCue(showRunningEditSummary(replyText, pendingChange), quota.remainingToday)
     } else if (pendingChange && replacesPendingPlanChange(latestClientText)) {
-      await savePendingPlanChange(admin, auth.user.id, null)
+      const merged = mergePlanChangeFragments(pendingChange, {
+        scope: inferPlanChangeScope(latestClientText),
+        requestText: latestClientText.trim(),
+        createdAt: new Date().toISOString(),
+      })
+      await savePendingPlanChange(admin, auth.user.id, merged)
+      replyText = withConfirmCue(showRunningEditSummary(replyText, merged), quota.remainingToday)
     }
   } catch {
     replyText =

@@ -4,12 +4,16 @@ import { MODELS } from '@/lib/ai/config'
 import {
   type PendingPlanChange,
   blocksPlanChangeLock,
+  continuesPlanEdit,
   dropStaleYesPrompt,
+  inferPlanChangeScope,
   isPlanChangeCancel,
   isPlanChangeConfirm,
+  mergePlanChangeFragments,
   pendingPlanChangeDirective,
   planChangeChatInstruction,
   replacesPendingPlanChange,
+  showRunningEditSummary,
   stripPlanChangeTrailer,
   wantsPlanChangeAppliedNow,
   withConfirmCue,
@@ -29,12 +33,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export type { PendingPlanChange }
 export {
   blocksPlanChangeLock,
+  continuesPlanEdit,
   dropStaleYesPrompt,
+  inferPlanChangeScope,
   isPlanChangeCancel,
   isPlanChangeConfirm,
+  mergePlanChangeFragments,
   pendingPlanChangeDirective,
   planChangeChatInstruction,
   replacesPendingPlanChange,
+  showRunningEditSummary,
   stripPlanChangeTrailer,
   wantsPlanChangeAppliedNow,
   withConfirmCue,
@@ -48,10 +56,14 @@ function parsePending(raw: unknown): PendingPlanChange | null {
     typeof row.requestText === 'string' &&
     row.requestText.trim().length >= 10
   ) {
+    const fragments = Array.isArray(row.fragments)
+      ? row.fragments.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim())
+      : undefined
     return {
       scope: row.scope,
       requestText: row.requestText.trim().slice(0, 4000),
       createdAt: typeof row.createdAt === 'string' ? row.createdAt : new Date().toISOString(),
+      fragments,
     }
   }
   return null
@@ -150,7 +162,10 @@ export async function lockAndProcessPlanChangeFromChat(input: {
     subscription_expires_at?: string | null
   }
   pending: PendingPlanChange
-}): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
+}): Promise<
+  | { ok: true; message: string; requestId: string; coachId: string; summary: string }
+  | { ok: false; message: string }
+> {
   if (input.profile.role && input.profile.role !== 'client') {
     return { ok: false, message: 'Only clients can lock plan edits.' }
   }
@@ -221,6 +236,9 @@ export async function lockAndProcessPlanChangeFromChat(input: {
   const quota = await getPlanChangeQuota(input.clientId)
   return {
     ok: true,
-    message: `Sent to your coach. They will update your ${input.pending.scope} plan from this request. You have ${quota.remainingToday} edit${quota.remainingToday === 1 ? '' : 's'} left today. The written plan stays as it is until that update is in My Plan.`,
+    requestId: created.request.id,
+    coachId,
+    summary: input.pending.requestText,
+    message: `I've sent the full list to your planner. It will check the plan and publish it. You have ${quota.remainingToday} edit${quota.remainingToday === 1 ? '' : 's'} left today. My Plan stays as it is until that check passes.`,
   }
 }

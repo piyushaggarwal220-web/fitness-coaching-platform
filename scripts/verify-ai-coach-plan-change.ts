@@ -4,6 +4,8 @@ import {
   dropStaleYesPrompt,
   isPlanChangeCancel,
   isPlanChangeConfirm,
+  continuesPlanEdit,
+  mergePlanChangeFragments,
   replacesPendingPlanChange,
   stripPlanChangeTrailer,
   wantsPlanChangeAppliedNow,
@@ -41,6 +43,26 @@ assert.equal(stripped.propose?.scope, 'diet')
 assert.match(stripped.propose?.requestText ?? '', /soya curd/)
 
 assert.match(withConfirmCue('Summary here.', 2), /Reply YES/)
+
+const first = mergePlanChangeFragments(null, {
+  scope: 'workout',
+  requestText: 'No seated rows. Make the workout normal.',
+  createdAt: '2026-10-27T00:00:00.000Z',
+})
+const both = mergePlanChangeFragments(first, {
+  scope: 'diet',
+  requestText: 'Remove paneer and add more rice.',
+  createdAt: '2026-10-27T00:01:00.000Z',
+})
+assert.equal(both.scope, 'both')
+assert.match(both.requestText, /seated rows/)
+assert.match(both.requestText, /paneer/)
+assert.equal(both.fragments?.length, 2)
+assert.equal(continuesPlanEdit('and more rice'), true)
+assert.equal(continuesPlanEdit('legs need more sets'), true)
+assert.equal(continuesPlanEdit('thanks'), false)
+assert.equal(continuesPlanEdit('Need to talk'), false)
+assert.equal(continuesPlanEdit('yes'), false)
 assert.match(withConfirmCue('Reply YES already.', 2), /^Reply YES already\.$/)
 
 console.log('verify-ai-coach-plan-change: ok')

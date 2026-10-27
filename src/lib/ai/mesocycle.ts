@@ -20,7 +20,7 @@ export type MesocycleContext = {
 
 const VOLUME_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
   1: 'Opening week volume follows Workout fit, not a blanket beginner template. Beginners: 3 working sets. Intermediate and advanced: 4 on main lifts. Drop to 2 sets only when this week\'s difficulty is Easier. About 5 to 7 working exercises per session.',
-  2: 'BUILD volume: beginners stay at 2 to 3 working sets and add load or reps. Intermediate and advanced use 3 working sets on main compounds and 2 to 3 on accessories. Never 5 or more working sets.',
+  2: 'BUILD volume: beginners stay at 3 working sets and add load or reps. Intermediate and advanced use 3 to 4 working sets on main compounds and 3 on accessories. Never 5 or more working sets. Do not copy the same lifts onto the next calendar day.',
   3: 'PUSH volume: beginners stay at 3 working sets and add load or tighter reps in reserve. Intermediate and advanced use 4 working sets on main compounds only and 3 on accessories. Never 5 or more working sets.',
   4: 'PEAK volume: keep the week 3 set counts. Progress with load and tighter reps in reserve, not more sets. Beginners stay at 3. Intermediate and advanced stay at 4 on main compounds and 3 on accessories. Never 5 or more working sets.',
 }
@@ -82,7 +82,7 @@ export function formatMesocyclePromptSection(
     stickySplitGuidance?.trim() ||
       formatStickySplitGuidance({}),
     '',
-    '### Prior workout (refresh exercises within sticky split; do not copy-paste wholesale)',
+    '### Prior workout (keep this day structure and muscle coverage; swap a lift only for the same pattern)',
     priorSplitSummary,
   ].join('\n')
 }
