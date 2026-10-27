@@ -228,7 +228,9 @@ export function DirectCheckout({
           </button>
         ) : null}
         <p className={styles.note}>
-          {payLabel} once. This is not a monthly charge. {FIRST_PLAN_TARGET}
+          {payLabel} once. This is not a monthly charge. {plan.slug === 'offer_84_days'
+            ? 'After onboarding and the required photos, the first plan arrives within 24 hours.'
+            : FIRST_PLAN_TARGET}
           {plan.slug === 'offer_3_months' || plan.slug === 'offer_84_days'
             ? ' Includes a testosterone protocol for men and hourglass for women.'
             : ''}

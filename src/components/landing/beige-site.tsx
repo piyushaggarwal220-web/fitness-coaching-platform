@@ -2,29 +2,31 @@
 
 import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { PreviewAdCapture } from '@/components/studio/PreviewAdCapture'
 import { PREVIEW4_AD_PATH, PREVIEW4_DROPOFF_SECTIONS } from '@/lib/analytics/ad-landing'
 import { trackFunnelStep } from '@/lib/analytics/funnel'
 import { persistMetaClickIdsFromLocation } from '@/lib/analytics/meta-attribution'
 import { coaches } from '@/lib/content'
-import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
 import { TRANSFORMATION_PLANS } from '@/lib/payments/plans'
 import { DirectCheckout } from './DirectCheckout'
 import { PreviewSaleProvider } from './PreviewSaleCode'
 import { CampaignImage, PrimaryCta } from './primitives'
 
+const PLAN_ARRIVES = '24 hours'
 const PLAN = TRANSFORMATION_PLANS.offer_84_days
 const TALK_HREF = '/preview4/talk'
+const NEXT_HREF = '/preview4/next'
 const CALL_KEY = 'lurvox_preview4_call_booked'
 const CALL_MESSAGE = 'Please call me about the 84-day transformation.'
 
 const PayContext = createContext<(plan: string) => void>(() => {})
 
 const PHASES = [
-  { n: '01', days: 'Week 1', title: 'The first plan', body: 'Written from your onboarding. Workout, diet, cardio, and supplements.' },
-  { n: '02', days: 'Wednesday', title: 'Mid-week check-in', body: 'You send the check-in. You get a reply. The plan stays the same.' },
-  { n: '03', days: 'Sunday', title: 'Weekly check-in', body: 'You send the week. The next plan is written from this.' },
-  { n: '04', days: 'After Sunday', title: 'The plan is rewritten', body: 'A new week of workout and diet. This repeats for twelve weeks.' },
+  { n: '01', days: 'Week 1', title: 'The first plan', body: 'Written from your onboarding. Workout, diet, cardio, and supplements.', src: '/images/lurvox/beige/included-workout.webp', alt: 'A silver dumbbell on cream linen' },
+  { n: '02', days: 'Wednesday', title: 'Mid-week check-in', body: 'You send the check-in. You get a reply. The plan stays the same.', src: '/images/lurvox/beige/included-checkin.webp', alt: 'An open notebook and a silver pen' },
+  { n: '03', days: 'Sunday', title: 'Weekly check-in', body: 'You send the week. The next plan is written from this.', src: '/images/lurvox/beige/included-trackers.webp', alt: 'A small card beside a dumbbell and herbs' },
+  { n: '04', days: 'After Sunday', title: 'The plan is rewritten', body: 'A new week of workout and diet. Then the week starts again.', src: '/images/lurvox/beige/included-updates.webp', alt: 'A hand turning a cream card in a stack' },
 ] as const
 
 const INCLUDED = [
@@ -42,7 +44,7 @@ const INCLUDED = [
 const FAQ = [
   ['What is this?', 'One block of online coaching. 84 days. One price. A workout plan, a diet plan, check-ins, and a coach in the app.'],
   ['What do I pay?', `${PLAN.displayPrice} once, for 84 days. It is not a monthly charge.`],
-  ['When does the plan arrive?', `After onboarding and the required photos, the first plan arrives within ${INSTANT_PLAN_WINDOW_LABEL}.`],
+  ['When does the plan arrive?', `After onboarding and the required photos, the first plan arrives within ${PLAN_ARRIVES}.`],
   ['Do I need a gym?', 'No. The plan uses a gym, home, or a mix, based on what you have.'],
   ['Can I talk to a coach before I pay?', 'Yes. Leave your name and WhatsApp number. A coach calls you. That call is free and does not start the 84 days.'],
   ['Can I message my coach?', 'Yes, in the app, once the 84 days are active.'],
@@ -102,12 +104,11 @@ function usePay() {
 }
 
 function OfferActions() {
-  const pay = usePay()
   return (
     <div className="lx-actions" data-lx-buy>
-      <PrimaryCta plan={PLAN.slug} className="lx-btn-block" source="preview4" landingPath="/preview4" onPay={pay}>
+      <Link href={NEXT_HREF} className="lx-btn lx-btn-primary lx-btn-block">
         Start the 84 days · {PLAN.displayPrice}
-      </PrimaryCta>
+      </Link>
       <Link href={TALK_HREF} className="lx-btn lx-btn-call" onClick={() => trackFunnelStep('talk_to_coach', { source: 'preview4', path: '/preview4' })}>
         Talk to a coach
       </Link>
@@ -150,12 +151,13 @@ function BeigeNav() {
 }
 
 function BeigeSticky() {
-  const pay = usePay()
+  const onBrief = usePathname() === NEXT_HREF
+  if (onBrief) return null
   return (
     <div className="lx-sticky">
-      <PrimaryCta plan={PLAN.slug} className="lx-btn-block" source="preview4" landingPath="/preview4" onPay={pay}>
+      <Link href={NEXT_HREF} className="lx-btn lx-btn-primary lx-btn-block">
         Start · {PLAN.displayPrice}
-      </PrimaryCta>
+      </Link>
       <Link href={TALK_HREF} className="lx-sticky-talk" onClick={() => trackFunnelStep('talk_to_coach', { source: 'preview4', path: '/preview4' })}>
         Talk to a coach
       </Link>
@@ -205,7 +207,7 @@ export function BeigeHome() {
             <strong>{PLAN.displayPrice}</strong>
             <em>for 84 days · once</em>
           </p>
-          <p className="lx-arrive">First plan within {INSTANT_PLAN_WINDOW_LABEL}, after onboarding and photos.</p>
+          <p className="lx-arrive">First plan within {PLAN_ARRIVES}, after onboarding and photos.</p>
           <OfferActions />
           <div className="lx-hero-photo">
             <CampaignImage
@@ -267,15 +269,22 @@ export function BeigeHome() {
       <section className="lx-method" id="method">
         <p className="lx-eyebrow">The 84 days</p>
         <h2>Twelve weekly plans.</h2>
-        <ol>
-          {PHASES.map((phase) => (
-            <li key={phase.n}>
-              <span>{phase.days}</span>
-              <strong>{phase.title}</strong>
-              <p>{phase.body}</p>
+        <ol className="lx-week">
+          {PHASES.map((phase, index) => (
+            <li key={phase.n} className={index === PHASES.length - 1 ? 'is-loop' : undefined}>
+              <figure>
+                <CampaignImage src={phase.src} alt={phase.alt} />
+                <b>{phase.n}</b>
+              </figure>
+              <div>
+                <span>{phase.days}</span>
+                <strong>{phase.title}</strong>
+                <p>{phase.body}</p>
+              </div>
             </li>
           ))}
         </ol>
+        <p className="lx-week-loop">The same week, twelve times.</p>
         <p className="lx-lead"><Link href="/preview4/program">Read the full 84 days</Link></p>
       </section>
 
@@ -290,7 +299,7 @@ export function BeigeHome() {
               {PLAN.displayPrice}
               <em>once · not a subscription</em>
             </p>
-            <p className="lx-arrive">First plan within {INSTANT_PLAN_WINDOW_LABEL}, after onboarding and photos.</p>
+            <p className="lx-arrive">First plan within {PLAN_ARRIVES}, after onboarding and photos.</p>
             <p className="lx-offer-line">Workout, diet, cardio, and supplements. Wednesday and Sunday check-ins. A new plan every week.</p>
             <p className="lx-offer-more"><a href="#system">See everything included</a></p>
             <OfferActions />
@@ -360,6 +369,45 @@ export function CoachesPage() {
         ))}
       </div>
       <OfferActions />
+    </section>
+  )
+}
+
+const AFTER_PAY = [
+  { n: '01', title: 'You pay once.', body: `${PLAN.displayPrice} for 84 days. It is not a monthly charge.` },
+  { n: '02', title: 'You tell us the case.', body: 'Onboarding covers your goal, training, food, and the required photos.' },
+  { n: '03', title: 'The first plan arrives.', body: `Within ${PLAN_ARRIVES} of onboarding and photos. Workout, diet, cardio, and supplements.` },
+  { n: '04', title: 'Wednesday and Sunday.', body: 'Wednesday you check in and get a reply. The plan stays the same. Sunday you send the week, and the next plan is written from it.' },
+  { n: '05', title: 'The same week, twelve times.', body: 'A coach is in the app for the 84 days.' },
+] as const
+
+export function BeforePayPage() {
+  const pay = usePay()
+  return (
+    <section className="lx-brief">
+      <p className="lx-eyebrow">After you pay</p>
+      <h2>How the 84 days run.</h2>
+      <p className="lx-lead">The plan is written from you, then rewritten every week.</p>
+      <p className="lx-price">
+        <strong>{PLAN.displayPrice}</strong>
+        <em>once · 84 days</em>
+      </p>
+      <div className="lx-actions" data-lx-buy>
+        <PrimaryCta plan={PLAN.slug} className="lx-btn-block" source="preview4" landingPath="/preview4" onPay={pay}>
+          Start your transformation
+        </PrimaryCta>
+      </div>
+      <ol>
+        {AFTER_PAY.map((step) => (
+          <li key={step.n}>
+            <span>{step.n}</span>
+            <div>
+              <strong>{step.title}</strong>
+              <p>{step.body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
     </section>
   )
 }

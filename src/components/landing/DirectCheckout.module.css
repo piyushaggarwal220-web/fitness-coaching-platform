@@ -92,7 +92,7 @@
 .close { border: 0; background: transparent; }
 
 .beige .card { background: #fffaf3; color: #1c1915; border: 1px solid rgba(30, 77, 61, 0.18); }
-.beige .kicker, .beige .note, .beige label { color: #4e4942; }
+.beige .kicker, .beige .note, .beige label { color: #2c2824; }
 .beige input:not([type='checkbox']) { background: #fff; border: 1px solid rgba(30, 77, 61, 0.25); color: #1c1915; }
 .beige .code { background: #1e4d3d; color: #f4efe6; }
 .beige .code:disabled { background: rgba(30, 77, 61, 0.12); color: #1e4d3d; }

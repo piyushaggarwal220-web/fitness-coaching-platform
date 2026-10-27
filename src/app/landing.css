@@ -868,6 +868,21 @@ body:has(.landing) {
   letter-spacing: -0.03em;
   color: #1e4d3d;
 }
+.lx-duration .lx-hero-copy .lx-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+  padding: 9px 16px 10px;
+  border-radius: 999px;
+  background: #1c1915;
+  color: #f7f4ee;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  box-shadow: 0 10px 24px rgba(28, 25, 21, 0.22);
+}
 .lx-duration .lx-switch button {
   display: grid;
   justify-items: center;
@@ -896,12 +911,25 @@ body:has(.landing) {
   background: #f0d78c;
   color: #1c1915;
 }
+.lx-duration {
+  --muted: #2c2824;
+  --dim: #3a342e;
+}
 .lx-duration .lx-lead,
 .lx-duration .lx-shared {
   font-size: 16px;
   line-height: 1.55;
   letter-spacing: -0.014em;
-  color: #5c564e;
+  font-weight: 500;
+  color: #2c2824;
+}
+.lx-duration .lx-price,
+.lx-duration .lx-arrive,
+.lx-duration .lx-offer-line,
+.lx-duration .lx-faq details p,
+.lx-duration .lx-footer,
+.lx-duration .lx-coach-row em {
+  color: #2c2824;
 }
 .lx-duration .lx-fail > h2,
 .lx-duration .lx-system > h2,
@@ -1044,7 +1072,9 @@ body:has(.landing) {
 .lx-duration .lx-login,
 .lx-duration .lx-talk input,
 .lx-duration .lx-menu-list,
-.lx-duration .lx-gifts figure {
+.lx-duration .lx-gifts figure,
+.lx-duration .lx-week figure,
+.lx-duration .lx-hero-copy .lx-eyebrow {
   position: relative;
 }
 .lx-duration .lx-hero-photo::after,
@@ -1057,7 +1087,9 @@ body:has(.landing) {
 .lx-duration .lx-login::after,
 .lx-duration .lx-talk input::after,
 .lx-duration .lx-menu-list::after,
-.lx-duration .lx-gifts figure::after {
+.lx-duration .lx-gifts figure::after,
+.lx-duration .lx-week figure::after,
+.lx-duration .lx-hero-copy .lx-eyebrow::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1124,7 +1156,9 @@ body:has(.landing) {
   .lx-duration .lx-login::after,
   .lx-duration .lx-talk input::after,
   .lx-duration .lx-menu-list::after,
-  .lx-duration .lx-gifts figure::after {
+  .lx-duration .lx-gifts figure::after,
+.lx-duration .lx-week figure::after,
+.lx-duration .lx-hero-copy .lx-eyebrow::after {
     animation: none;
   }
 }
@@ -1133,6 +1167,68 @@ body:has(.landing) {
   .lx-duration .lx-hero h1 { font-size: 64px; }
   .lx-duration #system { scroll-margin-top: 84px; }
 }
+
+.lx-duration .lx-brief {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 28px 20px 56px;
+}
+.lx-duration .lx-brief .lx-eyebrow,
+.lx-duration .lx-brief h2,
+.lx-duration .lx-brief .lx-lead {
+  text-align: center;
+}
+.lx-duration .lx-brief .lx-lead {
+  margin-left: auto;
+  margin-right: auto;
+}
+.lx-duration .lx-brief ol {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lx-duration .lx-brief li {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1.5px solid transparent;
+  border-radius: 18px;
+  background:
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    linear-gradient(115deg, #8a8680, #ffffff, #c8c3ba, #ffffff, #6f6b64) border-box;
+  box-shadow: 0 10px 24px rgba(28, 25, 21, 0.08);
+}
+.lx-duration .lx-brief li span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: #1c1915;
+  color: #f7f4ee;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.lx-duration .lx-brief strong {
+  display: block;
+  font-size: 1.05rem;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+.lx-duration .lx-brief li p {
+  margin: 4px 0 0;
+  color: #2c2824;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.lx-duration .lx-brief .lx-actions { margin-top: 8px; }
 
 .lx-duration .lx-offer-line {
   margin: 14px 0 0;
@@ -1167,4 +1263,106 @@ body:has(.landing) {
     padding: 6px 12px 6px 6px;
   }
   .lx-duration .lx-gifts figure { width: 64px; height: 64px; }
+}
+
+.lx-duration .lx-week {
+  display: grid;
+  gap: 14px;
+  margin: 22px auto 0;
+  padding: 0;
+  list-style: none;
+  max-width: 520px;
+  text-align: left;
+}
+.lx-duration .lx-week li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding: 8px 16px 8px 8px;
+  border: 1.5px solid transparent;
+  border-radius: 22px;
+  background:
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    linear-gradient(115deg, #8a8680, #ffffff, #c8c3ba, #ffffff, #6f6b64) border-box;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 18px 40px rgba(28, 25, 21, 0.16);
+}
+.lx-duration .lx-week li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 53px;
+  bottom: -14px;
+  width: 2px;
+  height: 14px;
+  background: linear-gradient(#ffffff, #8a8680);
+  z-index: 2;
+}
+.lx-duration .lx-week figure {
+  margin: 0;
+  width: 92px;
+  height: 92px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #e7e1d6;
+}
+.lx-duration .lx-week img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.lx-duration .lx-week figure b {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  z-index: 4;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #1c1915;
+  color: #f7f4ee;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.lx-duration .lx-week span {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.lx-duration .lx-week strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 1.05rem;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+.lx-duration .lx-week p {
+  margin-top: 4px;
+  color: #2c2824;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.lx-duration .lx-week .is-loop {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 22px 48px rgba(28, 25, 21, 0.2);
+}
+.lx-duration .lx-week-loop {
+  margin: 16px auto 0;
+  max-width: 520px;
+  color: #2c2824;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-align: center;
 }
