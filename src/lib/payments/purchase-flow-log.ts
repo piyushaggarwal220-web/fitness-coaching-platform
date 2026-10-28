@@ -8,6 +8,7 @@ export function logPurchaseStep(
     | 'payment_already_claimed'
     | 'claim_started'
     | 'claim_complete'
+    | 'claim_already_complete'
     | 'claim_failed'
     | 'fulfillment_started'
     | 'auth_user_created'
