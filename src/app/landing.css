@@ -1102,7 +1102,8 @@ body:has(.landing) {
 .lx-duration .lx-length,
 .lx-duration .lx-price,
 .lx-duration .lx-plan-price,
-.lx-duration .lx-hero-copy .lx-eyebrow {
+.lx-duration .lx-hero-copy .lx-eyebrow,
+.lx-duration .lx-ask-fab {
   position: relative;
 }
 .lx-duration .lx-hero-photo::after,
@@ -1122,7 +1123,8 @@ body:has(.landing) {
 .lx-duration .lx-length::after,
 .lx-duration .lx-price::after,
 .lx-duration .lx-plan-price::after,
-.lx-duration .lx-hero-copy .lx-eyebrow::after {
+.lx-duration .lx-hero-copy .lx-eyebrow::after,
+.lx-duration .lx-ask-fab::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1155,7 +1157,8 @@ body:has(.landing) {
 .lx-duration .lx-length::after,
 .lx-duration .lx-price::after,
 .lx-duration .lx-plan-price::after,
-.lx-duration .lx-hero-copy .lx-eyebrow::after {
+.lx-duration .lx-hero-copy .lx-eyebrow::after,
+.lx-duration .lx-ask-fab::after {
   background-image: linear-gradient(
     90deg,
     #8a6a2a 0%,
@@ -1255,7 +1258,8 @@ body:has(.landing) {
   .lx-duration .lx-length::after,
   .lx-duration .lx-price::after,
   .lx-duration .lx-plan-price::after,
-  .lx-duration .lx-hero-copy .lx-eyebrow::after {
+  .lx-duration .lx-hero-copy .lx-eyebrow::after,
+  .lx-duration .lx-ask-fab::after {
     animation: none;
   }
 }
@@ -1543,18 +1547,37 @@ body:has(.landing) {
   max-width: calc(100vw - 32px);
 }
 .lx-ask-fab {
-  min-height: 48px;
-  padding: 0 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 18px 0 8px;
   border: 0;
   border-radius: 999px;
-  background: #1e4d3d;
-  color: #f4efe6;
+  background: #fffaf3;
+  color: #1c1915;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   cursor: pointer;
-  box-shadow: 0 12px 28px rgba(28, 25, 21, 0.18);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 14px 32px rgba(28, 25, 21, 0.18);
+}
+.lx-ask-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: #1e4d3d;
+  color: #f6e7b2;
+}
+.lx-ask-mark svg {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 .lx-ask-panel {
   width: min(380px, calc(100vw - 32px));

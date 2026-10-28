@@ -102,7 +102,12 @@ export function OfferChat() {
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        {open ? 'Close' : 'Ask'}
+        <span className="lx-ask-mark" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M3 3.5h10a1 1 0 0 1 1 1V10a1 1 0 0 1-1 1H7.2L4 13.2V11H3a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+          </svg>
+        </span>
+        {open ? 'Close' : 'Ask anything'}
       </button>
     </div>
   )
