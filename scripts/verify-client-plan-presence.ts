@@ -6,12 +6,15 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
   absentPlanCopy,
+  clientSafePlanError,
   copySaysPlanIsBeingCreated,
+  intakePlanStartError,
   isStalePlanChangeRequest,
   livePlanSectionDetail,
   STALE_PLAN_CHANGE_DRAFT_MS,
   STALE_PLAN_CHANGE_GENERATING_MS,
 } from '../src/lib/client-plan-presence'
+import { validatePersistedOnboardingAnswers } from '../src/lib/initial-plan-generation-policy'
 import { syncStoredDietText } from '../src/lib/ai/nutrition-macro-sync'
 
 const windowLabel = '1–2 hours'
@@ -30,8 +33,9 @@ for (const copy of [delivered, ready, failed]) {
 }
 
 assert.equal(building.inProgress, true)
-assert.match(building.headline, /building/i)
+assert.match(building.headline, /not in My Plan yet/)
 assert.match(building.detail, /1–2 hours/)
+assert.doesNotMatch(`${building.headline} ${building.detail}`, /smart coach|soon|building/i)
 
 assert.equal(
   copySaysPlanIsBeingCreated(livePlanSectionDetail({ hasDiet: true, hasWorkout: true })),
@@ -57,6 +61,33 @@ assert.equal(
   true
 )
 assert.equal(isStalePlanChangeRequest('in_review', now - 60 * 60 * 1000, now), false)
+
+assert.equal(
+  intakePlanStartError('A coach must be assigned before generation.'),
+  'Intake saved, but your plan could not be started yet. Please try again or message support.'
+)
+assert.equal(
+  intakePlanStartError(''),
+  'Intake saved, but your plan could not be started yet. Please try again or message support.'
+)
+assert.match(
+  intakePlanStartError('Add your chest measurement.'),
+  /chest measurement/
+)
+assert.doesNotMatch(intakePlanStartError('Could not queue generation'), /generat/i)
+assert.equal(
+  clientSafePlanError('Request failed: Generation failed', 'Request failed. Try again tomorrow.'),
+  'Request failed. Try again tomorrow.'
+)
+assert.equal(clientSafePlanError('Add your chest measurement.', 'fallback'), 'Add your chest measurement.')
+assert.equal(
+  validatePersistedOnboardingAnswers({ coach_id: null } as never),
+  'A coach must be assigned before the plan can start.'
+)
+assert.doesNotMatch(
+  validatePersistedOnboardingAnswers({ coach_id: null } as never) ?? '',
+  /generat/i
+)
 
 const replySource = readFileSync(new URL('../src/lib/checkin-auto-reply.ts', import.meta.url), 'utf8')
 const claimStart = replySource.indexOf('Lock on the')

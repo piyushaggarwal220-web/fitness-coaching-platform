@@ -9,6 +9,27 @@ export const STALE_PLAN_CHANGE_DRAFT_MS = 24 * 60 * 60 * 1000
 const STILL_BEING_CREATED =
   /(?<!\bnot\b[\s\w]{0,24})(?:being created|being prepared|being built|being written|is building|check back shortly)/i
 
+/** Internal planning language. Members must never see it. */
+const INTERNAL_PLAN_LANGUAGE = /generat/i
+
+/**
+ * Member-facing substitute for an error that leaked internal planning language.
+ * Specific intake errors (measurements, photos, terms) pass through.
+ */
+export function clientSafePlanError(message: string | null | undefined, fallback: string): string {
+  const trimmed = (message ?? '').trim()
+  if (!trimmed || INTERNAL_PLAN_LANGUAGE.test(trimmed)) return fallback
+  return trimmed
+}
+
+/** Sentence shown when intake is saved but the first plan cannot start. */
+export function intakePlanStartError(serverError: string): string {
+  const fallback = 'Intake saved, but your plan could not be started yet. Please try again or message support.'
+  const trimmed = serverError.trim()
+  if (!trimmed || INTERNAL_PLAN_LANGUAGE.test(trimmed)) return fallback
+  return `Intake saved, but your plan could not be started yet: ${trimmed}`
+}
+
 export function copySaysPlanIsBeingCreated(text: string): boolean {
   return STILL_BEING_CREATED.test(text)
 }
@@ -55,10 +76,10 @@ export function absentPlanCopy(input: {
     }
   }
   return {
-    headline: 'Smart Coach is building your plan',
+    headline: 'Your plan is not in My Plan yet',
     detail: input.instant
-      ? `It arrives within ${input.windowLabel}. You’ll get an email, and it will show up in My Plan.`
-      : 'It usually arrives within 24 hours and appears in My Plan automatically.',
+      ? `It shows up in My Plan within ${input.windowLabel}. You’ll get an email when it is there.`
+      : 'It shows up in My Plan within 24 hours.',
     inProgress: true,
   }
 }

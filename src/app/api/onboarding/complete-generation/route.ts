@@ -15,6 +15,7 @@ import {
   validatePersistedOnboardingAnswers,
 } from '@/lib/initial-plan-generation'
 import { shouldAutoEnqueueInitialPlan, shouldAutoJourneyAndDeliverInitialPlan } from '@/lib/coach-delivery-policy'
+import { clientSafePlanError } from '@/lib/client-plan-presence'
 import {
   latestCoachingPurchase,
   latestDigitalPurchase,
@@ -26,6 +27,18 @@ import type { OnboardingProfile } from '@/types/database'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
+
+function clientPlanError(message: string, status: number) {
+  return NextResponse.json(
+    {
+      error: clientSafePlanError(
+        message,
+        'Your plan could not be started yet. Please try again or message support.'
+      ),
+    },
+    { status }
+  )
+}
 
 export async function POST(request: Request) {
   const auth = rejectIfPublicDemoMutation(await requireApiUser())
@@ -51,19 +64,16 @@ export async function POST(request: Request) {
 
   const deliveredGuard = await clientHasDeliveredPlanStrict(admin, auth.user.id)
   if (deliveredGuard.error) {
-    return NextResponse.json(
-      { error: `Could not verify delivery history: ${deliveredGuard.error}` },
-      { status: 503 }
-    )
+    return clientPlanError(`Could not verify delivery history: ${deliveredGuard.error}`, 503)
   }
   const alreadyHasPlan = persistedProfile.plan_delivered === true || deliveredGuard.delivered
 
-  // Clients who already received a plan do not need AI generation queued again.
+  // Clients who already received a plan do not need the first plan queued again.
   // Still require terms, but do not block completion on newly added intake fields.
   if (!alreadyHasPlan) {
     const validationError = validatePersistedOnboardingAnswers(persistedProfile, { termsAccepted })
     if (validationError) {
-      return NextResponse.json({ error: validationError }, { status: 422 })
+      return clientPlanError(validationError, 422)
     }
   } else if (!termsAccepted) {
     return NextResponse.json({ error: 'You must accept the terms to complete onboarding.' }, { status: 422 })
@@ -88,10 +98,7 @@ export async function POST(request: Request) {
       .single()
 
     if (completionError || !updated) {
-      return NextResponse.json(
-        { error: completionError?.message ?? 'Could not persist onboarding completion' },
-        { status: 500 }
-      )
+      return clientPlanError(completionError?.message ?? 'Could not persist onboarding completion', 500)
     }
     completedProfile = updated as OnboardingProfile
   }
@@ -172,7 +179,7 @@ export async function POST(request: Request) {
       success: true,
       status: 'generating',
       deduplicated: false,
-      message: 'Your personalized plan is being prepared. You will be notified when it is ready.',
+      message: 'Your plan shows up in My Plan. You’ll get an email when it is there.',
     }, { status: 202 })
   }
 
@@ -192,7 +199,7 @@ export async function POST(request: Request) {
       '[onboarding/complete-generation] queue rejected:',
       result.error ?? 'job unavailable'
     )
-    return NextResponse.json({ error: result.error ?? 'Could not queue generation' }, { status: 422 })
+    return clientPlanError(result.error ?? 'Could not start the plan.', 422)
   }
 
   let job = result.job

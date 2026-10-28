@@ -86,9 +86,7 @@ export function PlanCountdownCard({
           </p>
         )}
         <p style={{ margin: '12px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.55 }}>
-          {isDigital
-            ? `Complete onboarding so we can build your customised plan. Delivery is within ${deliveryWindowLabel} after you submit — by email and in the app.`
-            : `Complete onboarding so Smart Coach can build your personal diet and workout. Your plan is delivered within ${deliveryWindowLabel} after onboarding.`}
+          {`Complete onboarding. Your diet and workout show up in My Plan within ${deliveryWindowLabel} after that.`}
         </p>
         <Button fullWidth style={{ marginTop: 16 }} onClick={() => router.push('/onboarding')}>
           Continue onboarding
@@ -126,10 +124,10 @@ export function PlanCountdownCard({
     return (
       <Card variant="glass" style={{ marginBottom: spacing[4] }}>
         <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>
-          Setting up Smart Coach
+          Finish setup
         </p>
         <p style={{ margin: '8px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
-          Smart Coach is almost ready. Plan delivery starts after onboarding.
+          Your plan shows up in My Plan after onboarding.
         </p>
       </Card>
     )
@@ -160,11 +158,10 @@ export function PlanCountdownCard({
     return (
       <Card variant="glass" style={{ marginBottom: spacing[4] }}>
         <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>
-          Building your customised plan
+          {absent.headline}
         </p>
         <p style={{ margin: '12px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.55 }}>
-          Your personalized plan is being prepared. You&apos;ll get an email when it&apos;s ready,
-          and it will also appear in My Plan.
+          {absent.detail}
         </p>
         <p style={{ margin: '14px 0 4px', fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>
           Estimated delivery
@@ -199,7 +196,7 @@ export function PlanCountdownCard({
       }} />
       <CoachAssignedHeader coachName={displayCoach} />
       <p style={{ margin: '12px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.55 }}>
-        Smart Coach is building your personalized diet and workout plan.
+        {absent.detail}
       </p>
       <p style={{ margin: '14px 0 4px', fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>
         Estimated delivery

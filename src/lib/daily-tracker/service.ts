@@ -345,7 +345,7 @@ export async function getOrCreateTodayTracker(
 
   const planStamp = await getActivePlanStamp(supabase, clientId)
   if (!planStamp) {
-    return { day: null, error: 'No active plan yet. Smart Coach will deliver it automatically soon.' }
+    return { day: null, error: 'Your plan is not in My Plan yet.' }
   }
 
   // Today's snapshot already matches this plan. Skip downloading and re-parsing
@@ -400,7 +400,7 @@ export async function getOrCreateTodayTracker(
 
   const plan = await getActivePlan(supabase, clientId)
   if (!plan) {
-    return { day: null, error: 'No active plan yet. Smart Coach will deliver it automatically soon.' }
+    return { day: null, error: 'Your plan is not in My Plan yet.' }
   }
 
   const snapshot = buildTrackerSnapshot(plan, profile)

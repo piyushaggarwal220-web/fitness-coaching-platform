@@ -85,7 +85,7 @@ export function formatPlanCountdown(
   if (!deadline) return null
 
   const ms = deadline.getTime() - Date.now()
-  if (ms <= 0) return 'Delivering soon'
+  if (ms <= 0) return 'Check My Plan'
 
   const totalMins = Math.floor(ms / 60000)
   const hours = Math.floor(totalMins / 60)
@@ -150,7 +150,7 @@ export function getClientDashboardStatus(params: {
   } else if (profile.plan_delivered) {
     planStatus = 'Delivered — awaiting activation'
   } else if (onboardingComplete) {
-    planStatus = isDigital ? 'Building your customised plan' : 'Your plan is being prepared'
+    planStatus = 'Not in My Plan yet'
   } else if (paymentConfirmed) {
     planStatus = 'Complete onboarding to start plan delivery'
   }
@@ -167,15 +167,11 @@ export function getClientDashboardStatus(params: {
       profile.gender !== 'female' &&
       (!profile.progress_photo_front || !profile.progress_photo_side || !profile.progress_photo_back)
     nextAction = needsPhotos
-      ? isDigital
-        ? 'Upload front, side, and back photos to finish onboarding — your customised plan starts after that.'
-        : 'Upload front, side, and back photos to finish onboarding — your personalized diet and workout plan will start being prepared after that.'
-      : isDigital
-        ? `Finish onboarding so we can build your customised plan (within ${INSTANT_PLAN_WINDOW_LABEL}). Tracker, Journey, and Coach chat unlock separately if you want them.`
-        : `Finish onboarding (review & submit) so your plan can be prepared. It arrives within ${INSTANT_PLAN_WINDOW_LABEL}.`
+      ? 'Upload front, side, and back photos to finish onboarding. Your diet and workout show up in My Plan after that.'
+      : `Finish onboarding. Your diet and workout show up in My Plan within ${INSTANT_PLAN_WINDOW_LABEL}.`
     nextActionHref = '/onboarding'
   } else if (!coachAssigned && !isDigital) {
-    nextAction = 'Your plan is being prepared.'
+    nextAction = 'Your plan is not in My Plan yet.'
     nextActionHref = null
   } else if (!planReady && !profile.plan_delivered) {
     // Coach + countdown card handles this — avoid duplicate next-step CTA
@@ -201,7 +197,7 @@ export function getClientDashboardStatus(params: {
     paymentConfirmed,
     onboardingComplete,
     coachAssigned,
-    coachName: coach?.name?.trim().split(' ')[0] || (profile.coach_id ? 'Your coach' : 'Rakshit'),
+    coachName: coach?.name?.trim().split(' ')[0] || 'Piyush',
     planStatus,
     expectedDelivery: formatExpectedDelivery(expectedDeliveryDate),
     nextAction,

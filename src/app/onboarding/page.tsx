@@ -78,6 +78,7 @@ import {
   ONBOARDING_SPLIT_PREFERENCE_OPTIONS,
 } from '@/lib/onboarding'
 import { isSessionLostMessage, refreshAuthSessionIfExpiring } from '@/lib/session-restore'
+import { intakePlanStartError } from '@/lib/client-plan-presence'
 import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import { isGoalVisibleForGender, resolveGoalPlanTier } from '@/lib/plan-goals'
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
@@ -693,11 +694,7 @@ export default function OnboardingPage() {
           setSubmitting(false)
           return
         }
-        throw new Error(
-          serverError
-            ? `Intake saved, but your plan could not be started yet: ${serverError}`
-            : 'Intake saved, but your plan could not be started yet. Please try again or message support.'
-        )
+        throw new Error(intakePlanStartError(serverError))
       }
       await requestComplexityRecalculation({ trigger: 'onboarding_complete' })
       // Wait until the browser can see the server-written completion flag so the
@@ -1850,7 +1847,7 @@ function renderStep(
             your explicit permission. They are used only by your assigned coach to create more
             accurate recommendations.
             {!photosOptional &&
-              ' Front, side, and back photos are required — after you submit the final review, your personalized diet and workout plan starts being prepared.'}
+              ' Front, side, and back photos are required. After you submit, your diet and workout show up in My Plan.'}
             {photosOptional && ' Photos are optional for female clients, and you can continue without uploading them.'}
           </div>
           <div style={s.photoGrid}>
