@@ -182,6 +182,7 @@ export function BeigeHome() {
             You choose a starting point: lose fat, skinny-fat, or gain weight. Workout and diet are written for that body. Check in twice a week.
           </p>
           <p className="lx-price">
+            <s>₹4,999</s>
             <strong>{PLAN.displayPrice}</strong>
             <em>for 84 days · once</em>
           </p>
