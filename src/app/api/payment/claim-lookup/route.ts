@@ -24,6 +24,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      alreadyClaimed: purchase.alreadyClaimed,
       customerEmail: purchase.customerEmail,
       customerName: purchase.customerName,
       planSlug: purchase.planSlug,

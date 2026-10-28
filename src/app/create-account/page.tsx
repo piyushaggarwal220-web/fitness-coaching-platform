@@ -29,7 +29,13 @@ function CreateAccountForm() {
   const [loading, setLoading] = useState(false)
   const [lookingUp, setLookingUp] = useState(Boolean(token))
   const [error, setError] = useState('')
+  const [accountReady, setAccountReady] = useState(false)
   const [mode, setMode] = useState<'token' | 'receipt'>(token ? 'token' : 'receipt')
+  const signInHref = `/login?${new URLSearchParams({
+    ...(email ? { email } : {}),
+    setup: '1',
+  }).toString()}`
+  const forgotHref = `/forgot-password?${new URLSearchParams(email ? { email } : {}).toString()}`
 
   useEffect(() => {
     try {
@@ -64,6 +70,10 @@ function CreateAccountForm() {
         setName(data.customerName ?? '')
         setPlanName(data.planName ?? '')
         setPlanSlug(typeof data.planSlug === 'string' ? data.planSlug : '')
+        if (data.alreadyClaimed) {
+          setAccountReady(true)
+          return
+        }
         setMode('token')
       } catch (err) {
         if (cancelled) return
@@ -147,15 +157,31 @@ function CreateAccountForm() {
         </a>
         <h1 style={styles.title}>{brandTitle('Create your account')}</h1>
         <p style={styles.subtitle}>
-          {planName
-            ? `Payment received for ${planName}. Create your login password to continue.`
-            : 'Create your login password to unlock onboarding. If you left after paying, use your email and Razorpay payment ID.'}
+          {accountReady
+            ? `Your account${email ? ` for ${email}` : ''} is already set up. Sign in with the password you created.`
+            : planName
+              ? `Payment received for ${planName}. Create your login password to continue.`
+              : 'Create your login password to unlock onboarding. If you left after paying, use your email and Razorpay payment ID.'}
         </p>
 
         {lookingUp && <p style={styles.hint}>Payment received. Loading your setup…</p>}
         {error && <div style={styles.error}>{error}</div>}
 
-        {!lookingUp && !error && (
+        {!lookingUp && accountReady && (
+          <div style={styles.form}>
+            <p style={styles.hint}>
+              This setup link was already used, so it will not ask for a new password.
+            </p>
+            <Link href={signInHref} style={{ ...styles.button, textAlign: 'center', textDecoration: 'none' }}>
+              Sign in
+            </Link>
+            <Link href={forgotHref} style={{ ...styles.link, textAlign: 'center' }}>
+              Forgot password
+            </Link>
+          </div>
+        )}
+
+        {!lookingUp && !error && !accountReady && (
           <>
             <ol style={styles.steps}>
               <li><strong>Right now.</strong> Set your password on this screen.</li>
@@ -174,7 +200,7 @@ function CreateAccountForm() {
           </>
         )}
 
-        {!lookingUp && (
+        {!lookingUp && !accountReady && (
           <form onSubmit={handleSubmit} style={styles.form}>
             {mode === 'receipt' && (
               <>
@@ -252,6 +278,7 @@ function CreateAccountForm() {
           </form>
         )}
 
+        {!accountReady && (
         <p style={styles.footer}>
           {mode === 'token' ? (
             <>
@@ -273,6 +300,7 @@ function CreateAccountForm() {
             </>
           )}
         </p>
+        )}
       </div>
     </div>
   )

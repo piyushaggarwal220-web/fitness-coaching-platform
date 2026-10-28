@@ -159,6 +159,7 @@ export async function sendAccountSetupRecovery(input: {
     '',
     'If you feel lost, follow these steps in order:',
     `1. Create your login (link expires in 7 days): ${setupUrl}`,
+    'If you already saved a password, open that same link and choose Sign in.',
     `2. Sign in anytime at ${loginUrl}`,
     digital
       ? `3. Open Plan setup / onboarding and answer the short questionnaire: ${onboardingUrl}`
@@ -177,7 +178,7 @@ export async function sendAccountSetupRecovery(input: {
       <ol>
         <li style="margin:0 0 10px"><strong>Create your account</strong><br/>Tap the button below. This secure link expires in 7 days.${
           input.token
-            ? ''
+            ? ' If you already saved a password, the same link takes you to sign in.'
             : ' If you already have a login, sign in instead.'
         }</li>
         <li style="margin:0 0 10px"><strong>Sign in next time</strong><br/>Use <a href="${escapeHtml(loginUrl)}">${escapeHtml(loginUrl)}</a></li>

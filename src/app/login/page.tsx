@@ -18,12 +18,13 @@ const supabase = createClient();
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(searchParams.get('email')?.trim() ?? '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const sessionExpired = searchParams.get('expired') === '1';
   const linkedPurchase = searchParams.get('linked') === '1';
+  const setupReady = searchParams.get('setup') === '1';
   const redirectTo = safeInternalPath(searchParams.get('redirect'), '/dashboard');
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -114,6 +115,20 @@ function LoginForm() {
             lineHeight: 1.5,
           }}>
             Your session expired. Please sign in again.
+          </div>
+        )}
+
+        {setupReady && (
+          <div style={{
+            backgroundColor: colors.accentMuted,
+            color: colors.accent,
+            padding: '12px 16px',
+            borderRadius: 12,
+            fontSize: 14,
+            marginBottom: 16,
+            lineHeight: 1.5,
+          }}>
+            Your account is already set up. Sign in with the password you created. If you don&apos;t remember it, use Forgot password below.
           </div>
         )}
 

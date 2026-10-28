@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { recordCapturedPayment, issuePurchaseClaimToken } from '@/lib/payments/fulfillment'
+import { recordCapturedPayment } from '@/lib/payments/fulfillment'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { getCoachingPlan, getPurchasablePlan } from '@/lib/payments/plans'
 import {
@@ -285,33 +285,27 @@ export async function POST(request: Request) {
         success: true,
         alreadyClaimed: true,
         purchaseId: result.purchaseId,
-        redirectTo: `${appBase}/login`,
+        redirectTo: `${appBase}/login?${new URLSearchParams({
+          email: result.customerEmail,
+          setup: '1',
+        }).toString()}`,
         message: 'This payment already has an account. Please sign in.',
       })
     }
 
-    let claimToken = result.claimToken
-    if (!claimToken) {
-      // Browser just paid — mint a fresh setup token so the buyer continues
-      // without typing their Razorpay payment ID.
-      try {
-        claimToken = await issuePurchaseClaimToken(result.purchaseId)
-      } catch {
-        claimToken = null
-      }
-    }
-
     const appBase = resolveAppBaseUrl().replace(/\/$/, '')
 
-    if (claimToken) {
+    if (result.claimToken) {
       return NextResponse.json({
         success: true,
         purchaseId: result.purchaseId,
-        redirectTo: `${appBase}/create-account?token=${encodeURIComponent(claimToken)}`,
+        redirectTo: `${appBase}/create-account?token=${encodeURIComponent(result.claimToken)}`,
       })
     }
 
-    // Fallback if token minting failed — recover via email + payment id.
+    // The setup email already has a live token. Minting another one here
+    // would replace that link, so the email looks invalid. This browser
+    // already knows the email and payment id.
     const params = new URLSearchParams({
       email: result.customerEmail,
       paymentId: result.razorpayPaymentId,

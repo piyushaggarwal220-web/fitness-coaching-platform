@@ -11,7 +11,7 @@ function ForgotPasswordForm() {
   const searchParams = useSearchParams()
   const linkError = searchParams.get('error')
 
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(searchParams.get('email')?.trim() ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)

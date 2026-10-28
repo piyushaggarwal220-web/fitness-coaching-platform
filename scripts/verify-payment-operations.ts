@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { canonicalRazorpayReference } from '../src/lib/payments/razorpay-reference'
+import { setupLinkLookupState } from '../src/lib/payments/fulfillment'
 import { isMetaPurchaseEligibleSale } from '../src/lib/analytics/meta-purchase-eligibility'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -115,6 +116,16 @@ assert.deepEqual(canonicalRazorpayReference('Order_TnlBBepbhD2HN0'), {
   orderId: 'order_TnlBBepbhD2HN0',
 })
 assert.match(read('src/app/create-account/page.tsx'), /autoCapitalize="none"/)
+assert.equal(setupLinkLookupState({ claimed: true, expiresAt: '2000-01-01T00:00:00.000Z' }), 'already_claimed')
+assert.equal(setupLinkLookupState({ claimed: false, expiresAt: '2000-01-01T00:00:00.000Z' }), 'expired')
+assert.equal(setupLinkLookupState({ claimed: false, expiresAt: '2999-01-01T00:00:00.000Z' }), 'claimable')
+assert.match(fulfillment, /Keep claim_token_hash/)
+assert.doesNotMatch(fulfillment, /claim_token_hash:\s*null/)
+assert.doesNotMatch(read('src/app/api/payment/verify/route.ts'), /issuePurchaseClaimToken/)
+assert.match(read('src/app/api/payment/claim/route.ts'), /result\.alreadyClaimed/)
+assert.match(read('src/app/api/payment/claim-lookup/route.ts'), /alreadyClaimed: purchase\.alreadyClaimed/)
+assert.match(read('src/app/create-account/page.tsx'), /accountReady/)
+assert.match(read('src/app/login/page.tsx'), /setupReady/)
 
 console.log('✓ Payment operation schema has durable idempotency')
 console.log('✓ Claim tokens remain hashed at rest')

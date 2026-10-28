@@ -50,6 +50,36 @@ export async function POST(request: Request) {
       name: body.name,
     })
 
+    if (result.alreadyClaimed) {
+      const session = await establishPurchaseSession(result.email, password)
+      const loginParams = new URLSearchParams({
+        email: result.email,
+        setup: '1',
+      })
+      if (session.ok) {
+        return NextResponse.json({
+          success: true,
+          alreadyClaimed: true,
+          userId: result.userId,
+          purchaseId: result.purchaseId,
+          isNewUser: false,
+          sessionEstablished: true,
+          redirectTo: '/onboarding',
+        })
+      }
+      return NextResponse.json({
+        success: true,
+        alreadyClaimed: true,
+        needsLogin: true,
+        sessionEstablished: false,
+        userId: result.userId,
+        purchaseId: result.purchaseId,
+        isNewUser: false,
+        redirectTo: `/login?${loginParams.toString()}`,
+        message: 'Your account is already set up. Sign in with the password you created.',
+      })
+    }
+
     let intakeBasicsMerged: boolean | null = null
     let intakeBasicsMergeError: string | undefined
     try {

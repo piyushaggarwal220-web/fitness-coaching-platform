@@ -52,6 +52,8 @@ export type ClaimPurchaseResult = {
   email: string
   /** Existing account — password was not overwritten; user may need /login */
   needsLogin?: boolean
+  /** Purchase was already linked to an account. Do not change that password. */
+  alreadyClaimed?: boolean
 }
 
 export type ClaimPurchaseInput = {
@@ -81,6 +83,18 @@ export type FulfillPurchaseResult = {
 
 function hashClaimToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
+}
+
+/** A used setup link stays recognizable so the buyer is sent to sign in. */
+export function setupLinkLookupState(input: {
+  claimed: boolean
+  expiresAt?: string | null
+  now?: number
+}): 'claimable' | 'already_claimed' | 'expired' {
+  if (input.claimed) return 'already_claimed'
+  const now = input.now ?? Date.now()
+  if (input.expiresAt && new Date(input.expiresAt).getTime() < now) return 'expired'
+  return 'claimable'
 }
 
 function createClaimToken(): { raw: string; hash: string; expiresAt: string } {
@@ -410,6 +424,7 @@ export async function lookupClaimablePurchase(input: {
   customerName: string | null
   planSlug: string
   planName: string
+  alreadyClaimed: boolean
 }> {
   const admin = createAdminClient()
   let purchase: PurchaseRow | null = null
@@ -426,15 +441,8 @@ export async function lookupClaimablePurchase(input: {
     purchase = data as PurchaseRow | null
 
     if (!purchase) {
-      throw new Error('This setup link is invalid or has already been used.')
-    }
-
-    if (
-      purchase.claim_token_expires_at &&
-      new Date(purchase.claim_token_expires_at).getTime() < Date.now()
-    ) {
       throw new Error(
-        'This setup link has expired. Use your email and Razorpay payment ID to finish creating your account.'
+        'This setup link is invalid. If you already created your password, sign in. Otherwise use your email and Razorpay payment ID.'
       )
     }
   } else {
@@ -490,8 +498,16 @@ export async function lookupClaimablePurchase(input: {
     throw new Error('Purchase not found')
   }
 
-  if (isClaimed(purchase)) {
-    throw new Error('This payment already has an account. Please sign in instead.')
+  const viaToken = Boolean(input.token?.trim())
+  const linkState = setupLinkLookupState({
+    claimed: isClaimed(purchase),
+    expiresAt: viaToken ? purchase.claim_token_expires_at : null,
+  })
+
+  if (linkState === 'expired') {
+    throw new Error(
+      'This setup link has expired. Use your email and Razorpay payment ID to finish creating your account.'
+    )
   }
 
   return {
@@ -500,6 +516,7 @@ export async function lookupClaimablePurchase(input: {
     customerName: purchase.customer_name,
     planSlug: purchase.plan_slug,
     planName: purchase.plan_name,
+    alreadyClaimed: linkState === 'already_claimed',
   }
 }
 
@@ -531,6 +548,22 @@ export async function claimPurchaseWithPassword(
 
   const purchase = purchaseRaw as PurchaseRow
   const email = purchase.customer_email.trim().toLowerCase()
+
+  if (isClaimed(purchase)) {
+    if (!purchase.user_id) {
+      throw new Error('This payment already has an account. Please sign in.')
+    }
+    logPurchaseStep('claim_already_complete', { email, purchaseId: purchase.id })
+    return {
+      userId: purchase.user_id,
+      purchaseId: purchase.id,
+      isNewUser: false,
+      email,
+      needsLogin: true,
+      alreadyClaimed: true,
+    }
+  }
+
   const name = (input.name?.trim() || purchase.customer_name || '').trim()
   if (!name) {
     throw new Error('Name is required')
@@ -687,14 +720,14 @@ export async function claimPurchaseWithPassword(
     throw new Error(`Failed to create profile: ${profileError.message}`)
   }
 
+  // Keep claim_token_hash. Clearing it makes the emailed setup link look invalid
+  // after the password was saved.
   const { data: claimedRows, error: claimError } = await admin
     .from('purchases')
     .update({
       user_id: userId,
       customer_name: name,
       claimed_at: now,
-      claim_token_hash: null,
-      claim_token_expires_at: null,
     })
     .eq('id', purchase.id)
     .is('claimed_at', null)
