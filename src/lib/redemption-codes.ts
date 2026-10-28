@@ -596,6 +596,7 @@ export async function completeEnrollment(
       subscription_expires_at: expiresAt.toISOString(),
       updated_at: new Date().toISOString(),
     })
+    await autoAssignCoachToClient(userId, admin)
   }
 
   void isNewUser

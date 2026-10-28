@@ -27,7 +27,7 @@ export default function AdminCoachesPage() {
       setError('')
 
       const [coachesRes, clientsRes] = await Promise.all([
-        supabase.from('coaches').select('id, name, user_id, hard_cap').order('name'),
+        supabase.from('coaches').select('id, name, user_id, hard_cap, active').eq('active', true).order('name'),
         supabase.from('profiles').select('coach_id, plan_delivered, checkin_awaiting, checkin_overdue').eq('role', 'client'),
       ])
 

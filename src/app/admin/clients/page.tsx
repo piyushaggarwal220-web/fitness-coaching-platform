@@ -27,7 +27,7 @@ export default function AdminClientsPage() {
 
       const [clientsRes, coachesRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('role', 'client').order('name', { ascending: true }),
-        supabase.from('coaches').select('id, name, user_id, hard_cap'),
+        supabase.from('coaches').select('id, name, user_id, hard_cap').eq('active', true),
       ])
 
       if (clientsRes.error || coachesRes.error) {

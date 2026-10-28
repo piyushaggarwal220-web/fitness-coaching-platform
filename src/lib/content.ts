@@ -20,12 +20,12 @@ export const hero = {
   duration: '90 days',
   primaryCta: 'Start for ₹1,999',
   secondaryCta: 'View plans',
-  coachPhotoAlt: 'LURVOX coaches Piyush Aggarwal and Rakshit Mohla',
+  coachPhotoAlt: 'LURVOX coach Piyush Aggarwal',
 } as const
 
-/** Issues go to the two coaches on Instagram. */
+/** Issues go to Piyush on Instagram. */
 export const COACH_ISSUE_CONTACT =
-  'If you have an issue, message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.'
+  'If you have an issue, message Coach Piyush (@maximusvault) on Instagram.'
 
 export const coaches = [
   {
@@ -34,13 +34,6 @@ export const coaches = [
     photo: '/landing/coach-piyush-dark.webp',
     instagramHandle: '@maximusvault',
     instagramUrl: 'https://www.instagram.com/maximusvault/',
-  },
-  {
-    name: 'Rakshit Mohla',
-    firstName: 'Rakshit',
-    photo: '/landing/coach-rakshit-dark.webp',
-    instagramHandle: '@rakshitmohla_',
-    instagramUrl: 'https://www.instagram.com/rakshitmohla_/',
   },
 ] as const
 
@@ -97,7 +90,7 @@ export const system = {
 export const coaching = {
   eyebrow: 'Human coaching',
   headline: 'Your coach guides the journey.',
-  lead: 'Piyush and Rakshit guide your case in the app — plans built on tested training and nutrition principles.',
+  lead: 'Piyush guides your case in the app — plans built on tested training and nutrition principles.',
   note: COACH_ISSUE_CONTACT,
 } as const
 
@@ -176,7 +169,7 @@ export const faq = {
     },
     {
       q: 'How do I reach a coach?',
-      a: 'Inside the app. For an issue, message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.',
+      a: 'Inside the app. For an issue, message Coach Piyush (@maximusvault) on Instagram.',
     },
     {
       q: 'Are results guaranteed?',

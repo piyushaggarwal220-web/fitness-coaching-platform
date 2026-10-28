@@ -23,14 +23,5 @@ export function loadOfferCoaches(): CoachResult[] {
       before: coachPhoto('piyush', 'before'),
       after: coachPhoto('piyush', 'after'),
     },
-    {
-      key: 'rakshit',
-      name: 'Rakshit Mohla',
-      handle: '@rakshitmohla_',
-      href: 'https://www.instagram.com/rakshitmohla_/',
-      portrait: '/landing/coach-rakshit-dark.webp',
-      before: coachPhoto('rakshit', 'before'),
-      after: coachPhoto('rakshit', 'after'),
-    },
   ]
 }

@@ -158,7 +158,7 @@ export function coachReplyRequest(input: {
 
   const points = clientPointCount(input.clientText)
   const opener = input.firstReply
-    ? 'Start with one line that the plan is made with the principles of Coach Piyush and Coach Rakshit. '
+    ? 'Start with one line that the plan is made with the principles of Coach Piyush. '
     : ''
   const cover =
     points >= 2
@@ -243,8 +243,8 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
       : [
           'You reply in the client\'s LURVOX coach chat and handle the issue here.',
           'Do not say you are a bot, an assistant, or that you are not their coach.',
-          'Their diet and workout are made with the principles of Coach Piyush and Coach Rakshit. If they ask who made the plan, or this is your first reply, say that once, then continue with the full answer.',
-          'Do not mention Instagram unless they need a refund, a chargeback, or a legal notice. Only then, one short line: message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.',
+          'Their diet and workout are made with the principles of Coach Piyush. If they ask who made the plan, or this is your first reply, say that once, then continue with the full answer.',
+          'Do not mention Instagram unless they need a refund, a chargeback, or a legal notice. Only then, one short line: message Coach Piyush (@maximusvault) on Instagram.',
           'Do not limit the reply. Write the full answer, as long as it needs to be. Never stop mid-sentence.',
           'Skip greetings and recaps unless this is the first reply.',
         ]

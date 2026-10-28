@@ -15,6 +15,7 @@ import {
   validatePersistedOnboardingAnswers,
 } from '@/lib/initial-plan-generation'
 import { shouldAutoEnqueueInitialPlan, shouldAutoJourneyAndDeliverInitialPlan } from '@/lib/coach-delivery-policy'
+import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { clientSafePlanError } from '@/lib/client-plan-presence'
 import {
   latestCoachingPurchase,
@@ -59,7 +60,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
   }
 
-  const persistedProfile = profile as OnboardingProfile
+  let persistedProfile = profile as OnboardingProfile
+  if (!persistedProfile.coach_id) {
+    const assigned = await autoAssignCoachToClient(auth.user.id, admin)
+    if (assigned.error) {
+      console.error('[onboarding/complete-generation] coach assign failed:', assigned.error)
+    } else if (assigned.coachId) {
+      persistedProfile = { ...persistedProfile, coach_id: assigned.coachId }
+    }
+  }
   const termsAccepted = Boolean(profile.terms_accepted_at) || body?.termsAccepted === true
 
   const deliveredGuard = await clientHasDeliveredPlanStrict(admin, auth.user.id)

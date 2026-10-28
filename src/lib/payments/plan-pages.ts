@@ -146,7 +146,7 @@ export const PLAN_COMPARE_ROWS: {
   {
     group: 'Opens with debloat',
     label: 'Issues on Instagram',
-    hint: 'Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.',
+    hint: 'Coach Piyush (@maximusvault) on Instagram.',
     cells: { ...YES },
   },
   {

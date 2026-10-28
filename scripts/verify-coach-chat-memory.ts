@@ -57,7 +57,8 @@ assert.match(ask.instruction, /one short question/i)
 assert.doesNotMatch(ask.instruction, /Piyush|Rakshit/)
 
 const human = coachReplyRequest({ clientText: 'what is for dinner', firstReply: true })
-assert.match(human.instruction, /Coach Piyush and Coach Rakshit/)
+assert.match(human.instruction, /Coach Piyush/)
+assert.doesNotMatch(human.instruction, /Rakshit/)
 
 const memory = buildCoachMemoryUpdatePrompt({
   previous: 'Left wrist pain. Still unknown how it happened.',

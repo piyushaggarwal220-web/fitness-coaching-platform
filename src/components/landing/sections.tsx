@@ -222,7 +222,7 @@ export function Difference() {
     {
       n: '02',
       title: 'Human coaching',
-      body: 'Piyush Aggarwal and Rakshit Mohla guide your case in the app — plans built on tested principles, not random templates.',
+      body: 'Piyush Aggarwal guides your case in the app — plans built on tested principles, not random templates.',
       images: coaches.map((coach) => ({ src: coach.photo, alt: `${coach.name}, LURVOX coach` })),
     },
     {
@@ -378,7 +378,7 @@ export function System() {
     },
     {
       title: 'Coach',
-      body: 'Piyush Aggarwal and Rakshit Mohla reply in the app.',
+      body: 'Piyush Aggarwal replies in the app.',
       images: coaches.map((coach) => ({ src: coach.photo, alt: `${coach.name}, LURVOX coach` })),
     },
     {

@@ -37,6 +37,7 @@ export default function AdminCoachDetailPage() {
       const { data: coachesList } = await supabase
         .from('coaches')
         .select('id, name, user_id, hard_cap')
+        .eq('active', true)
         .order('name')
 
       if (coachRes.error || !coachRes.data) {

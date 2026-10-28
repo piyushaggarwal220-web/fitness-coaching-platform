@@ -120,7 +120,7 @@ export async function enqueueInitialPlanGeneration(
     return { job: data as InitialPlanGenerationJob, error: null, deduplicated: false }
   }
   if (error?.code !== '23505') {
-    return { job: null, error: error?.message ?? 'Could not queue plan generation.', deduplicated: false }
+    return { job: null, error: error?.message ?? 'Could not start the plan.', deduplicated: false }
   }
 
   const { data: existing, error: existingError } = await admin

@@ -1,23 +1,23 @@
 import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import type { OnboardingProfile } from '@/types/database'
 
-/** Piyush Aggarwal — FIFO queue; AI handles ongoing delivery; only real calls stay human. */
+/** Piyush Aggarwal — the only coach members are assigned to and shown. */
 export const PIYUSH_COACH_ID = 'fde68466-fb3e-4a24-a5f2-97a60a363690'
-/** Default auto-assign coach for new paying clients. Same auto-delivery path as Piyush. */
+/** Former auto-assign coach. Kept so older rows still follow the same automatic delivery path. */
 export const RAKSHIT_COACH_ID = 'c0e44f5c-28c6-4a93-8a2f-d7ed69172b2a'
 
 /**
  * Coaches who own ongoing delivery manually (weekly replies, publish from queue).
- * Piyush and Rakshit are fully automatic except phone calls and chats that need a human.
+ * Piyush is fully automatic except phone calls and chats that need a human.
  * Mid-week replies auto-send for every coach.
  */
 const MANUAL_PLAN_DELIVERY_COACH_IDS = new Set<string>()
 
 /**
- * New paying clients are assigned here after checkout.
+ * New paying clients are assigned to Piyush.
  * Initial diet/workout auto-generates and delivers for auto-delivery coaches.
  */
-const AUTO_ASSIGN_COACH_IDS = new Set([RAKSHIT_COACH_ID])
+const AUTO_ASSIGN_COACH_IDS = new Set([PIYUSH_COACH_ID])
 
 /** Coaches whose clients get AI journey, chat, check-in replies, and plans auto-delivered. */
 export const AUTO_DELIVERY_COACH_IDS = new Set([PIYUSH_COACH_ID, RAKSHIT_COACH_ID])
@@ -35,19 +35,18 @@ export function isAutoDeliveryCoach(coachId: string | null | undefined): boolean
 }
 
 export function autoCoachFirstName(coachId: string | null | undefined): string {
-  if (coachId === RAKSHIT_COACH_ID) return 'Rakshit'
-  if (coachId === PIYUSH_COACH_ID) return 'Piyush'
+  if (coachId === PIYUSH_COACH_ID || coachId === RAKSHIT_COACH_ID) return 'Piyush'
   return 'your coach'
 }
 
-/** First name shown to a new member. Unnamed new members use Rakshit, the auto-assign coach. */
+/** First name shown to a member. Piyush is the only coach name members see. */
 export function memberFacingCoachFirstName(
   coachId: string | null | undefined,
   coachService?: string | null
 ): string {
   const named = autoCoachFirstName(coachId)
   if (named !== 'your coach') return named
-  if (coachService === 'ai' || !coachId) return 'Rakshit'
+  if (coachService === 'ai' || !coachId) return 'Piyush'
   return 'your coach'
 }
 

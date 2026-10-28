@@ -6,6 +6,7 @@ import {
   coachAcceptsAutoAssignment,
   coachRequiresManualPlanDelivery,
   coachUsesFifoWorkQueue,
+  memberFacingCoachFirstName,
   shouldScheduleCheckinAutoReply,
 } from '../src/lib/coach-delivery-policy'
 import { isTrialClientHiddenFromCoaches } from '../src/lib/coach-roster-visibility'
@@ -43,9 +44,13 @@ assert.equal(
   true
 )
 
-assert.equal(coachAcceptsAutoAssignment(PIYUSH_COACH_ID), false)
-assert.equal(coachAcceptsAutoAssignment(RAKSHIT_COACH_ID), true)
+assert.equal(coachAcceptsAutoAssignment(PIYUSH_COACH_ID), true)
+assert.equal(coachAcceptsAutoAssignment(RAKSHIT_COACH_ID), false)
 assert.equal(coachAcceptsAutoAssignment(null), false)
+assert.equal(memberFacingCoachFirstName(RAKSHIT_COACH_ID, 'human'), 'Piyush')
+assert.equal(memberFacingCoachFirstName(PIYUSH_COACH_ID, 'ai'), 'Piyush')
+assert.equal(memberFacingCoachFirstName(null, 'ai'), 'Piyush')
+assert.equal(memberFacingCoachFirstName(null, null), 'Piyush')
 assert.equal(coachRequiresManualPlanDelivery(PIYUSH_COACH_ID), false)
 assert.equal(coachRequiresManualPlanDelivery(RAKSHIT_COACH_ID), false)
 assert.equal(shouldScheduleCheckinAutoReply('mid_week', PIYUSH_COACH_ID), true)
@@ -79,5 +84,5 @@ assert.match(autoReplySrc, /coachRequiresManualPlanDelivery\(checkin\.coach_id\)
 assert.match(autoReplySrc, /Manual-delivery coaches never auto-publish/)
 
 console.log(
-  '✓ trial clients stay hidden; Piyush and Rakshit weekly plans auto-deliver; mid-week auto-replies for both coaches; Complete does not auto-publish for remaining manual coaches'
+  '✓ trial clients stay hidden; Piyush is the only auto-assigned coach; weekly plans auto-deliver; Complete does not auto-publish for remaining manual coaches'
 )

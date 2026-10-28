@@ -515,7 +515,7 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
 
     await markPlanChangeDraftReady(admin, request.id, saved.data.id)
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Generation failed'
+    const message = err instanceof Error ? err.message : 'The plan update failed'
     console.error('[plan-change] process failed', requestId, message)
     const { data: lease } = await admin
       .from('plan_change_requests')

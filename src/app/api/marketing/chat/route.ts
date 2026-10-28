@@ -107,8 +107,65 @@ function takeRateLimit(ip: string): { ok: true } | { ok: false; retryAfterSec: n
   return { ok: true }
 }
 
-function faqFallback(surface: 'instant' | 'coaching', message: string): string | null {
+const OFFER_BRIEF = `You speak for LURVOX on the 84-day page. You are not a model, a bot, or a coach name. Never say AI, artificial intelligence, chatbot, bot, language model, GPT, OpenAI, or Smart Coach. Never say you are automated.
+Answer only from these facts. If a question is not covered, say you do not have that here and they can talk to a coach or read the Terms. No medical advice. No invented discounts. No guaranteed fat loss, muscle gain, or visible results.
+Offer: ₹999 once, for 84 days. Not a subscription. Not a monthly charge.
+Starting point: lose fat, skinny-fat, or gain weight. Workout and diet are written for that body.
+Included: a personal workout plan, a personal diet plan, cardio and supplement plans, a coach in the app, mid-week and weekly check-ins, workout and diet trackers, and a new plan every week. Men get a testosterone protocol. Women get hourglass guidance.
+First plan: within 24 hours after onboarding and the required photos. It shows up in My Plan. Workout, diet, cardio, and supplements.
+Check-ins: Wednesday is a check-in and a reply. The plan stays the same. Sunday, they send the week, and the next plan is written from it.
+A coach is in the app for the full 84 days. They can message the coach once the 84 days are active.
+Gym: not required. The plan uses a gym, home, or a mix, based on what they have.
+Before paying: they can leave a name and WhatsApp number. A coach calls. That call is free and does not start the 84 days.
+Refunds: sales are final once payment is captured, except where the Terms say otherwise. The Terms are the only refund rules.
+To start: they open "See how it runs", then pay ₹999 once.
+Tone: short, plain, professional. Max 3 short sentences.`
+
+const OFFER_SAFE = 'The 84 days are ₹999, paid once. Ask about what is included, check-ins, or when the plan arrives.'
+
+function offer84Faq(q: string): string | null {
+  if (/call|phone|whatsapp|callback|talk to a coach/.test(q)) {
+    return 'Leave your name and WhatsApp on Talk to a coach. A coach calls you. That call is free and does not start the 84 days.'
+  }
+  if (/refund|money.?back|guarantee|terms/.test(q)) {
+    return 'Sales are final once payment is captured, except where the Terms say otherwise. The Terms are the only refund rules.'
+  }
+  if (/price|cost|₹|rs\b|rupee|pay|999|subscription|monthly/.test(q)) {
+    return '₹999 once, for 84 days. It is not a monthly charge.'
+  }
+  if (/wednesday|sunday|check-?in/.test(q)) {
+    return 'Wednesday is a check-in and a reply. The plan stays. Sunday writes the next plan from your week.'
+  }
+  if (/when|hours|deliver|arriv|photo|onboard/.test(q)) {
+    return 'After onboarding and the required photos, the first plan shows up in My Plan within 24 hours. Workout, diet, cardio, and supplements.'
+  }
+  if (/gym|home workout|equipment/.test(q)) {
+    return 'A gym is not required. The plan uses a gym, home, or a mix, based on what you have.'
+  }
+  if (/includ|what do i get|workout|diet|supplement|cardio|tracker/.test(q)) {
+    return 'A personal workout, a personal diet, cardio and supplements, a coach in the app, check-ins, trackers, and a new plan every week.'
+  }
+  if (/coach/.test(q)) {
+    return 'A coach is in the app with you for the full 84 days. You can message them once the 84 days are active.'
+  }
+  return null
+}
+
+function publicOfferReply(text: string): string {
+  const cleaned = text.replace(/\s+/g, ' ').trim()
+  if (!cleaned) return OFFER_SAFE
+  if (/\b(ai|a\.i\.|artificial intelligence|language model|chatbot|chat bot|openai|gpt-?\d*|smart coach)\b/i.test(cleaned)) {
+    return OFFER_SAFE
+  }
+  if (/₹\s*1[,.]?999|₹\s*3[,.]?499|₹\s*5[,.]?999|₹\s*49\b|₹\s*89\b/.test(cleaned)) {
+    return '₹999 once, for 84 days. It is not a monthly charge.'
+  }
+  return cleaned
+}
+
+function faqFallback(surface: 'instant' | 'coaching' | 'offer84', message: string): string | null {
   const q = message.toLowerCase()
+  if (surface === 'offer84') return offer84Faq(q)
   if (/call|phone|whatsapp|callback|instagram|insta\b/.test(q)) {
     return COACH_ISSUE_CONTACT
   }
@@ -178,7 +235,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Message required' }, { status: 400, headers })
   }
 
-  const surface = body.surface === 'coaching' ? 'coaching' : 'instant'
+  const surface = body.surface === 'offer84' ? 'offer84' : body.surface === 'coaching' ? 'coaching' : 'instant'
   const faq = faqFallback(surface, message)
   if (faq) {
     return NextResponse.json({ reply: faq }, { headers })
@@ -196,13 +253,13 @@ export async function POST(request: Request) {
 
   try {
     const result = await generateOpenAIResponse({
-      systemPrompt: surface === 'coaching' ? COACHING_SYSTEM : INSTANT_SYSTEM,
+      systemPrompt: surface === 'offer84' ? OFFER_BRIEF : surface === 'coaching' ? COACHING_SYSTEM : INSTANT_SYSTEM,
       userPrompt,
       model: MODELS.GPT_LUNA,
       maxTokens: 280,
       temperature: 0.4,
     })
-    const reply = result.text.trim()
+    const reply = surface === 'offer84' ? publicOfferReply(result.text) : result.text.trim()
     if (!reply) {
       throw new Error('Empty marketing chat reply')
     }
@@ -212,9 +269,11 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         reply:
-          surface === 'coaching'
-            ? 'Plans start at ₹1,999 for 3 months. Ask about fat loss, muscle, or Athletic body — or open the plans section on this page.'
-            : 'Workout is ₹49, Diet ₹89, Complete ₹99. After payment you answer a short questionnaire and get your plan in the app and email.',
+          surface === 'offer84'
+            ? OFFER_SAFE
+            : surface === 'coaching'
+              ? 'Plans start at ₹1,999 for 3 months. Ask about fat loss, muscle, or Athletic body — or open the plans section on this page.'
+              : 'Workout is ₹49, Diet ₹89, Complete ₹99. After payment you answer a short questionnaire and get your plan in the app and email.',
       },
       { headers }
     )

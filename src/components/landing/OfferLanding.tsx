@@ -25,7 +25,7 @@ import { PreviewSaleProvider, usePreviewSale } from './PreviewSaleCode'
 import { SaleEndsTimer } from './SaleEndsTimer'
 
 export type CoachResult = {
-  key: 'piyush' | 'rakshit'
+  key: 'piyush'
   name: string
   handle: string
   href: string
@@ -493,7 +493,7 @@ function OfferLandingView({
           </div>
           <div className="lxo-hero-copy">
             {adPath === PREVIEW5_AD_PATH ? <SaleEndsTimer tone="dark" /> : null}
-            <p className="lxo-kicker">Online coaching · Piyush &amp; Rakshit&apos;s method</p>
+            <p className="lxo-kicker">Online coaching · Piyush&apos;s method</p>
             <h1 key={goal.slug}>{goal.title}</h1>
             <p className="lxo-sub">
               {durationOffer
@@ -570,7 +570,7 @@ function OfferLandingView({
           <blockquote className="lxo-voice lxo-rise">
             <p>We looked fat. No confidence. No support.</p>
             <p>We learned on our own, the hard way, so you don&apos;t have to.</p>
-            <footer>Piyush and Rakshit</footer>
+            <footer>Piyush</footer>
           </blockquote>
           <div className="lxo-coach-list">
             {coaches.map((coach) => (

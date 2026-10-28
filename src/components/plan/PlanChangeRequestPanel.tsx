@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type CSSProperties, type FormEvent } from 'react'
 import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import { PLAN_CHANGE_DAILY_LIMIT } from '@/lib/plan-change-limits'
-import { isStalePlanChangeRequest } from '@/lib/client-plan-presence'
+import { clientSafePlanError, isStalePlanChangeRequest } from '@/lib/client-plan-presence'
 import { readApiJson } from '@/lib/read-api-json'
 
 type Scope = 'diet' | 'workout' | 'both'
@@ -136,9 +136,10 @@ export function PlanChangeRequestPanel() {
       return 'Your update is ready. Open My Plan again in a moment if you do not see it yet.'
     }
     if (openRequest.status === 'failed') {
-      return openRequest.errorMessage
-        ? `Request failed: ${openRequest.errorMessage}`
-        : 'Request failed. Try again tomorrow.'
+      return clientSafePlanError(
+        openRequest.errorMessage ? `Request failed: ${openRequest.errorMessage}` : '',
+        'Request failed. Try again tomorrow.'
+      )
     }
     return null
   })()

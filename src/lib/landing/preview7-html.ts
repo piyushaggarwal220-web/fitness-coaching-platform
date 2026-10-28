@@ -171,17 +171,12 @@ const COACH_INSTA_CTA = `<section id="lx-coach-insta" class="lx-ig-cta" aria-lab
   <div class="lx-ig-cta__card">
     <p class="lx-ig-cta__kicker"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor"/></svg> Instagram</p>
     <h2 class="lx-ig-cta__title">Tap to open coach Instagram</h2>
-    <p class="lx-ig-cta__lede">See the coaches. Real profiles.</p>
+    <p class="lx-ig-cta__lede">See the coach. Real profile.</p>
     <div class="lx-ig-cta__row">
       <a class="lx-ig-cta__chip" href="https://www.instagram.com/maximusvault/" target="_blank" rel="noopener noreferrer" data-funnel="coach_instagram">
         <span class="lx-ig-cta__ring"><img src="https://app.lurvox.in/landing/instant-coach-piyush.png" alt="Piyush Aggarwal, LURVOX coach" width="80" height="80"></span>
         <strong>Piyush</strong>
         <span>@maximusvault</span>
-      </a>
-      <a class="lx-ig-cta__chip" href="https://www.instagram.com/rakshitmohla_/" target="_blank" rel="noopener noreferrer" data-funnel="coach_instagram">
-        <span class="lx-ig-cta__ring"><img src="https://app.lurvox.in/landing/instant-coach-rakshit.png" alt="Rakshit Mohla, LURVOX coach" width="80" height="80"></span>
-        <strong>Rakshit</strong>
-        <span>@rakshitmohla_</span>
       </a>
     </div>
   </div>

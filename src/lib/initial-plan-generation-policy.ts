@@ -26,7 +26,7 @@ export function validatePersistedOnboardingAnswers(
   options?: { termsAccepted?: boolean; requireCoach?: boolean }
 ): string | null {
   if (options?.requireCoach !== false && !profile.coach_id) {
-    return 'A coach must be assigned before generation.'
+    return 'A coach must be assigned before the plan can start.'
   }
   return validateOnboardingAnswersForProfile(profile, {
     termsAccepted: options?.termsAccepted ?? Boolean(profile.terms_accepted_at),

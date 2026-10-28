@@ -31,7 +31,6 @@ const LANDING = PREVIEW3_AD_PATH
 
 const PORTRAIT: Record<CoachResult['key'], string> = {
   piyush: '/landing/instant-coach-piyush.png',
-  rakshit: '/landing/instant-coach-rakshit.png',
 }
 
 type PlanCard = {

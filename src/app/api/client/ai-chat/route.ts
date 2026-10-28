@@ -84,10 +84,10 @@ async function coachNameForClient(
 ): Promise<string> {
   const known = memberFacingCoachFirstName(profile.coach_id, profile.coach_service)
   if (known !== 'your coach') return known
-  if (!profile.coach_id) return 'Rakshit'
+  if (!profile.coach_id) return 'Piyush'
   const { data } = await admin.from('coaches').select('name').eq('id', profile.coach_id).maybeSingle()
   const first = data?.name?.trim().split(/\s+/)[0]
-  return first || 'Rakshit'
+  return first || 'Piyush'
 }
 
 async function earlierCoachThread(

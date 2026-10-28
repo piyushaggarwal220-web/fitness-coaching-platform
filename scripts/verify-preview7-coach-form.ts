@@ -95,7 +95,7 @@ assert.doesNotMatch(
 assert.match(reordered, /id="lx-coach-insta"/)
 assert.match(reordered, /Tap to open coach Instagram/)
 assert.match(reordered, /instagram\.com\/maximusvault/)
-assert.match(reordered, /instagram\.com\/rakshitmohla_/)
+assert.doesNotMatch(reordered, /instagram\.com\/rakshitmohla_/)
 assert.match(reordered, /id="plans"[\s\S]*lx-coach-insta[\s\S]*Pick your goal/)
 assert.match(reordered, /lx-wyg--cards/)
 assert.match(reordered, /A living coaching system\. Not a PDF\./)

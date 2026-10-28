@@ -9,6 +9,8 @@ import {
   type InitialPlanGenerationJob,
 } from '@/lib/initial-plan-generation'
 import { shouldAutoEnqueueInitialPlan, shouldAutoJourneyAndDeliverInitialPlan } from '@/lib/coach-delivery-policy'
+import { autoAssignCoachToClient } from '@/lib/coach-assignment'
+import { clientSafePlanError } from '@/lib/client-plan-presence'
 import {
   latestCoachingPurchase,
   latestDigitalPurchase,
@@ -20,6 +22,18 @@ import type { OnboardingProfile } from '@/types/database'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
+
+function clientPlanError(message: string, status: number) {
+  return NextResponse.json(
+    {
+      error: clientSafePlanError(
+        message,
+        'Your plan could not be started yet. Please try again or message support.'
+      ),
+    },
+    { status }
+  )
+}
 
 /**
  * Safety net: if onboarding completed but the initial AI job never started
@@ -40,7 +54,15 @@ export async function POST() {
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
   }
 
-  const completed = profile as OnboardingProfile
+  let completed = profile as OnboardingProfile
+  if (!completed.coach_id) {
+    const assigned = await autoAssignCoachToClient(auth.user.id, admin)
+    if (assigned.error) {
+      console.error('[onboarding/ensure-generation] coach assign failed:', assigned.error)
+    } else if (assigned.coachId) {
+      completed = { ...completed, coach_id: assigned.coachId }
+    }
+  }
   if (!completed.onboarding_complete || !completed.onboarding_completed_at) {
     return NextResponse.json({ error: 'Onboarding is not complete.' }, { status: 409 })
   }
@@ -50,10 +72,7 @@ export async function POST() {
 
   const deliveredGuard = await clientHasDeliveredPlanStrict(admin, auth.user.id)
   if (deliveredGuard.error) {
-    return NextResponse.json(
-      { error: `Could not verify delivery history: ${deliveredGuard.error}` },
-      { status: 503 }
-    )
+    return clientPlanError(`Could not verify delivery history: ${deliveredGuard.error}`, 503)
   }
   if (deliveredGuard.delivered) {
     return NextResponse.json({ success: true, status: 'skipped', reason: 'plan_already_delivered' })
@@ -99,7 +118,7 @@ export async function POST() {
 
   const result = await enqueueInitialPlanGeneration(admin, completed)
   if (result.error || !result.job) {
-    return NextResponse.json({ error: result.error ?? 'Could not queue generation' }, { status: 422 })
+    return clientPlanError(result.error ?? 'Could not start the plan.', 422)
   }
 
   let job = result.job

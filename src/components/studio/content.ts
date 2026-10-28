@@ -109,8 +109,7 @@ export const STEPS: StoryFrame[] = [
     text: `Workout and diet within ${INSTANT_PLAN_WINDOW_LABEL} of that.`,
     image: '/landing/coach-piyush-dark.webp',
     alt: 'Piyush Aggarwal',
-    second: { image: '/landing/coach-rakshit-dark.webp', alt: 'Rakshit Mohla' },
-    caption: 'Piyush Aggarwal and Rakshit Mohla write the plans.',
+    caption: 'Piyush Aggarwal writes the plans.',
   },
   {
     n: '03',
@@ -144,8 +143,8 @@ export const INCLUDED: StoryFrame[] = [
   {
     title: 'Check-ins',
     text: 'You report the week. The coach answers.',
-    image: '/landing/coach-rakshit-dark.webp',
-    alt: 'Rakshit Mohla',
+    image: '/landing/coach-piyush-dark.webp',
+    alt: 'Piyush Aggarwal',
   },
   {
     title: 'Cardio and supplements',
@@ -178,12 +177,6 @@ export const QUOTES = [
     name: 'Piyush Aggarwal',
     role: 'Founder',
     photo: '/landing/coach-piyush-dark.webp',
-  },
-  {
-    quote: 'We learned on our own, the hard way, so you don’t have to.',
-    name: 'Rakshit Mohla',
-    role: 'Founder',
-    photo: '/landing/coach-rakshit-dark.webp',
   },
 ]
 

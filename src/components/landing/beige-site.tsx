@@ -11,6 +11,7 @@ import { coaches } from '@/lib/content'
 import { TRANSFORMATION_PLANS } from '@/lib/payments/plans'
 import { DirectCheckout } from './DirectCheckout'
 import { PreviewSaleProvider } from './PreviewSaleCode'
+import { OfferChat } from './offer-chat'
 import { CampaignImage, PrimaryCta } from './primitives'
 
 const PLAN_ARRIVES = '24 hours'
@@ -44,23 +45,6 @@ const FAQ = [
 
 export function BeigeSite({ children, capture = false }: { children: ReactNode; capture?: boolean }) {
   const [payPlan, setPayPlan] = useState<string | null>(null)
-  useEffect(() => {
-    const bar = document.querySelector('.lx-sticky')
-    const clusters = document.querySelectorAll('[data-lx-buy]')
-    if (!bar || clusters.length === 0) return
-    const visible = new Set<Element>()
-    const sync = () => bar.classList.toggle('is-hidden', visible.size > 0)
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) visible.add(entry.target)
-        else visible.delete(entry.target)
-      }
-      sync()
-    }, { threshold: 0, rootMargin: '0px 0px 88px 0px' })
-    clusters.forEach((node) => observer.observe(node))
-    sync()
-    return () => observer.disconnect()
-  }, [])
   return (
     <PreviewSaleProvider>
     <PayContext.Provider value={setPayPlan}>
@@ -76,7 +60,7 @@ export function BeigeSite({ children, capture = false }: { children: ReactNode; 
         <BeigeNav />
         <main>{children}</main>
         <BeigeFooter />
-        <BeigeSticky />
+        <OfferChat />
         <DirectCheckout
           planSlug={payPlan}
           landingPath="/preview4"
@@ -118,6 +102,8 @@ const NAV = [
 function BeigeNav() {
   const path = usePathname()
   const onHome = path === '/preview4'
+  const onNext = path === NEXT_HREF
+  const pay = usePay()
   return (
     <header className="lx-header">
       <div className="lx-nav">
@@ -144,30 +130,21 @@ function BeigeNav() {
               {NAV.map(([href, label]) => (
                 <Link key={href} href={href}>{label}</Link>
               ))}
+              {onNext ? <Link href="/login">Client login</Link> : null}
             </div>
           </details>
         </div>
         <Link href="/preview4" className="lx-logo">LURVOX</Link>
         <div className="lx-nav-actions">
+          {onNext ? (
+            <PrimaryCta plan={PLAN.slug} className="lx-nav-cta" source="preview4" landingPath="/preview4" onPay={pay}>
+              Start · {PLAN.displayPrice}
+            </PrimaryCta>
+          ) : null}
           <Link href="/login" className="lx-login">Client login</Link>
         </div>
       </div>
     </header>
-  )
-}
-
-function BeigeSticky() {
-  const onBrief = usePathname() === NEXT_HREF
-  if (onBrief) return null
-  return (
-    <div className="lx-sticky">
-      <Link href={NEXT_HREF} className="lx-btn lx-btn-primary lx-btn-block">
-        See how it runs · {PLAN.displayPrice}
-      </Link>
-      <Link href={TALK_HREF} className="lx-sticky-talk" onClick={() => trackFunnelStep('talk_to_coach', { source: 'preview4', path: '/preview4' })}>
-        Talk to a coach
-      </Link>
-    </div>
   )
 }
 
@@ -209,7 +186,14 @@ export function BeigeHome() {
             <em>for 84 days · once</em>
           </p>
           <p className="lx-arrive">First plan within {PLAN_ARRIVES}, after onboarding and photos.</p>
-          <OfferActions />
+          <div className="lx-actions">
+            <Link href={NEXT_HREF} className="lx-btn lx-btn-primary lx-btn-block">
+              Click here to start
+            </Link>
+            <Link href={TALK_HREF} className="lx-btn lx-btn-call" onClick={() => trackFunnelStep('talk_to_coach', { source: 'preview4', path: '/preview4' })}>
+              Talk to a coach
+            </Link>
+          </div>
           <div className="lx-hero-photo">
             <CampaignImage
               src="/images/lurvox/campaign/hero-muscle.webp"
@@ -252,8 +236,8 @@ export function BeigeHome() {
       <section className="lx-coaches" id="coaching">
         <div className="lx-coaches-copy">
           <p className="lx-eyebrow">Coaches</p>
-          <h2>Two coaches. Your case has a person.</h2>
-          <p className="lx-lead">Piyush Aggarwal and Rakshit Mohla. You can open their Instagram, or ask for a call before you start.</p>
+          <h2>Your coach. Your case has a person.</h2>
+          <p className="lx-lead">Piyush Aggarwal. You can open his Instagram, or ask for a call before you start.</p>
         </div>
         <div className="lx-coach-row">
           {coaches.map((coach) => (
@@ -334,11 +318,11 @@ export function CoachesPage() {
 }
 
 const AFTER_PAY = [
-  { n: '01', title: 'You pay once.', body: `${PLAN.displayPrice} for 84 days. It is not a monthly charge.` },
-  { n: '02', title: 'You tell us the case.', body: 'You choose lose fat, skinny-fat, or gain weight. Then training, food, and the required photos.' },
-  { n: '03', title: 'The first plan arrives.', body: `Within ${PLAN_ARRIVES} of onboarding and photos. Workout, diet, cardio, and supplements.` },
-  { n: '04', title: 'Wednesday and Sunday.', body: 'Wednesday you check in and get a reply. The plan stays the same. Sunday you send the week, and the next plan is written from it.' },
-  { n: '05', title: 'The same week, twelve times.', body: 'A coach is in the app for the 84 days.' },
+  { n: '01', title: 'One payment.', body: `${PLAN.displayPrice} for the full 84 days. Not a subscription.` },
+  { n: '02', title: 'Your starting point.', body: 'Lose fat, skinny-fat, or gain weight. Then training, food, and photos.' },
+  { n: '03', title: 'Your first plan.', body: `Workout, diet, cardio, and supplements, within ${PLAN_ARRIVES} of onboarding and photos.` },
+  { n: '04', title: 'Two check-ins.', body: 'Wednesday brings a reply. The plan stays. Sunday writes the next one from your week.' },
+  { n: '05', title: 'Your coach.', body: 'In the app with you for the full 84 days.' },
 ] as const
 
 export function BeforePayPage() {
@@ -363,17 +347,24 @@ export function BeforePayPage() {
   }, [])
   return (
     <section className="lx-brief">
-      <p className="lx-eyebrow">After you pay</p>
-      <h2>How the 84 days run.</h2>
-      <p className="lx-lead">The plan is written from you, then rewritten every week.</p>
-      <p className="lx-price">
-        <strong>{PLAN.displayPrice}</strong>
-        <em>once · 84 days</em>
-      </p>
-      <div className="lx-actions" data-lx-buy>
-        <PrimaryCta plan={PLAN.slug} className="lx-btn-block" source="preview4" landingPath="/preview4" onPay={pay}>
-          Start your transformation
-        </PrimaryCta>
+      <div className="lx-brief-side">
+        <div className="lx-brief-copy">
+          <p className="lx-eyebrow">After you pay</p>
+          <h1>How the 84 days run.</h1>
+          <p className="lx-lead">The plan is written from you, then rewritten every week.</p>
+        </div>
+        <div className="lx-brief-pay" data-lx-buy>
+          <p className="lx-price">
+            <strong>{PLAN.displayPrice}</strong>
+            <em>once · 84 days</em>
+          </p>
+          <p className="lx-brief-note">Paid once. Not a monthly charge.</p>
+          <div className="lx-actions">
+            <PrimaryCta plan={PLAN.slug} className="lx-btn-block" source="preview4" landingPath="/preview4" onPay={pay}>
+              Start your transformation
+            </PrimaryCta>
+          </div>
+        </div>
       </div>
       <ol>
         {AFTER_PAY.map((step) => (
