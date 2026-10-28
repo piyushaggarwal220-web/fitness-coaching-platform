@@ -54,6 +54,7 @@ type Props = {
   modules: TrackerModuleSummary[] | null
   unreadMessages: number
   showChat: boolean
+  chatLabel?: string
   weekWorkouts: number
   streak: number
   todayPercent: number | null
@@ -71,6 +72,7 @@ export function TodayFocus({
   modules,
   unreadMessages,
   showChat,
+  chatLabel = 'Smart Coach',
   weekWorkouts,
   streak,
   todayPercent,
@@ -267,7 +269,7 @@ export function TodayFocus({
               <MessageCircle size={18} color={colors.textMuted} />
               <span style={{ flex: 1 }}>
                 <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>
-                  Smart Coach
+                  {chatLabel}
                 </span>
                 <span style={{ display: 'block', marginTop: 2, fontSize: 13, color: colors.textSecondary }}>
                   {unreadMessages > 0

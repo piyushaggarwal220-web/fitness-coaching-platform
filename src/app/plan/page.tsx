@@ -22,6 +22,7 @@ import { planGoalName, planDurationLabel } from '@/lib/payments/plan-pages'
 import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
 import { absentPlanCopy } from '@/lib/client-plan-presence'
 import { isAutoDeliveryCoach } from '@/lib/coach-delivery-policy'
+import { usesHumanCoach } from '@/lib/coach-service'
 import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
 import { clientFacingDietPlanText } from '@/lib/ai/nutrition-macro-sync'
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
@@ -48,6 +49,7 @@ export default function ClientPlanPage() {
   const [membershipName, setMembershipName] = useState('')
   const [membershipDuration, setMembershipDuration] = useState('')
   const [isDigitalPlan, setIsDigitalPlan] = useState(false)
+  const [coachWritesPlan, setCoachWritesPlan] = useState(false)
   const [digitalSections, setDigitalSections] = useState<'workout' | 'diet' | 'both' | null>(null)
 
   useEffect(() => {
@@ -59,6 +61,7 @@ export default function ClientPlanPage() {
       }
 
       setPlanDelivered(result.profile?.plan_delivered === true);
+      setCoachWritesPlan(usesHumanCoach(result.profile));
       const { data: generationJob } = await supabase
         .from('initial_plan_generation_jobs')
         .select('status')
@@ -337,7 +340,12 @@ export default function ClientPlanPage() {
       ))}
 
       {!isDigitalPlan && <MessMenuPanel />}
-      {!isDigitalPlan && <PlanChangeRequestPanel />}
+      {!isDigitalPlan && coachWritesPlan && (
+        <p style={{ marginTop: spacing[4], fontSize: 15, lineHeight: 1.5, color: colors.textSecondary }}>
+          Write diet or workout changes in <Link href="/client/chat" style={{ color: colors.accent, fontWeight: 700 }}>coach chat</Link>. Your coach updates the live plan from there.
+        </p>
+      )}
+      {!isDigitalPlan && !coachWritesPlan && <PlanChangeRequestPanel />}
     </ClientShell>
   );
 }

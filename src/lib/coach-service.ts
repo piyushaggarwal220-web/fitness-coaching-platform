@@ -28,9 +28,12 @@ export function usesHumanCoach(profile: CoachServiceProfile | null | undefined):
   return resolveCoachService(profile) === 'human'
 }
 
-/** High-payers on Piyush can use Smart Coach and also message Piyush. */
-export function clientHasDualChat(profile: CoachServiceProfile | null | undefined): boolean {
-  return profile?.coach_id === PIYUSH_COACH_ID
+/**
+ * Nobody gets both chats. Above ₹500 the client only has coach chat.
+ * At ₹500 or below they only have Smart Coach.
+ */
+export function clientHasDualChat(_profile: CoachServiceProfile | null | undefined): boolean {
+  return false
 }
 
 /** Every client can open chat. Dual clients pick Smart Coach or Piyush. */

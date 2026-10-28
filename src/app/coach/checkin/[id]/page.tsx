@@ -39,6 +39,7 @@ export default function CoachCheckinDetailPage() {
   const checkinId = typeof params.id === 'string' ? params.id : '';
 
   const [checkin, setCheckin] = useState<CheckinWithClient | null>(null);
+  const [midweek, setMidweek] = useState<Checkin | null>(null);
   const [previous, setPrevious] = useState<Checkin | null>(null);
   const [clientProfile, setClientProfile] = useState<{ fitness_goal: string | null; age: string | number | null } | null>(null);
   const [response, setResponse] = useState<CoachCheckinResponse>({ feedback: '', action_items: '' });
@@ -79,6 +80,21 @@ export default function CoachCheckinDetailPage() {
         .single();
 
       setClientProfile(profileData);
+
+      if (record.checkin_type === 'weekly' && record.coaching_week != null) {
+        const { data: midweekRow } = await supabase
+          .from('checkins')
+          .select('*')
+          .eq('client_id', record.client_id)
+          .eq('checkin_type', 'mid_week')
+          .eq('coaching_week', record.coaching_week)
+          .order('submitted_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        setMidweek((midweekRow as Checkin | null) ?? null);
+      } else {
+        setMidweek(null);
+      }
 
       const { data: prevData } = await supabase
         .from('checkins')
@@ -223,6 +239,24 @@ export default function CoachCheckinDetailPage() {
           <Link href={`/coach/chat?clientId=${checkin.client_id}`} style={styles.chatLink}>
             Reply in chat →
           </Link>
+          {isWeekly && midweek && (
+            <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: colors.bgElevated, border: `1px solid ${colors.borderSubtle}`, color: colors.textPrimary }}>
+              <p style={{ margin: 0, fontWeight: 700 }}>Mid-week check-in, same week</p>
+              {[
+                midweek.weight != null ? `Weight: ${midweek.weight} kg` : '',
+                midweek.questions_for_coach ? `Questions: ${midweek.questions_for_coach}` : '',
+                midweek.progress_notes ? `Notes: ${midweek.progress_notes}` : '',
+                midweek.adherence_wins ? `Going well: ${midweek.adherence_wins}` : '',
+                midweek.adherence_struggles ? `Hard parts: ${midweek.adherence_struggles}` : '',
+                midweek.pain_injuries ? `Pain: ${midweek.pain_injuries}` : '',
+              ].filter(Boolean).map((line) => (
+                <p key={line} style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.45, color: colors.textSecondary }}>{line}</p>
+              ))}
+              {!midweek.weight && !midweek.questions_for_coach && !midweek.progress_notes && !midweek.adherence_wins && !midweek.adherence_struggles && !midweek.pain_injuries && (
+                <p style={{ margin: '6px 0 0', fontSize: 14, color: colors.textSecondary }}>Submitted, with no written notes.</p>
+              )}
+            </div>
+          )}
           {isWeekly && (
             <a href={`/api/checkin/weekly-report?checkinId=${checkin.id}`} style={styles.chatLink}>
               Download week Excel →

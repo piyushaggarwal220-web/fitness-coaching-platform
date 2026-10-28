@@ -28,8 +28,8 @@ assert.equal(
   capturedNetPaidPaise({ status: 'captured', amount_paise: 6900, plan_slug: 'exercise_videos_monthly' }),
   0
 )
-assert.equal(paidAmountQualifiesForPiyushHumanCoach(139900), false)
-assert.equal(paidAmountQualifiesForPiyushHumanCoach(140000), true)
+assert.equal(paidAmountQualifiesForPiyushHumanCoach(50000), false)
+assert.equal(paidAmountQualifiesForPiyushHumanCoach(50001), true)
 assert.equal(paidAmountQualifiesForPiyushHumanCoach(149900), true)
 assert.equal(
   purchasesQualifyForPiyushHumanCoach([
@@ -40,6 +40,10 @@ assert.equal(
 )
 assert.equal(
   purchasesQualifyForPiyushHumanCoach([{ status: 'captured', amount_paise: 89900, plan_slug: '3_months' }]),
+  true
+)
+assert.equal(
+  purchasesQualifyForPiyushHumanCoach([{ status: 'captured', amount_paise: 49900, plan_slug: 'offer_1_month' }]),
   false
 )
 assert.equal(
@@ -50,11 +54,11 @@ assert.equal(
   99900
 )
 
-assert.equal(clientChatNavLabel({ coach_service: 'ai', coach_id: PIYUSH_COACH_ID }), 'Chat')
-assert.equal(clientChatNavLabel({ coach_service: 'human', coach_id: PIYUSH_COACH_ID }), 'Chat')
+assert.equal(clientChatNavLabel({ coach_service: 'ai', coach_id: PIYUSH_COACH_ID }), 'Smart Coach')
+assert.equal(clientChatNavLabel({ coach_service: 'human', coach_id: PIYUSH_COACH_ID }), 'Piyush')
 assert.equal(clientChatNavLabel({ coach_service: 'human', coach_id: 'unknown' }), 'Coach')
 assert.equal(clientHasCoachChat({ coach_id: PIYUSH_COACH_ID }), true)
-assert.equal(clientHasDualChat({ coach_id: PIYUSH_COACH_ID }), true)
+assert.equal(clientHasDualChat({ coach_id: PIYUSH_COACH_ID }), false)
 assert.equal(clientHasDualChat({ coach_id: 'c0e44f5c-28c6-4a93-8a2f-d7ed69172b2a' }), false)
 assert.equal(coachIdHasClientChat(PIYUSH_COACH_ID), false)
 assert.equal(clientHasCoachChat({ coach_id: 'c0e44f5c-28c6-4a93-8a2f-d7ed69172b2a' }), true)

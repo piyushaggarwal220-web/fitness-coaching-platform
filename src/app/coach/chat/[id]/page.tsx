@@ -6,6 +6,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Copy, Phone, Sparkles, UserRound } from 'lucide-react'
 import { CoachShell } from '@/components/ui/CoachShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
+import { CoachChatAssistPanel } from '@/components/coach/CoachChatAssistPanel'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { readApiJson } from '@/lib/api-response'
 import { getPlanTierTheme, isEnrollmentCodeClient } from '@/lib/client-plan-tier'
@@ -268,6 +269,7 @@ function CoachChatDetailInner() {
         </div>
 
         <div className="coach-chat-detail-viewport">
+          <CoachChatAssistPanel conversationId={conversation.id} messages={messages} />
           <CoachChatThread
             conversationId={conversation.id}
             coachId={conversation.coach_id}

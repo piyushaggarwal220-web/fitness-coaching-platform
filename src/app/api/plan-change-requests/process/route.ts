@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
+import { usesHumanCoach } from '@/lib/coach-service'
 import { processPlanChangeRequest, publishReadyPlanChange } from '@/lib/plan-change-requests'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -25,6 +26,20 @@ export async function POST(request: Request) {
 
   if (!row || row.client_id !== auth.user.id) {
     return NextResponse.json({ error: 'Request not found.' }, { status: 404 })
+  }
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('coach_service, coach_id')
+    .eq('id', row.client_id)
+    .maybeSingle()
+  if (usesHumanCoach(profile)) {
+    await admin
+      .from('plan_change_requests')
+      .update({ status: 'awaiting_planner', updated_at: new Date().toISOString() })
+      .eq('id', requestId)
+      .eq('status', 'generating')
+    return NextResponse.json({ ok: true, skipped: true, status: 'awaiting_planner' })
   }
 
   if (row.status !== 'generating') {

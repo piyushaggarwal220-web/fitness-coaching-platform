@@ -14,6 +14,7 @@ import { processPlanChangeRequest } from '@/lib/plan-change-requests'
 import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
 import { activatePlan } from '@/lib/plans'
 import { autoReplyUnreadChat } from '@/lib/piyush-chat-auto'
+import { usesHumanCoach } from '@/lib/coach-service'
 import { runPiyushInitialPlanForClient } from '@/lib/piyush-initial-plan-auto'
 import { sendChatMessage, getOrCreateConversation, markConversationRead } from '@/lib/coach-chat'
 import type { Checkin } from '@/types/database'
@@ -110,6 +111,20 @@ async function handleCheckin(
   const typed = checkin as Checkin
 
   if (typed.checkin_type === 'weekly') {
+    const { data: serviceRow } = await admin
+      .from('profiles')
+      .select('coach_service, coach_id')
+      .eq('id', typed.client_id)
+      .maybeSingle()
+    if (usesHumanCoach(serviceRow)) {
+      return {
+        taskId: task.id,
+        type: task.type,
+        clientName: task.clientName,
+        status: 'left_for_coach',
+        detail: 'coach chat does not auto-write plans',
+      }
+    }
     const planSlug = await fetchCapturedPlanSlug(typed.client_id)
     const week = typed.coaching_week ?? 0
     if (shouldAutoGenerateWeeklyPlanDraft(planSlug, week)) {
@@ -185,6 +200,23 @@ async function handlePlanChange(
       clientName: task.clientName,
       status: 'failed',
       detail: error?.message ?? 'plan change not found',
+    }
+  }
+
+  if (existing.client_id) {
+    const { data: serviceRow } = await admin
+      .from('profiles')
+      .select('coach_service, coach_id')
+      .eq('id', existing.client_id)
+      .maybeSingle()
+    if (usesHumanCoach(serviceRow)) {
+      return {
+        taskId: task.id,
+        type: task.type,
+        clientName: task.clientName,
+        status: 'left_for_coach',
+        detail: 'coach updates the plan from chat',
+      }
     }
   }
 

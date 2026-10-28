@@ -41,8 +41,8 @@ export async function loadClientPaidPurchases(
 }
 
 /**
- * High-payers get Piyush as a human coach and can also use Smart Coach.
- * Everyone else stays on Smart Coach. Their assigned coach is left as-is.
+ * Above ₹500, the client is assigned to Piyush and uses coach chat only.
+ * At ₹500 or below, they stay on Smart Coach. Their assigned coach is left as-is.
  */
 export async function applyPaidCoachRouting(
   admin: SupabaseClient,

@@ -1,16 +1,11 @@
-import { after, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { logApiDev } from '@/lib/api-dev-log'
-import { markConversationRead, pulseCoachTyping, sendChatMessage, setTypingIndicator } from '@/lib/coach-chat'
+import { markConversationRead, sendChatMessage, setTypingIndicator } from '@/lib/coach-chat'
 import { requireConversationParticipant } from '@/lib/chat-api-access'
 import { getCoachResponseTargetFromAnchor } from '@/lib/chat-response-target'
 import { enforceClientCallPolicy, loadClientCallBookingPolicy } from '@/lib/call-booking-policy-server'
-import {
-  autoCoachFirstName,
-  isAutoDeliveryCoach,
-} from '@/lib/coach-delivery-policy'
 import { hasClientEntitlement } from '@/lib/entitlements'
-import { autoReplyUnreadChat, chatNeedsHumanCoach } from '@/lib/piyush-chat-auto'
-import { COACH_REPLY_QUIET_MS, COACH_TYPING_FRESH_MS } from '@/lib/chat-reply-pause'
+import { COACH_TYPING_FRESH_MS } from '@/lib/chat-reply-pause'
 import { isPublicDemoEmail } from '@/lib/public-demo'
 import { publicDemoReadOnlyJson } from '@/lib/public-demo-guard'
 
@@ -220,30 +215,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true })
     }
 
-    if (body.replyNow && participant.viewer === 'client' && isAutoDeliveryCoach(participant.coachId)) {
-      const coachId = participant.coachId
-      const clientId = participant.conversation.client_id
-      after(() =>
-        (async () => {
-          const { data: coach } = await admin
-            .from('coaches')
-            .select('user_id, name')
-            .eq('id', coachId)
-            .maybeSingle()
-          if (!coach?.user_id) return
-          const firstName = coach.name?.trim().split(/\s+/)[0] || autoCoachFirstName(coachId)
-          await autoReplyUnreadChat(admin, {
-            conversationId,
-            clientId,
-            coachUserId: coach.user_id,
-            coachId,
-            coachFirstName: firstName,
-            force: true,
-          })
-        })().catch((err) => {
-          console.error('[chat-messages] reply-now error:', err instanceof Error ? err.message : err)
-        })
-      )
+    if (body.replyNow && participant.viewer === 'client') {
       return NextResponse.json({ success: true, pendingReply: false })
     }
 
@@ -275,46 +247,6 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { success: false, error: 'Message could not be sent right now. Please retry.' },
         { status: 500 }
-      )
-    }
-
-    // Instant AI reply for Piyush/Rakshit (and other auto-delivery coaches).
-    // Cron remains a fallback; autoReplyUnreadChat skips if already answered.
-    if (
-      senderType === 'client' &&
-      isAutoDeliveryCoach(participant.coachId) &&
-      !chatNeedsHumanCoach({ messageType, content: body.content })
-    ) {
-      await setTypingIndicator(admin, conversationId, 'coach')
-      const coachId = participant.coachId
-      const clientId = participant.conversation.client_id
-      after(() =>
-        (async () => {
-          await pulseCoachTyping(admin, conversationId, COACH_REPLY_QUIET_MS)
-          const { data: coach } = await admin
-            .from('coaches')
-            .select('user_id, name')
-            .eq('id', coachId)
-            .maybeSingle()
-          if (!coach?.user_id) return
-          const firstName =
-            coach.name?.trim().split(/\s+/)[0] || autoCoachFirstName(coachId)
-          const result = await autoReplyUnreadChat(admin, {
-            conversationId,
-            clientId,
-            coachUserId: coach.user_id,
-            coachId,
-            coachFirstName: firstName,
-          })
-          if (result.status === 'failed') {
-            console.error('[chat-messages] instant auto-reply failed:', result.detail)
-          }
-        })().catch((err) => {
-          console.error(
-            '[chat-messages] instant auto-reply error:',
-            err instanceof Error ? err.message : err
-          )
-        })
       )
     }
 

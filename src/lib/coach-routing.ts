@@ -6,8 +6,11 @@ import {
   type CoachServiceProfile,
 } from '@/lib/coach-service'
 
-/** ₹1,400. Below this, the client keeps Smart Coach. At or above, they get Piyush. */
-export const PIYUSH_HUMAN_COACH_MIN_PAISE = 140_000
+/**
+ * ₹500. This amount or less stays on Smart Coach.
+ * Anything above it is coach chat only. The AI does not talk to that client.
+ */
+export const SMART_COACH_MAX_PAISE = 50_000
 
 export type PaidCoachPurchase = {
   status?: string | null
@@ -37,7 +40,7 @@ export function maxCapturedPaidPaise(rows: PaidCoachPurchase[]): number {
 }
 
 export function paidAmountQualifiesForPiyushHumanCoach(paise: number): boolean {
-  return paise >= PIYUSH_HUMAN_COACH_MIN_PAISE
+  return paise > SMART_COACH_MAX_PAISE
 }
 
 export function purchasesQualifyForPiyushHumanCoach(rows: PaidCoachPurchase[]): boolean {

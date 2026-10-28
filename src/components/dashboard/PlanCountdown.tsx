@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { CheckCircle2, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { isAutoDeliveryCoach } from '@/lib/coach-delivery-policy'
+import { isAutoDeliveryCoach, memberFacingCoachFirstName } from '@/lib/coach-delivery-policy'
+import { usesHumanCoach } from '@/lib/coach-service'
 import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
 import {
   PLAN_DELIVERY_HOURS,
@@ -65,7 +66,9 @@ export function PlanCountdownCard({
         ? Boolean(activePlan?.diet_opened_at)
         : hasOpenedDietAndWorkout(activePlan)
     : hasOpenedDietAndWorkout(activePlan)
-  const displayCoach = 'Smart Coach'
+  const humanCoach = usesHumanCoach(profile)
+  const namedCoach = memberFacingCoachFirstName(profile.coach_id, profile.coach_service)
+  const displayCoach = humanCoach ? (namedCoach === 'your coach' ? 'Your coach' : namedCoach) : 'Smart Coach'
   const instantWindow = isDigital || isAutoDeliveryCoach(profile.coach_id)
   const deliveryWindowLabel = instantWindow
     ? INSTANT_PLAN_WINDOW_LABEL
@@ -79,7 +82,7 @@ export function PlanCountdownCard({
     return (
       <Card variant="glass" style={{ marginBottom: spacing[4] }}>
         {!isDigital ? (
-          <CoachAssignedHeader coachName={displayCoach} />
+          <CoachAssignedHeader coachName={displayCoach} roleLabel={humanCoach ? 'Coach' : 'Smart Coach'} />
         ) : (
           <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>
             Finish setup for your customised plan
@@ -194,7 +197,7 @@ export function PlanCountdownCard({
         paddingTop: spacing[4],
         borderRadius: '16px 16px 0 0',
       }} />
-      <CoachAssignedHeader coachName={displayCoach} />
+      <CoachAssignedHeader coachName={displayCoach} roleLabel={humanCoach ? 'Coach' : 'Smart Coach'} />
       <p style={{ margin: '12px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.55 }}>
         {absent.detail}
       </p>
@@ -222,10 +225,12 @@ export function PlanCountdownCard({
 function CoachAssignedHeader({
   coachName,
   photoUrl,
+  roleLabel = 'Smart Coach',
 }: {
   coachName: string
   photoUrl?: string | null
   bio?: string | null
+  roleLabel?: string
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
@@ -253,7 +258,7 @@ function CoachAssignedHeader({
         <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>
           {coachName}
         </p>
-        <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.textMuted }}>Smart Coach</p>
+        <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.textMuted }}>{roleLabel}</p>
       </div>
     </div>
   )

@@ -585,6 +585,7 @@ export async function getCoachWorkQueue(
     if (isCheckinPendingAutoReply(checkin)) continue
     if (!clientNameById.has(checkin.client_id)) continue
     const name = clientNameById.get(checkin.client_id) ?? 'Client'
+    if (checkin.checkin_type === 'mid_week') continue
     const isWeekly = checkin.checkin_type === 'weekly'
 
     // Hide weekly check-in while AI draft is generating (mirrors initial plan).

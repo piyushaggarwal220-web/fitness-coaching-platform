@@ -21,7 +21,7 @@ import {
 import { clientFacingPlanTitle } from '@/lib/plan-metadata';
 import { isBiweeklyPlanUpdate, nextAutoPlanUpdateWeek, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence';
 import { getHomePlanCardCopy, UPDATED_PLAN_READY_WITHIN_MS, getHomePlanPhase } from '@/lib/checkin-reply-timing';
-import { absentPlanCopy, livePlanSectionDetail } from '@/lib/client-plan-presence';
+import { absentPlanCopy, clientSafePlanError, livePlanSectionDetail } from '@/lib/client-plan-presence';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { planGoalName } from '@/lib/payments/plan-pages';
@@ -327,7 +327,9 @@ export default function Dashboard() {
           setTodayModules([]);
         }
       } catch (err) {
-        setLoadError(err instanceof Error ? err.message : 'Failed to load dashboard');
+        setLoadError(
+          clientSafePlanError(err instanceof Error ? err.message : '', 'Failed to load dashboard')
+        );
         setLoading(false);
       }
     };
@@ -549,6 +551,7 @@ export default function Dashboard() {
         modules={activePlan && !instantLocked.tracker ? todayModules : []}
         unreadMessages={unreadMessages}
         showChat={chatReady}
+        chatLabel={profile ? clientChatNavLabel(profile) : 'Smart Coach'}
         weekWorkouts={weekWorkouts}
         streak={trackerStreak}
         todayPercent={todayTrackerPercent}

@@ -26,6 +26,7 @@ import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
+import { usesHumanCoach } from '@/lib/coach-service'
 import { parseAdherenceDays } from '@/lib/checkin-adherence-days'
 import { normalizeCheckinSplitPreference, normalizeWorkoutDifficulty } from '@/lib/ai/workout-split'
 import { areProgressPhotosOptional } from '@/lib/checkin'
@@ -285,10 +286,12 @@ export async function POST(request: Request) {
       training_performance: body.workout_adherence,
       pain_injuries: body.pain_injuries ?? null,
       reviewed: false,
-      // Mid-week always auto-replies. Weekly auto-replies for auto-delivery coaches.
-      auto_reply_at: shouldScheduleCheckinAutoReply(body.checkinType, profile.coach_id)
-        ? computeAutoReplyAt(new Date()).toISOString()
-        : null,
+      // Smart Coach clients still get an automatic check-in note.
+      // Coach-chat clients do not. Their mid-week answers are read with the weekly check-in.
+      auto_reply_at:
+        !usesHumanCoach(profile) && shouldScheduleCheckinAutoReply(body.checkinType, profile.coach_id)
+          ? computeAutoReplyAt(new Date()).toISOString()
+          : null,
     }
 
     let insertRow: Record<string, unknown>
@@ -451,7 +454,8 @@ export async function POST(request: Request) {
       const planSlug = await fetchCapturedPlanSlug(user.id)
       const autoUpdate =
         shouldAutoGenerateWeeklyPlanDraft(planSlug, scheduled.coachingWeek) &&
-        !coachRequiresManualPlanDelivery(profile.coach_id)
+        !coachRequiresManualPlanDelivery(profile.coach_id) &&
+        !usesHumanCoach(profile)
       planUpdateScheduled = autoUpdate
 
       if (profile.coach_id) {
