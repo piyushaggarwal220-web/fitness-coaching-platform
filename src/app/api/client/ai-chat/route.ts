@@ -49,6 +49,8 @@ import {
 } from '@/lib/ai/ai-coach-plan-change'
 import { chatNeedsHumanCoach } from '@/lib/piyush-chat-auto'
 import { chatTextForModel, decodeChatPhoto, decodeChatVoice, encodeChatVoice } from '@/lib/chat-reply-pause'
+import { decodeChatFile, encodeChatFile, isVideoFile } from '@/lib/chat-file'
+import { readChatFile } from '@/lib/ai/read-chat-file'
 import {
   applyProfileChangeFromChat,
   describeProfileChange,
@@ -343,10 +345,24 @@ export async function POST(request: Request) {
 
   let storedMessage = message
   if (message) {
-    const voice = decodeChatVoice(message)
-    if (voice.audioPath && ownVoicePath(voice.audioPath, auth.user.id) && !voice.text) {
-      const transcript = await transcribeChatVoice(admin, voice.audioPath).catch(() => null)
-      storedMessage = encodeChatVoice(voice.audioPath, transcript ?? '')
+    const attached = decodeChatFile(message)
+    if (attached.path) {
+      if (!ownVoicePath(attached.path, auth.user.id) || isVideoFile(attached.name)) {
+        return NextResponse.json(
+          { error: 'Send a document, spreadsheet, or text file. Videos are not accepted.' },
+          { status: 400 }
+        )
+      }
+      const extract = await readChatFile(admin, attached.path, attached.name).catch(
+        () => 'This file could not be read. Ask them to paste the important lines.'
+      )
+      storedMessage = encodeChatFile(attached.path, attached.name, attached.text, extract)
+    } else {
+      const voice = decodeChatVoice(message)
+      if (voice.audioPath && ownVoicePath(voice.audioPath, auth.user.id) && !voice.text) {
+        const transcript = await transcribeChatVoice(admin, voice.audioPath).catch(() => null)
+        storedMessage = encodeChatVoice(voice.audioPath, transcript ?? '')
+      }
     }
   }
 

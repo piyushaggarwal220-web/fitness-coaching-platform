@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
-import { ImageIcon, Send, Settings } from 'lucide-react'
+import { ImageIcon, Paperclip, Send, Settings } from 'lucide-react'
 import { StorageImage } from '@/components/ui/StorageImage'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
@@ -14,6 +14,16 @@ import {
   encodeChatPhoto,
   encodeChatVoice,
 } from '@/lib/chat-reply-pause'
+import {
+  aiCoachFileStoragePath,
+  CHAT_FILE_BUCKET,
+  CHAT_FILE_MAX_BYTES,
+  decodeChatFile,
+  encodeChatFile,
+  isImageFile,
+  isVideoFile,
+  safeChatFileName,
+} from '@/lib/chat-file'
 import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import { markSmartCoachRead } from '@/lib/smart-coach-unread'
 import { aiCoachImageStoragePath } from '@/lib/ai/ai-coach-photo-path'
@@ -43,6 +53,7 @@ export function AiCoachChatThread() {
   const [coachTyping, setCoachTyping] = useState(false)
   const [error, setError] = useState('')
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null)
+  const [filePreview, setFilePreview] = useState<File | null>(null)
   const [language, setLanguage] = useState<ChatLanguage>('hinglish')
   const [mood, setMood] = useState<ChatMood>('auto')
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -206,7 +217,7 @@ export function AiCoachChatThread() {
 
   const send = async () => {
     const text = draft.trim()
-    if ((!text && !imagePreview) || sendingRef.current) return
+    if ((!text && !imagePreview && !filePreview) || sendingRef.current) return
     stickToLatestRef.current = true
     sendingRef.current = true
     setSending(true)
@@ -253,6 +264,37 @@ export function AiCoachChatThread() {
         content = encodeChatPhoto(path, text)
         URL.revokeObjectURL(imagePreview.url)
         setImagePreview(null)
+      } else if (filePreview) {
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setError('Sign in again to send that file.')
+          setSending(false)
+          return
+        }
+        if (isVideoFile(filePreview.name, filePreview.type)) {
+          setDraft(text)
+          setError('Videos are not accepted. Send a document, spreadsheet, photo, or text file.')
+          return
+        }
+        if (filePreview.size > CHAT_FILE_MAX_BYTES) {
+          setDraft(text)
+          setError('That file is too large. Keep it under 15 MB.')
+          return
+        }
+        const path = aiCoachFileStoragePath(user.id, filePreview.name)
+        const { error: uploadError } = await supabase.storage.from(CHAT_FILE_BUCKET).upload(path, filePreview, {
+          contentType: filePreview.type || 'application/octet-stream',
+          upsert: false,
+        })
+        if (uploadError) {
+          setDraft(text)
+          setError('Something went wrong sending that file. Try again.')
+          return
+        }
+        content = encodeChatFile(path, safeChatFileName(filePreview.name), text)
+        setFilePreview(null)
       }
 
       setMessages((prev) => [...prev, { id: tempId, role: 'user', content }])
@@ -367,7 +409,7 @@ export function AiCoachChatThread() {
         <div style={{ minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>Smart Coach</p>
           <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
-            Ask about your plan. A voice note works too.
+            A photo, a file, or a voice note works. No videos.
           </p>
         </div>
         <button
@@ -496,7 +538,13 @@ export function AiCoachChatThread() {
         {messages.map((msg, index) => {
           const mine = msg.role === 'user'
           const voice = decodeChatVoice(msg.content)
-          const photo = voice.audioPath ? { imagePath: null, text: voice.text } : decodeChatPhoto(msg.content)
+          const attached = voice.audioPath
+            ? { path: null as string | null, name: '', text: voice.text, extract: '' }
+            : decodeChatFile(msg.content)
+          const photo =
+            voice.audioPath || attached.path
+              ? { imagePath: null, text: attached.text }
+              : decodeChatPhoto(msg.content)
           return (
             <div
               key={msg.id ?? `${msg.role}-${index}`}
@@ -514,6 +562,9 @@ export function AiCoachChatThread() {
             >
               {voice.audioPath ? (
                 <VoicePlayer url={voice.audioPath} duration={undefined} lightBubble={!mine} />
+              ) : null}
+              {attached.path ? (
+                <p style={{ margin: photo.text ? '0 0 6px' : 0, fontWeight: 700 }}>{attached.name}</p>
               ) : null}
               {photo.imagePath ? (
                 <StorageImage
@@ -552,6 +603,26 @@ export function AiCoachChatThread() {
           {error}
         </p>
       )}
+      {filePreview && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${spacing[3]}px ${spacing[2]}px` }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: colors.textPrimary }}>{safeChatFileName(filePreview.name)}</p>
+          <button
+            type="button"
+            onClick={() => setFilePreview(null)}
+            style={{
+              minHeight: 36,
+              padding: '0 12px',
+              border: 'none',
+              borderRadius: 999,
+              background: colors.bgElevated,
+              color: colors.textPrimary,
+              cursor: 'pointer',
+            }}
+          >
+            Remove file
+          </button>
+        </div>
+      )}
       {imagePreview && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${spacing[3]}px ${spacing[2]}px` }}>
           <img src={imagePreview.url} alt="Photo to send" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8 }} />
@@ -579,47 +650,98 @@ export function AiCoachChatThread() {
         style={{
           flexShrink: 0,
           display: 'flex',
+          flexDirection: 'column',
           gap: 8,
-          alignItems: 'flex-end',
           padding: spacing[3],
           paddingBottom: `calc(${spacing[3]}px + env(safe-area-inset-bottom, 0px))`,
           borderTop: `1px solid ${colors.divider}`,
           background: colors.bgGlass,
         }}
       >
-        <VoiceRecorder onRecorded={sendVoiceNote} onError={(msg) => setError(msg)} />
-        <label
-          style={{
-            flexShrink: 0,
-            minHeight: 44,
-            padding: '0 12px',
-            borderRadius: radius.sm,
-            border: `1px solid ${colors.borderSubtle}`,
-            background: colors.bgCard,
-            color: colors.textPrimary,
-            fontWeight: 800,
-            fontSize: 13,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            cursor: 'pointer',
-          }}
-        >
-          <ImageIcon size={16} />
-          Photo
-          <input
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={(event) => {
-              const file = event.target.files?.[0]
-              if (!file) return
-              if (imagePreview) URL.revokeObjectURL(imagePreview.url)
-              setImagePreview({ file, url: URL.createObjectURL(file) })
-              event.target.value = ''
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          <label
+            style={{
+              flexShrink: 0,
+              minHeight: 44,
+              padding: '0 14px',
+              borderRadius: radius.sm,
+              border: `1px solid ${colors.borderSubtle}`,
+              background: colors.bgCard,
+              color: colors.textPrimary,
+              fontWeight: 800,
+              fontSize: 14,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              cursor: 'pointer',
             }}
-          />
-        </label>
+          >
+            <Paperclip size={16} />
+            Document
+            <input
+              type="file"
+              aria-label="Attach a document"
+              style={{ display: 'none' }}
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                event.target.value = ''
+                if (!file) return
+                if (isVideoFile(file.name, file.type)) {
+                  setError('Videos are not accepted. Send a document, spreadsheet, photo, or text file.')
+                  return
+                }
+                setError('')
+                if (isImageFile(file.name, file.type)) {
+                  if (imagePreview) URL.revokeObjectURL(imagePreview.url)
+                  setFilePreview(null)
+                  setImagePreview({ file, url: URL.createObjectURL(file) })
+                  return
+                }
+                if (imagePreview) {
+                  URL.revokeObjectURL(imagePreview.url)
+                  setImagePreview(null)
+                }
+                setFilePreview(file)
+              }}
+            />
+          </label>
+          <label
+            style={{
+              flexShrink: 0,
+              minHeight: 44,
+              padding: '0 14px',
+              borderRadius: radius.sm,
+              border: `1px solid ${colors.borderSubtle}`,
+              background: colors.bgCard,
+              color: colors.textPrimary,
+              fontWeight: 800,
+              fontSize: 14,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              cursor: 'pointer',
+            }}
+          >
+            <ImageIcon size={16} />
+            Photo
+            <input
+              type="file"
+              accept="image/*"
+              aria-label="Attach a photo"
+              style={{ display: 'none' }}
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (!file) return
+                if (imagePreview) URL.revokeObjectURL(imagePreview.url)
+                setFilePreview(null)
+                setImagePreview({ file, url: URL.createObjectURL(file) })
+                event.target.value = ''
+              }}
+            />
+          </label>
+          <VoiceRecorder onRecorded={sendVoiceNote} onError={(msg) => setError(msg)} />
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -646,7 +768,7 @@ export function AiCoachChatThread() {
         <button
           type="button"
           onClick={() => void send()}
-          disabled={sending || (!draft.trim() && !imagePreview)}
+          disabled={sending || (!draft.trim() && !imagePreview && !filePreview)}
           aria-label="Send"
           style={{
             flexShrink: 0,
@@ -659,7 +781,7 @@ export function AiCoachChatThread() {
             color: colors.textInverse,
             fontWeight: 800,
             cursor: sending ? 'wait' : 'pointer',
-            opacity: sending || (!draft.trim() && !imagePreview) ? 0.55 : 1,
+            opacity: sending || (!draft.trim() && !imagePreview && !filePreview) ? 0.55 : 1,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -669,6 +791,7 @@ export function AiCoachChatThread() {
           <Send size={16} />
           Send
         </button>
+        </div>
       </div>
     </div>
   )

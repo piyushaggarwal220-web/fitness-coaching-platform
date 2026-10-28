@@ -1,3 +1,5 @@
+import { chatFileTextForModel } from '@/lib/chat-file'
+
 /** How long a client can keep sending before the coach reply starts. */
 export const COACH_REPLY_QUIET_MS = 20_000
 
@@ -46,6 +48,8 @@ export function decodeChatVoice(content: string): { audioPath: string | null; te
 }
 
 export function chatTextForModel(content: string): string {
+  const attached = chatFileTextForModel(content)
+  if (attached) return attached
   const photo = decodeChatPhoto(content)
   if (photo.imagePath) return photo.text ? `[Photo attached] ${photo.text}` : '[Photo attached]'
   const voice = decodeChatVoice(content)

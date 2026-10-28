@@ -237,6 +237,7 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
           'Use the client situation below for their last check-in, recent logs, and when the current plan was delivered. Do not invent a check-in, a delivery time, or a log that is not listed.',
           'Ask one short question only when a pain report is missing the exact spot or what happened, and they did not already ask for a diet or workout change. If they said there is no pain, or the change is already clear, do not ask. Do the change. Do not list treatments.',
           'A voice note is the transcript. If the transcript is missing, ask them to type it. Do not guess the words.',
+          'A file attachment includes its text under File contents. Use that text. If it says the file could not be read, say so and ask them to paste the important lines. Do not invent numbers that are not in the file.',
           'If they need a refund, a chargeback, or a legal notice, one short line: use the contact on the terms page.',
         ]
       : [
