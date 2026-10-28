@@ -3,6 +3,17 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { resolveProductionHostRedirect } from '@/lib/host-routing'
 import { warnIfTestModeEnvInProduction } from '@/lib/test-mode'
 
+/** Stay under Vercel's middleware limit. A hung auth refresh becomes a 504 for every page. */
+const AUTH_REFRESH_TIMEOUT_MS = 4000
+
+function fetchWithDeadline(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), AUTH_REFRESH_TIMEOUT_MS)
+  if (init?.signal?.aborted) controller.abort()
+  else init?.signal?.addEventListener('abort', () => controller.abort(), { once: true })
+  return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer))
+}
+
 function supabasePublicConfig(): { url: string; anonKey: string } {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
@@ -37,6 +48,7 @@ export async function middleware(request: NextRequest) {
   const { url, anonKey } = supabasePublicConfig()
 
   const supabase = createServerClient(url, anonKey, {
+    global: { fetch: fetchWithDeadline },
     cookies: {
       getAll() {
         return request.cookies.getAll()
@@ -52,7 +64,10 @@ export async function middleware(request: NextRequest) {
   })
 
   try {
-    await supabase.auth.getUser()
+    await Promise.race([
+      supabase.auth.getUser(),
+      new Promise((resolve) => setTimeout(resolve, AUTH_REFRESH_TIMEOUT_MS + 250)),
+    ])
   } catch {
     // Keep the request alive. Auth outages must not fail checkout or webhooks.
   }
@@ -61,11 +76,16 @@ export async function middleware(request: NextRequest) {
 }
 
 function shouldSkipAuthRefresh(pathname: string): boolean {
-  return (
+  if (
     pathname === '/api/payment/webhook' ||
     pathname === '/api/payment/create-order' ||
     pathname === '/api/payment/verify'
-  )
+  ) {
+    return true
+  }
+  // Public marketing pages, including the Shopify iframe of /preview4.
+  // They do not need a session refresh, and a stuck sign-in cookie must not 504 them.
+  return /^\/preview\d+(?:\/|$)/.test(pathname)
 }
 
 export const config = {
