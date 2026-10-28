@@ -16,6 +16,8 @@ import { NotificationActivationGate } from '@/components/notifications/PushNotif
 import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 import type { WorkQueueCounts, WorkQueueFilter } from '@/lib/coach-work-queue';
 import { getCoachClientCheckinSummary, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
+import { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply';
+import { isTrialClientHiddenFromCoaches } from '@/lib/coach-roster-visibility';
 import type { Checkin, ClientProfile, Coach, CoachStats } from '@/types/database';
 
 const panelFallback = (
@@ -128,24 +130,20 @@ export default function CoachDashboard() {
       const newClients = clientsData.filter(c => c.plan_delivered === false).length;
       setStats({ total, awaiting, overdue, new: newClients });
 
-      const rosterIds = clientsData.map((c) => c.id)
-      const [pendingCheckinsResult, activePlansResult] = rosterIds.length
-        ? await Promise.all([
-            supabase
-              .from('checkins')
-              .select('*', { count: 'exact', head: true })
-              .eq('coach_id', coachData.id)
-              .eq('reviewed', false)
-              .is('auto_reply_at', null)
-              .in('client_id', rosterIds),
-            supabase
-              .from('plans')
-              .select('*', { count: 'exact', head: true })
-              .eq('coach_id', coachData.id)
-              .eq('active', true)
-              .in('client_id', rosterIds),
-          ])
-        : [{ count: 0, error: null }, { count: 0, error: null }]
+      // Count by coach, not by pasting every client id into the URL.
+      // That list is long enough now that the request is rejected.
+      const [pendingCheckinsResult, activePlansResult] = await Promise.all([
+        supabase
+          .from('checkins')
+          .select('client_id, reviewed, auto_reply_at, auto_replied_at, profiles!inner(email, access_source)')
+          .eq('coach_id', coachData.id)
+          .eq('reviewed', false),
+        supabase
+          .from('plans')
+          .select('id', { count: 'exact', head: true })
+          .eq('coach_id', coachData.id)
+          .eq('active', true),
+      ])
 
       if (pendingCheckinsResult.error) {
         setError('Failed to load check-in counts.');
@@ -153,7 +151,15 @@ export default function CoachDashboard() {
         return;
       }
 
-      setPendingCheckins(pendingCheckinsResult.count ?? 0);
+      const waitingOnCoach = new Set<string>()
+      for (const row of pendingCheckinsResult.data ?? []) {
+        const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles
+        if (isTrialClientHiddenFromCoaches(profile)) continue
+        if (isCheckinPendingAutoReply(row)) continue
+        if (row.auto_reply_at == null) waitingOnCoach.add(row.client_id)
+      }
+      setPendingCheckins(waitingOnCoach.size)
+      setStats((prev) => ({ ...prev, awaiting: waitingOnCoach.size }))
 
       if (activePlansResult.error) {
         setError('Failed to load plan counts.');

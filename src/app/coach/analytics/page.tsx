@@ -34,24 +34,19 @@ export default function CoachAnalyticsPage() {
         .eq('coach_id', coach.id)
 
       const roster = (clients ?? []) as Array<{ id: string; complexity_tier: string | null }>
-      const rosterIds = roster.map((c) => c.id)
-      const [{ count: pending }, { count: plans }] = rosterIds.length
-        ? await Promise.all([
-            supabase
-              .from('checkins')
-              .select('*', { count: 'exact', head: true })
-              .eq('coach_id', coach.id)
-              .eq('reviewed', false)
-              .is('auto_reply_at', null)
-              .in('client_id', rosterIds),
-            supabase
-              .from('plans')
-              .select('*', { count: 'exact', head: true })
-              .eq('coach_id', coach.id)
-              .eq('active', true)
-              .in('client_id', rosterIds),
-          ])
-        : [{ count: 0 }, { count: 0 }]
+      const [{ count: pending }, { count: plans }] = await Promise.all([
+        supabase
+          .from('checkins')
+          .select('id', { count: 'exact', head: true })
+          .eq('coach_id', coach.id)
+          .eq('reviewed', false)
+          .is('auto_reply_at', null),
+        supabase
+          .from('plans')
+          .select('id', { count: 'exact', head: true })
+          .eq('coach_id', coach.id)
+          .eq('active', true),
+      ])
 
       const tiers = roster
       setStats({

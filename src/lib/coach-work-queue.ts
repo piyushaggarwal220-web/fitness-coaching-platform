@@ -615,9 +615,17 @@ export async function getCoachWorkQueue(
     })
   }
 
+  const callNameById = new Map(clientNameById)
+  for (const client of clients ?? []) {
+    if (isTrialClientHiddenFromCoaches(client)) continue
+    if (!callNameById.has(client.id)) {
+      callNameById.set(client.id, client.name || client.email || 'Client')
+    }
+  }
+
   for (const request of callRequests ?? []) {
-    if (!clientNameById.has(request.client_id)) continue
-    const name = clientNameById.get(request.client_id) ?? 'Client'
+    if (!callNameById.has(request.client_id)) continue
+    const name = callNameById.get(request.client_id) ?? 'Client'
     tasks.push({
       id: `call-${request.id}`,
       type: 'call_request',
