@@ -8,7 +8,7 @@ export const SESSION_RESTORE_MESSAGE = 'Restoring your session...'
 export function isAuthNetworkError(error: { message?: string; name?: string } | string | null | undefined): boolean {
   const message =
     typeof error === 'string' ? error : `${error?.name ?? ''} ${error?.message ?? ''}`
-  return /failed to fetch|networkerror|network request failed|load failed|timeout|timed out|authretryablefetch/i.test(
+  return /abort|failed to fetch|networkerror|network request failed|load failed|timeout|timed out|authretryablefetch/i.test(
     message
   )
 }
@@ -236,6 +236,8 @@ export async function ensureAuthSession(
         })
         return { user: localUser, refreshed: sawRefresh }
       }
+      // Auth's database is not answering. Another refresh would wait on the same outage.
+      break
     }
 
     if (!triedSameOrigin) {

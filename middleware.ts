@@ -84,8 +84,10 @@ function shouldSkipAuthRefresh(pathname: string): boolean {
     return true
   }
   // Public marketing pages, including the Shopify iframe of /preview4.
-  // They do not need a session refresh, and a stuck sign-in cookie must not 504 them.
-  return /^\/preview\d+(?:\/|$)/.test(pathname)
+  if (/^\/preview\d+(?:\/|$)/.test(pathname)) return true
+  // Auth cannot reach its own database right now. A getUser() on every page
+  // and prefetch keeps those lookups piled up, so signed-in people stay stuck.
+  return true
 }
 
 export const config = {

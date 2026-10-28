@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { fetchWithDeadline } from '@/lib/supabase/fetch-deadline'
 
 type BrowserClient = ReturnType<typeof createBrowserClient>
 
@@ -22,7 +23,7 @@ export function createClient() {
 
   const client =
     url && anonKey
-      ? createBrowserClient(url, anonKey)
+      ? createBrowserClient(url, anonKey, { global: { fetch: fetchWithDeadline } })
       : createBrowserClient(
           'https://placeholder.supabase.co',
           // Minimal JWT-shaped placeholder accepted by @supabase/ssr during build.

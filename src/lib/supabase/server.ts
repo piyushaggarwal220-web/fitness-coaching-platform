@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { fetchWithDeadline } from '@/lib/supabase/fetch-deadline'
 
 function supabasePublicConfig(): { url: string; anonKey: string } {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
@@ -22,6 +23,7 @@ export async function createClient() {
   const { url, anonKey } = supabasePublicConfig()
 
   return createServerClient(url, anonKey, {
+    global: { fetch: fetchWithDeadline },
     cookies: {
       getAll() {
         return cookieStore.getAll()
