@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pickSameWeekMidWeekCheckin, combineCheckinFreeText } from '../src/lib/ai/same-week-midweek'
 import { buildClientJourneySnapshot } from '../src/lib/ai/client-journey'
+import { checkinNeedsCoachResponse } from '../src/lib/checkin-pending-auto-reply'
 import { shouldScheduleCheckinAutoReply } from '../src/lib/coach-delivery-policy'
 import { PIYUSH_COACH_ID } from '../src/lib/coach-delivery-policy'
 import type { Checkin } from '../src/types/database'
@@ -110,5 +111,28 @@ assert.match(draftSrc, /sameWeekMidWeekCheckin: sameWeekMidWeek/)
 
 const submitSrc = readFileSync(join(root, 'src/app/api/checkin/submit/route.ts'), 'utf8')
 assert.equal(submitSrc.includes('generateMidWeekAnalysis'), false)
+assert.match(submitSrc, /checkinType === 'weekly'[\s\S]*checkin_awaiting: true/)
+
+assert.equal(
+  checkinNeedsCoachResponse({ checkin_type: 'mid_week', reviewed: false, auto_reply_at: null }),
+  false
+)
+assert.equal(
+  checkinNeedsCoachResponse({ checkin_type: 'weekly', reviewed: false, auto_reply_at: null }),
+  true
+)
+assert.equal(
+  checkinNeedsCoachResponse({
+    checkin_type: 'weekly',
+    reviewed: false,
+    auto_reply_at: '2026-10-29T10:00:00.000Z',
+    auto_replied_at: null,
+  }),
+  false
+)
+
+const dashSrc = readFileSync(join(root, 'src/app/coach/dashboard/page.tsx'), 'utf8')
+assert.match(dashSrc, /checkinNeedsCoachResponse/)
+assert.match(dashSrc, /checkin_type/)
 
 console.log('✓ mid-week is not auto-replied; same-week Day 3 feeds Sunday plan generation')

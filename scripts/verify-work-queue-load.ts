@@ -66,6 +66,7 @@ assert.match(routeSrc, /maxDuration/)
 assert.match(dashSrc, /ROSTER_PREVIEW_LIMIT/)
 assert.match(dashSrc, /previewIds/)
 assert.match(dashSrc, /Unblock the work queue immediately/)
+assert.match(dashSrc, /checkinNeedsCoachResponse/)
 
 // Indexes + content flag for queue hot paths.
 assert.match(migrationSrc, /checkins_coach_unreviewed_submitted_idx/)

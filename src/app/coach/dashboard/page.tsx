@@ -16,7 +16,7 @@ import { NotificationActivationGate } from '@/components/notifications/PushNotif
 import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 import type { WorkQueueCounts, WorkQueueFilter } from '@/lib/coach-work-queue';
 import { getCoachClientCheckinSummary, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
-import { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply';
+import { checkinNeedsCoachResponse } from '@/lib/checkin-pending-auto-reply';
 import { isTrialClientHiddenFromCoaches } from '@/lib/coach-roster-visibility';
 import type { Checkin, ClientProfile, Coach, CoachStats } from '@/types/database';
 
@@ -135,7 +135,7 @@ export default function CoachDashboard() {
       const [pendingCheckinsResult, activePlansResult] = await Promise.all([
         supabase
           .from('checkins')
-          .select('client_id, reviewed, auto_reply_at, auto_replied_at, profiles!inner(email, access_source)')
+          .select('client_id, checkin_type, reviewed, auto_reply_at, auto_replied_at, profiles!inner(email, access_source)')
           .eq('coach_id', coachData.id)
           .eq('reviewed', false),
         supabase
@@ -155,8 +155,8 @@ export default function CoachDashboard() {
       for (const row of pendingCheckinsResult.data ?? []) {
         const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles
         if (isTrialClientHiddenFromCoaches(profile)) continue
-        if (isCheckinPendingAutoReply(row)) continue
-        if (row.auto_reply_at == null) waitingOnCoach.add(row.client_id)
+        if (!checkinNeedsCoachResponse(row)) continue
+        waitingOnCoach.add(row.client_id)
       }
       setPendingCheckins(waitingOnCoach.size)
       setStats((prev) => ({ ...prev, awaiting: waitingOnCoach.size }))

@@ -343,7 +343,11 @@ export async function POST(request: Request) {
 
     await supabase
       .from('profiles')
-      .update({ checkin_awaiting: true, checkin_overdue: false })
+      .update(
+        body.checkinType === 'weekly'
+          ? { checkin_awaiting: true, checkin_overdue: false }
+          : { checkin_overdue: false }
+      )
       .eq('id', user.id)
 
     if (body.checkinType === 'weekly') {
