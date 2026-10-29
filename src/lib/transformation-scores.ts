@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { queryInBatches } from '@/lib/supabase/chunked-in'
 
 function asNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value
@@ -68,18 +69,22 @@ export async function loadTransformationScores(
   const ids = (profiles ?? []).map((p) => p.id as string)
   if (ids.length === 0) return []
 
-  const [{ data: checkins }, { data: showcases }] = await Promise.all([
-    admin
-      .from('checkins')
-      .select('client_id, weight, submitted_at, diet_adherence, workout_adherence, progress_photo_front, checkin_type')
-      .in('client_id', ids)
-      .eq('checkin_type', 'weekly')
-      .order('submitted_at', { ascending: true }),
-    admin
-      .from('transformation_showcases')
-      .select('client_id, status')
-      .in('client_id', ids)
-      .in('status', ['candidate', 'approved', 'published']),
+  const [checkins, showcases] = await Promise.all([
+    queryInBatches(ids, (batch) =>
+      admin
+        .from('checkins')
+        .select('client_id, weight, submitted_at, diet_adherence, workout_adherence, progress_photo_front, checkin_type')
+        .in('client_id', batch)
+        .eq('checkin_type', 'weekly')
+        .order('submitted_at', { ascending: true })
+    ),
+    queryInBatches(ids, (batch) =>
+      admin
+        .from('transformation_showcases')
+        .select('client_id, status')
+        .in('client_id', batch)
+        .in('status', ['candidate', 'approved', 'published'])
+    ),
   ])
 
   const showcaseByClient = new Map<string, string>()

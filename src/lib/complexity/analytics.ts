@@ -1,5 +1,6 @@
 import type { StoredComplexityTier } from '@/lib/ai/complexity-score'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { queryInBatches } from '@/lib/supabase/chunked-in'
 
 export type ComplexityDistribution = {
   low: { count: number; percent: number }
@@ -118,22 +119,22 @@ export async function getComplexityAnalytics(coachId?: string | null): Promise<C
   const { data: profilesData } = await profileQuery
   const profiles = (profilesData ?? []) as ProfileRow[]
 
-  let historyQuery = admin
-    .from('complexity_score_history')
-    .select('id, client_id, display_score, tier, previous_tier, score_change, created_at')
-    .order('created_at', { ascending: false })
+  const historySelect = () =>
+    admin
+      .from('complexity_score_history')
+      .select('id, client_id, display_score, tier, previous_tier, score_change, created_at')
+      .order('created_at', { ascending: false })
 
+  let history: HistoryRow[] = []
   if (coachId) {
     const clientIds = profiles.map((p) => p.id)
-    if (clientIds.length === 0) {
-      historyQuery = historyQuery.in('client_id', ['00000000-0000-0000-0000-000000000000'])
-    } else {
-      historyQuery = historyQuery.in('client_id', clientIds)
+    if (clientIds.length > 0) {
+      history = await queryInBatches(clientIds, (batch) => historySelect().in('client_id', batch))
     }
+  } else {
+    const { data: historyData } = await historySelect()
+    history = (historyData ?? []) as HistoryRow[]
   }
-
-  const { data: historyData } = await historyQuery
-  const history = (historyData ?? []) as HistoryRow[]
 
   const distribution = buildDistribution(profiles)
 

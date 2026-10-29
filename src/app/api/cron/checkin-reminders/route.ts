@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { queryInBatches } from '@/lib/supabase/chunked-in'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { getClientCheckinSchedule, getCoachingDateKey, hasCoachingDayStarted } from '@/lib/checkin-schedule'
@@ -120,18 +121,22 @@ export async function GET(request: Request) {
   let checkinsByClient = new Map<string, Pick<Checkin, 'checkin_type' | 'coaching_week' | 'coaching_day' | 'id' | 'reviewed'>[]>()
 
   if (clientIds.length > 0) {
-    const { data: checkins, error: checkinsError } = await admin
-      .from('checkins')
-      .select('id, client_id, checkin_type, coaching_week, coaching_day, reviewed')
-      .in('client_id', clientIds)
-
-    if (checkinsError) {
-      console.error('[cron/checkin-reminders] checkins query failed:', checkinsError.message)
-      return NextResponse.json({ error: checkinsError.message }, { status: 500 })
+    let checkins: Pick<Checkin, 'id' | 'client_id' | 'checkin_type' | 'coaching_week' | 'coaching_day' | 'reviewed'>[]
+    try {
+      checkins = await queryInBatches(clientIds, (batch) =>
+        admin
+          .from('checkins')
+          .select('id, client_id, checkin_type, coaching_week, coaching_day, reviewed')
+          .in('client_id', batch)
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'checkins query failed'
+      console.error('[cron/checkin-reminders] checkins query failed:', message)
+      return NextResponse.json({ error: message }, { status: 500 })
     }
 
     checkinsByClient = new Map()
-    for (const row of checkins ?? []) {
+    for (const row of checkins) {
       const c = row as Pick<Checkin, 'id' | 'client_id' | 'checkin_type' | 'coaching_week' | 'coaching_day' | 'reviewed'>
       const list = checkinsByClient.get(c.client_id) ?? []
       list.push(c)
@@ -141,18 +146,18 @@ export async function GET(request: Request) {
 
   const activePlanClientIds = new Set<string>()
   if (clientIds.length > 0) {
-    const { data: activePlans, error: planError } = await admin
-      .from('plans')
-      .select('client_id')
-      .in('client_id', clientIds)
-      .eq('active', true)
-
-    if (planError) {
-      console.error('[cron/checkin-reminders] active plans query failed:', planError.message)
-      return NextResponse.json({ error: planError.message }, { status: 500 })
+    let activePlans: { client_id?: string | null }[]
+    try {
+      activePlans = await queryInBatches(clientIds, (batch) =>
+        admin.from('plans').select('client_id').in('client_id', batch).eq('active', true)
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'active plans query failed'
+      console.error('[cron/checkin-reminders] active plans query failed:', message)
+      return NextResponse.json({ error: message }, { status: 500 })
     }
 
-    for (const row of activePlans ?? []) {
+    for (const row of activePlans) {
       const clientId = (row as { client_id?: string | null }).client_id
       if (clientId) activePlanClientIds.add(clientId)
     }
@@ -160,18 +165,22 @@ export async function GET(request: Request) {
 
   const trackerByClient = new Map<string, TrackerDaySummary>()
   if (clientIds.length > 0) {
-    const { data: trackerDays, error: trackerError } = await admin
-      .from('daily_tracker_days')
-      .select('client_id, log_date, overall_percent, coaching_day, coaching_week')
-      .in('client_id', clientIds)
-      .eq('log_date', todayKey)
-
-    if (trackerError) {
-      console.error('[cron/checkin-reminders] tracker query failed:', trackerError.message)
-      return NextResponse.json({ error: trackerError.message }, { status: 500 })
+    let trackerDays: TrackerDaySummary[]
+    try {
+      trackerDays = await queryInBatches(clientIds, (batch) =>
+        admin
+          .from('daily_tracker_days')
+          .select('client_id, log_date, overall_percent, coaching_day, coaching_week')
+          .in('client_id', batch)
+          .eq('log_date', todayKey)
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'tracker query failed'
+      console.error('[cron/checkin-reminders] tracker query failed:', message)
+      return NextResponse.json({ error: message }, { status: 500 })
     }
 
-    for (const row of (trackerDays ?? []) as TrackerDaySummary[]) {
+    for (const row of trackerDays) {
       trackerByClient.set(row.client_id, row)
     }
   }

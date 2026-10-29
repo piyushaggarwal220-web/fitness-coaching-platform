@@ -8,6 +8,7 @@ import { brandTitle } from '@/lib/brand';
 import { coachPageStyles as styles } from '@/lib/coach-page-styles';
 import { colors } from '@/lib/coach-theme';
 import { requireCoach } from '@/lib/coach-session';
+import { queryInBatches } from '@/lib/supabase/chunked-in';
 import {
   coachBadgeStyles,
   formatFitnessGoal,
@@ -66,30 +67,40 @@ function CoachClientsContent() {
 
       setCoach(coachData);
 
-      const { data: clientsData, error: clientsError } = await supabase
-        .from('profiles')
-        .select('id, name, email, fitness_goal, plan_delivered, checkin_awaiting, checkin_overdue, checkin_schedule_started_at, complexity_score, complexity_tier, complexity_score_change, complexity_last_calculated_at')
-        .eq('coach_id', coachData.id)
-        .order('name', { ascending: true });
+      const clientsData: CoachClientRow[] = [];
+      for (let from = 0; from < 20000; from += 1000) {
+        const { data: page, error: clientsError } = await supabase
+          .from('profiles')
+          .select('id, name, email, fitness_goal, plan_delivered, checkin_awaiting, checkin_overdue, checkin_schedule_started_at, complexity_score, complexity_tier, complexity_score_change, complexity_last_calculated_at')
+          .eq('coach_id', coachData.id)
+          .order('name', { ascending: true })
+          .range(from, from + 999);
 
-      if (clientsError) {
-        setError('Failed to load clients. Please try again.');
-        setLoading(false);
-        return;
+        if (clientsError) {
+          setError('Failed to load clients. Please try again.');
+          setLoading(false);
+          return;
+        }
+
+        clientsData.push(...((page ?? []) as CoachClientRow[]));
+        if (!page || page.length < 1000) break;
       }
 
-      setClients((clientsData ?? []) as CoachClientRow[]);
+      setClients(clientsData);
 
-      const clientIds = ((clientsData ?? []) as CoachClientRow[]).map((c) => c.id);
+      const clientIds = clientsData.map((c) => c.id);
       if (clientIds.length > 0) {
         const since = new Date();
         since.setDate(since.getDate() - 90);
-        const { data: checkinData } = await supabase
-          .from('checkins')
-          .select('id, client_id, checkin_type, coaching_week, coaching_day, reviewed, submitted_at')
-          .in('client_id', clientIds)
-          .gte('submitted_at', since.toISOString());
-        setCheckins((checkinData ?? []) as Checkin[]);
+        const sinceIso = since.toISOString();
+        const checkinData = await queryInBatches<Checkin>(clientIds, (batch) =>
+          supabase
+            .from('checkins')
+            .select('id, client_id, checkin_type, coaching_week, coaching_day, reviewed, submitted_at')
+            .in('client_id', batch)
+            .gte('submitted_at', sinceIso)
+        );
+        setCheckins(checkinData);
       }
 
       setLoading(false);

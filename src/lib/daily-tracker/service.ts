@@ -18,6 +18,7 @@ import {
   remapWorkoutDayKey,
   resolveSuggestedDayKey,
 } from './parser'
+import { queryInBatches } from '@/lib/supabase/chunked-in'
 import { averageRpe, calculateTrackerScores } from './scores'
 import { buildWeekProgress } from './week-progress'
 import type {
@@ -873,26 +874,42 @@ export async function loadClientAdherenceSummary(
   )
 }
 
-/** Batch adherence for many clients in one round-trip (coach dashboard). */
+type TrackerScoreRow = {
+  client_id: string
+  scores: TrackerCategoryScores | null
+  overall_percent: number | null
+}
+
+async function loadTrackerScoreRows(
+  supabase: SupabaseClient,
+  clientIds: string[],
+  sinceKey: string
+): Promise<TrackerScoreRow[]> {
+  return queryInBatches(clientIds, (batch) =>
+    supabase
+      .from('daily_tracker_days')
+      .select('client_id, scores, overall_percent')
+      .in('client_id', batch)
+      .gte('log_date', sinceKey)
+  )
+}
+
+/** Batch adherence for the coach dashboard. Client ids are fetched in short batches. */
 export async function loadCoachAdherenceSummaries(
   supabase: SupabaseClient,
   clients: { id: string; name: string | null }[],
   periodDays = 7
-): Promise<Array<TrackerAdherenceSummary & { clientName: string | null }>> {
+): Promise<Array<TrackerAdherenceSummary & { clientName: string | null; loggedDays: number }>> {
   if (clients.length === 0) return []
 
   const sinceKey = coachingDateKeyDaysAgo(periodDays)
   const clientIds = clients.map((c) => c.id)
 
   // Panel only needs scores + overall — skip huge snapshot/completion payloads.
-  const { data } = await supabase
-    .from('daily_tracker_days')
-    .select('client_id, scores, overall_percent')
-    .in('client_id', clientIds)
-    .gte('log_date', sinceKey)
+  const data = await loadTrackerScoreRows(supabase, clientIds, sinceKey)
 
   const daysByClient = new Map<string, { scores: TrackerCategoryScores | null; overall_percent: number | null }[]>()
-  for (const row of data ?? []) {
+  for (const row of data) {
     const clientId = row.client_id as string
     const list = daysByClient.get(clientId) ?? []
     list.push({
@@ -927,6 +944,7 @@ export async function loadCoachAdherenceSummaries(
         missedMeals: 0,
         missedWorkouts: 0,
         exercisePerformance: [],
+        loggedDays: 0,
       }
     }
 
@@ -951,6 +969,7 @@ export async function loadCoachAdherenceSummaries(
       missedMeals: 0,
       missedWorkouts: 0,
       exercisePerformance: [],
+      loggedDays: days.length,
     }
   })
 }

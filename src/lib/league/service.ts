@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { queryInBatches } from '@/lib/supabase/chunked-in'
 import {
   clampDivisionForCrazyEligibility,
   isCrazyLeagueEligible,
@@ -30,21 +31,18 @@ async function loadCrazyEligibilityByClientId(
   for (const id of clientIds) eligible.set(id, false)
   if (clientIds.length === 0) return eligible
 
-  const { data: purchases, error } = await admin
-    .from('purchases')
-    .select('user_id, plan_slug, plan_name, created_at, status')
-    .in('user_id', clientIds)
-    .eq('status', 'captured')
-    .order('created_at', { ascending: false })
+  const purchases = await queryInBatches(clientIds, (batch) =>
+    admin
+      .from('purchases')
+      .select('user_id, plan_slug, plan_name, created_at, status')
+      .in('user_id', batch)
+      .eq('status', 'captured')
+      .order('created_at', { ascending: false })
+  )
 
-  if (error) throw new Error(error.message)
-
-  const { data: profiles, error: profileError } = await admin
-    .from('profiles')
-    .select('id, subscription_expires_at')
-    .in('id', clientIds)
-
-  if (profileError) throw new Error(profileError.message)
+  const profiles = await queryInBatches(clientIds, (batch) =>
+    admin.from('profiles').select('id, subscription_expires_at').in('id', batch)
+  )
 
   const expiryById = new Map(
     (profiles ?? []).map((p) => [p.id as string, (p.subscription_expires_at as string | null) ?? null])
@@ -420,33 +418,32 @@ export async function recomputeCoachLeagueStandings(
   const clientIds = roster.map((c) => c.id as string)
   const crazyEligibility = await loadCrazyEligibilityByClientId(admin, clientIds)
 
-  const [trackerResult, checkinResult, journeyResult] = await Promise.all([
-    admin
-      .from('daily_tracker_days')
-      .select('client_id, log_date, overall_percent')
-      .in('client_id', clientIds)
-      .gte('log_date', season.startsOn)
-      .lte('log_date', season.endsOn),
-    admin
-      .from('checkins')
-      .select('client_id, checkin_type, submitted_at, chest, thigh, navel')
-      .in('client_id', clientIds)
-      .gte('submitted_at', `${season.startsOn}T00:00:00.000Z`)
-      .lte('submitted_at', `${season.endsOn}T23:59:59.999Z`),
-    admin
-      .from('journey_entries')
-      .select('client_id, entry_date, photo_front, photo_side, photo_back, extra_photos')
-      .in('client_id', clientIds)
-      .gte('entry_date', season.startsOn)
-      .lte('entry_date', season.endsOn),
+  const [trackerDays, checkins, journeys] = await Promise.all([
+    queryInBatches(clientIds, (batch) =>
+      admin
+        .from('daily_tracker_days')
+        .select('client_id, log_date, overall_percent')
+        .in('client_id', batch)
+        .gte('log_date', season.startsOn)
+        .lte('log_date', season.endsOn)
+    ),
+    queryInBatches(clientIds, (batch) =>
+      admin
+        .from('checkins')
+        .select('client_id, checkin_type, submitted_at, chest, thigh, navel')
+        .in('client_id', batch)
+        .gte('submitted_at', `${season.startsOn}T00:00:00.000Z`)
+        .lte('submitted_at', `${season.endsOn}T23:59:59.999Z`)
+    ),
+    queryInBatches(clientIds, (batch) =>
+      admin
+        .from('journey_entries')
+        .select('client_id, entry_date, photo_front, photo_side, photo_back, extra_photos')
+        .in('client_id', batch)
+        .gte('entry_date', season.startsOn)
+        .lte('entry_date', season.endsOn)
+    ),
   ])
-
-  const scoringError = trackerResult.error ?? checkinResult.error ?? journeyResult.error
-  if (scoringError) throw new Error(scoringError.message)
-
-  const trackerDays = trackerResult.data ?? []
-  const checkins = checkinResult.data ?? []
-  const journeys = journeyResult.data ?? []
 
   const scored = await Promise.all(
     roster.map(async (client) => {

@@ -20,12 +20,19 @@ export async function GET(request: Request) {
   const url = new URL(request.url)
   const clientId = url.searchParams.get('clientId')?.trim()
 
-  const { data: clients } = await supabase
-    .from('profiles')
-    .select('id, name')
-    .eq('coach_id', coach.id)
-
-  const list = clients ?? []
+  const list: { id: string; name: string | null }[] = []
+  for (let from = 0; from < 20000; from += 1000) {
+    const { data: clients, error: clientsError } = await supabase
+      .from('profiles')
+      .select('id, name')
+      .eq('coach_id', coach.id)
+      .range(from, from + 999)
+    if (clientsError) {
+      return NextResponse.json({ error: 'Could not load tracker adherence.' }, { status: 500 })
+    }
+    list.push(...((clients ?? []) as { id: string; name: string | null }[]))
+    if (!clients || clients.length < 1000) break
+  }
 
   // Single-client detail keeps full missed-meal/workout accounting.
   if (clientId) {
@@ -39,8 +46,11 @@ export async function GET(request: Request) {
     })
   }
 
-  const summaries = await loadCoachAdherenceSummaries(supabase, list, 7)
-  summaries.sort((a, b) => a.overallAverage - b.overallAverage)
-
-  return NextResponse.json({ summaries })
+  try {
+    const summaries = await loadCoachAdherenceSummaries(supabase, list, 7)
+    summaries.sort((a, b) => a.overallAverage - b.overallAverage)
+    return NextResponse.json({ summaries })
+  } catch {
+    return NextResponse.json({ error: 'Could not load tracker adherence.' }, { status: 500 })
+  }
 }

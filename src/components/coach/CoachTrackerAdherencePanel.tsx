@@ -19,20 +19,27 @@ type AdherenceRow = {
   }
   missedMeals: number
   missedWorkouts: number
+  loggedDays?: number
 }
 
 export function CoachTrackerAdherencePanel() {
   const [rows, setRows] = useState<AdherenceRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
       try {
         const res = await fetch('/api/coach/tracker-adherence')
-        if (res.ok) {
-          const data = (await res.json()) as { summaries?: AdherenceRow[] }
-          setRows(data.summaries ?? [])
+        const data = (await res.json().catch(() => null)) as { summaries?: AdherenceRow[]; error?: string } | null
+        if (!res.ok) {
+          setError(data?.error ?? 'Could not load tracker adherence.')
+          return
         }
+        setRows(data?.summaries ?? [])
+        setError(null)
+      } catch {
+        setError('Could not load tracker adherence.')
       } finally {
         setLoading(false)
       }
@@ -48,7 +55,17 @@ export function CoachTrackerAdherencePanel() {
     )
   }
 
-  if (rows.length === 0) {
+  if (error) {
+    return (
+      <div style={coachPageStyles.card}>
+        <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>{error}</p>
+      </div>
+    )
+  }
+
+  const tracked = rows.filter((row) => (row.loggedDays ?? 0) > 0)
+
+  if (tracked.length === 0) {
     return (
       <div style={coachPageStyles.card}>
         <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>
@@ -58,11 +75,12 @@ export function CoachTrackerAdherencePanel() {
     )
   }
 
-  const low = rows.filter((r) => r.overallAverage < 70).slice(0, 5)
+  const low = tracked.filter((r) => r.overallAverage < 70).slice(0, 5)
+  const shown = low.length > 0 ? low : tracked.slice(0, 5)
 
   return (
     <div style={{ ...coachPageStyles.card, display: 'grid', gap: spacing[3] }}>
-      {(low.length > 0 ? low : rows.slice(0, 5)).map((row) => (
+      {shown.map((row) => (
         <Link
           key={row.clientId}
           href={`/coach/client/${row.clientId}`}

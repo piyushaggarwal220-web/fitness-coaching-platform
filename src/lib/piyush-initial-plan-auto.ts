@@ -7,6 +7,7 @@ import {
   shouldAutoJourneyAndDeliverInitialPlan,
 } from '@/lib/coach-delivery-policy'
 import { hasClientEntitlement } from '@/lib/entitlements'
+import { queryInBatches } from '@/lib/supabase/chunked-in'
 import {
   canRetryInitialGeneration,
   enqueueInitialPlanGeneration,
@@ -511,32 +512,41 @@ export async function listPiyushPendingInitialPlanClients(
   if (!entitled.length) return []
 
   const clientIds = entitled.map((row) => row.id)
-  const [{ data: deliveredPlans, error: deliveredError }, { data: activePlans }, { data: readyJobs }] =
-    await Promise.all([
-      admin.from('plans').select('client_id').in('client_id', clientIds).not('delivered_at', 'is', null),
-      admin.from('plans').select('client_id').in('client_id', clientIds).eq('active', true),
-      admin
-        .from('initial_plan_generation_jobs')
-        .select('client_id, status')
-        .in('client_id', clientIds)
-        .eq('status', 'ready'),
+  let deliveredPlans: { client_id: string }[]
+  let activePlans: { client_id: string }[]
+  let readyJobs: { client_id: string }[]
+  let purchaseRows: { user_id: string; plan_slug: string | null; status: string }[]
+  try {
+    ;[deliveredPlans, activePlans, readyJobs, purchaseRows] = await Promise.all([
+      queryInBatches(clientIds, (batch) =>
+        admin.from('plans').select('client_id').in('client_id', batch).not('delivered_at', 'is', null)
+      ),
+      queryInBatches(clientIds, (batch) =>
+        admin.from('plans').select('client_id').in('client_id', batch).eq('active', true)
+      ),
+      queryInBatches(clientIds, (batch) =>
+        admin
+          .from('initial_plan_generation_jobs')
+          .select('client_id, status')
+          .in('client_id', batch)
+          .eq('status', 'ready')
+      ),
+      queryInBatches(clientIds, (batch) =>
+        admin.from('purchases').select('user_id, plan_slug, status').in('user_id', batch)
+      ),
     ])
+  } catch {
+    // Fail closed: if we cannot verify delivery history, return empty rather than over-queue.
+    return []
+  }
 
-  // Fail closed: if we cannot verify delivery history, return empty rather than over-queue.
-  if (deliveredError) return []
-
-  const hasDelivered = new Set((deliveredPlans ?? []).map((p) => p.client_id))
-  const hasActive = new Set((activePlans ?? []).map((p) => p.client_id))
-  const hasReadyJob = new Set((readyJobs ?? []).map((p) => p.client_id))
-
-  const { data: purchaseRows } = await admin
-    .from('purchases')
-    .select('user_id, plan_slug, status')
-    .in('user_id', clientIds)
+  const hasDelivered = new Set(deliveredPlans.map((p) => p.client_id))
+  const hasActive = new Set(activePlans.map((p) => p.client_id))
+  const hasReadyJob = new Set(readyJobs.map((p) => p.client_id))
 
   const hasDigital = new Set<string>()
   const hasCoaching = new Set<string>()
-  for (const row of purchaseRows ?? []) {
+  for (const row of purchaseRows) {
     const status = (row.status || '').toLowerCase()
     const paid = status === 'paid' || status === 'captured' || status === 'completed' || !status
     if (!paid || !row.plan_slug) continue
