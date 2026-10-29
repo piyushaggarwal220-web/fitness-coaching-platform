@@ -250,7 +250,7 @@ export async function sendCheckinAutoReply(
 
   await supabase.from('profiles').update({ checkin_awaiting: false }).eq('id', checkin.client_id)
 
-  const checkinType = checkin.checkin_type === 'mid_week' ? 'mid_week' : 'weekly'
+  const checkinType = 'weekly' as const
   const canChat = coachIdHasClientChat(coach.id)
   const chatResult = canChat
     ? await postCoachCheckinFeedbackToChat({
