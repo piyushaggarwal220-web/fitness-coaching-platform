@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx'
 import type { Checkin } from '@/types/database'
+import { listWorkoutExercises } from '@/lib/daily-tracker/exercise-utils'
 import type {
   DailyTrackerDay,
   TrackerCompletion,
@@ -148,7 +149,7 @@ export function buildWeeklyWorkbook(input: WeeklyWorkbookInput): Buffer {
     ])
 
     for (const workout of snapshotWorkouts(day.snapshot)) {
-      for (const exercise of workout.exercises) {
+      for (const exercise of listWorkoutExercises(workout)) {
         const sets = day.completion.exercises?.[exercise.id]?.sets ?? []
         sets.forEach((set, index) => {
           setRows.push([

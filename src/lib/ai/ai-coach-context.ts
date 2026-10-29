@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { splitSnapshot } from '@/lib/daily-tracker/display'
+import { listWorkoutExercises } from '@/lib/daily-tracker/exercise-utils'
 import { buildTrackerSnapshot, resolveSuggestedDayKey } from '@/lib/daily-tracker/parser'
 import type { TrackerCompletion, TrackerPlanDayOption, TrackerSnapshot, TrackerWorkoutItem } from '@/lib/daily-tracker/types'
 import {
@@ -106,7 +107,7 @@ export function purchasedPlanLine(slug: string | null | undefined): string {
 function isRestWorkout(workout: TrackerWorkoutItem): boolean {
   const focus = String(workout.focus ?? '').toLowerCase()
   const title = String(workout.title ?? '').toLowerCase()
-  const hasExercises = workout.exercises.length > 0
+  const hasExercises = listWorkoutExercises(workout).length > 0
   if (!hasExercises) return true
   return /\brest\s*day\b/.test(focus) || /\brest\s*day\b/.test(title) || focus === 'rest'
 }
@@ -161,12 +162,13 @@ export function formatTodayPlan(input: {
     workoutLine = 'Workout: rest day'
     trained = 'Trained today: rest day'
   } else if (workout) {
-    const moves = workout.exercises.slice(0, 8).map((exercise) => {
+    const exercises = listWorkoutExercises(workout)
+    const moves = exercises.slice(0, 8).map((exercise) => {
       const sets = exercise.targetSets ? `${exercise.targetSets}x${exercise.targetReps}` : exercise.targetReps
       return sets ? `${exercise.name} ${sets}` : exercise.name
     })
     workoutLine = moves.length ? `Workout: ${moves.join('; ')}` : `Workout: ${workout.title}`
-    const anyLogged = workout.exercises.some((exercise) => completion.exercises?.[exercise.id]?.completed)
+    const anyLogged = exercises.some((exercise) => completion.exercises?.[exercise.id]?.completed)
     trained = anyLogged ? 'Trained today: yes' : 'Trained today: no'
   }
 

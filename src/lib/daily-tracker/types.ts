@@ -90,7 +90,10 @@ export type TrackerWorkoutItem = {
   /** Display label, e.g. Monday */
   workoutDayLabel?: string
   phases: WorkoutPhaseBlock[]
-  /** Flat list for scoring — all exercises across phases */
+  /**
+   * Flat list for scoring — all exercises across phases.
+   * Omitted in stored JSON when `phases` is present; hydrate on read.
+   */
   exercises: TrackerExerciseItem[]
   sortOrder: number
 }

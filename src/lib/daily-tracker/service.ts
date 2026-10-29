@@ -18,6 +18,8 @@ import {
   remapWorkoutDayKey,
   resolveSuggestedDayKey,
 } from './parser'
+import { compactTrackerSnapshotForStorage, hydrateTrackerSnapshot } from './display'
+import { listWorkoutExercises } from './exercise-utils'
 import { queryInBatches } from '@/lib/supabase/chunked-in'
 import { averageRpe, calculateTrackerScores } from './scores'
 import { buildWeekProgress } from './week-progress'
@@ -48,7 +50,7 @@ function rowToDay(row: Record<string, unknown>): DailyTrackerDay {
     plan_version: row.plan_version as number,
     coaching_day: (row.coaching_day as number) ?? null,
     coaching_week: (row.coaching_week as number) ?? null,
-    snapshot: row.snapshot as DailyTrackerDay['snapshot'],
+    snapshot: hydrateTrackerSnapshot(row.snapshot as DailyTrackerDay['snapshot']),
     completion: (row.completion as TrackerCompletion) ?? {},
     scores: (row.scores as TrackerCategoryScores) ?? null,
     overall_percent: (row.overall_percent as number) ?? null,
@@ -138,7 +140,7 @@ function getWorkoutPhaseSignature(snapshot: {
       const phases = workout.phases ?? []
       return [
         workout.workoutDay ?? 'default',
-        `ex:${workout.exercises.length}`,
+        `ex:${listWorkoutExercises(workout).length}`,
         ...phases.map((phase) => `${phase.phase}:${phase.exercises.length}`),
       ].join('|')
     }),
@@ -160,7 +162,7 @@ function snapshotContentFingerprint(snapshot: DailyTrackerDay['snapshot']): stri
       return `meal:${item.id}:${item.title}:${foods}:${macros}:${item.mealTime ?? ''}:${item.dietDay ?? ''}`
     }
     if (item.type === 'workout') {
-      const names = (item.exercises ?? [])
+      const names = listWorkoutExercises(item)
         .map(
           (ex) =>
             `${ex.name}:${ex.targetSets}:${ex.targetReps}:${ex.targetWeight ?? ''}:${ex.notes ?? ''}`
@@ -544,7 +546,7 @@ export async function getOrCreateTodayTracker(
         plan_version: plan.version,
         coaching_day: coachingDay,
         coaching_week: coachingWeek,
-        snapshot,
+        snapshot: compactTrackerSnapshotForStorage(snapshot),
         completion,
         scores,
         overall_percent: overall,
@@ -570,7 +572,7 @@ export async function getOrCreateTodayTracker(
       plan_version: plan.version,
       coaching_day: coachingDay,
       coaching_week: coachingWeek,
-      snapshot,
+      snapshot: compactTrackerSnapshotForStorage(snapshot),
       completion,
       scores,
       overall_percent: overall,
@@ -638,6 +640,33 @@ async function alignTrackerSnapshotWithPlan(
   }
 }
 
+/** Omit snapshot from completion saves unless the frozen plan copy actually changed. */
+export function trackerCompletionWritePayload(input: {
+  loaded: DailyTrackerDay
+  current: DailyTrackerDay
+  completion: TrackerCompletion
+  scores: TrackerCategoryScores
+  overall: number
+  now: string
+}): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    completion: input.completion,
+    scores: input.scores,
+    overall_percent: input.overall,
+    updated_at: input.now,
+  }
+  const snapshotChanged =
+    input.current.plan_id !== input.loaded.plan_id ||
+    input.current.plan_version !== input.loaded.plan_version ||
+    input.current.snapshot !== input.loaded.snapshot
+  if (snapshotChanged) {
+    payload.plan_id = input.current.plan_id
+    payload.plan_version = input.current.plan_version
+    payload.snapshot = compactTrackerSnapshotForStorage(input.current.snapshot)
+  }
+  return payload
+}
+
 export async function updateTrackerCompletion(
   supabase: SupabaseClient,
   clientId: string,
@@ -667,18 +696,18 @@ export async function updateTrackerCompletion(
     const { scores, overall } = calculateTrackerScores(current.snapshot, completion)
     const now = new Date().toISOString()
     const expectedUpdatedAt = current.updated_at
+    const payload = trackerCompletionWritePayload({
+      loaded,
+      current,
+      completion,
+      scores,
+      overall,
+      now,
+    })
 
     const { data: updated, error } = await supabase
       .from('daily_tracker_days')
-      .update({
-        plan_id: current.plan_id,
-        plan_version: current.plan_version,
-        snapshot: current.snapshot,
-        completion,
-        scores,
-        overall_percent: overall,
-        updated_at: now,
-      })
+      .update(payload)
       .eq('id', dayId)
       .eq('client_id', clientId)
       .eq('updated_at', expectedUpdatedAt)
@@ -754,7 +783,7 @@ export async function refreshTodayTrackerAfterPlanPublish(
       .update({
         plan_id: plan.id,
         plan_version: plan.version,
-        snapshot,
+        snapshot: compactTrackerSnapshotForStorage(snapshot),
         completion,
         scores,
         overall_percent: overall,
@@ -776,7 +805,7 @@ export async function refreshTodayTrackerAfterPlanPublish(
     plan_version: plan.version,
     coaching_day: coachingDay,
     coaching_week: coachingWeek,
-    snapshot,
+    snapshot: compactTrackerSnapshotForStorage(snapshot),
     completion,
     scores,
     overall_percent: overall,
@@ -1030,7 +1059,9 @@ function summarizeAdherenceDays(
           missedWorkouts++
           continue
         }
-        const allDone = item.exercises.every((ex) => day.completion.exercises?.[ex.id]?.completed)
+        const allDone = listWorkoutExercises(item).every(
+          (ex) => day.completion.exercises?.[ex.id]?.completed
+        )
         if (!allDone) missedWorkouts++
       }
     }

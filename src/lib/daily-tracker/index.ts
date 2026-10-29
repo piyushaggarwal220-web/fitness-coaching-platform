@@ -12,6 +12,7 @@ export {
   getActivePlan,
   getOrCreateTodayTracker,
   updateTrackerCompletion,
+  trackerCompletionWritePayload,
   refreshTodayTrackerAfterPlanPublish,
   loadTodayTrackerView,
   loadTrackerHistory,

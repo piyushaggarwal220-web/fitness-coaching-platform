@@ -3,7 +3,17 @@ import type {
   ExerciseSetLog,
   ExerciseTrackingMode,
   TrackerExerciseItem,
+  WorkoutPhaseBlock,
 } from './types'
+
+/** Prefer the flat list; fall back to phases so compact stored snapshots still score. */
+export function listWorkoutExercises(workout: {
+  exercises?: TrackerExerciseItem[]
+  phases?: WorkoutPhaseBlock[]
+}): TrackerExerciseItem[] {
+  if (workout.exercises && workout.exercises.length > 0) return workout.exercises
+  return workout.phases?.flatMap((phase) => phase.exercises) ?? []
+}
 
 /** Infer how an exercise should be logged from its prescription text. */
 export function inferTrackingMode(ex: Pick<

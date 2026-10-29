@@ -7,6 +7,7 @@ import {
 import { sendDirectEmail } from '@/lib/notifications/email-provider'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Checkin } from '@/types/database'
+import { hydrateTrackerSnapshot } from '@/lib/daily-tracker/display'
 import type {
   DailyTrackerDay,
   TrackerCategoryScores,
@@ -30,7 +31,15 @@ function rowToTrackerDay(row: Record<string, unknown>): DailyTrackerDay {
     plan_version: Number(row.plan_version ?? 0),
     coaching_day: (row.coaching_day as number | null) ?? null,
     coaching_week: (row.coaching_week as number | null) ?? null,
-    snapshot: (row.snapshot as TrackerSnapshot) ?? { items: [], generatedAt: '', planId: '', planVersion: 0, planTitle: '' },
+    snapshot: hydrateTrackerSnapshot(
+      (row.snapshot as TrackerSnapshot) ?? {
+        items: [],
+        generatedAt: '',
+        planId: '',
+        planVersion: 0,
+        planTitle: '',
+      }
+    ),
     completion: (row.completion as TrackerCompletion) ?? {},
     scores: (row.scores as TrackerCategoryScores | null) ?? null,
     overall_percent: (row.overall_percent as number | null) ?? null,

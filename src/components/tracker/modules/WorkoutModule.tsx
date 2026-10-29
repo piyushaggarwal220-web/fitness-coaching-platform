@@ -22,6 +22,7 @@ import {
   getCurrentExercise,
   getExerciseSets,
   inferTrackingMode,
+  listWorkoutExercises,
   resolveRestSeconds,
 } from '@/lib/daily-tracker/exercise-utils'
 import {
@@ -176,7 +177,7 @@ export function WorkoutModule({
   }, [workouts, multiDay, selectedKey])
 
   const workoutContentKey = workouts
-    .map((w) => `${w.workoutDay ?? 'default'}:${w.exercises.map((ex) => ex.name).join(',')}`)
+    .map((w) => `${w.workoutDay ?? 'default'}:${listWorkoutExercises(w).map((ex) => ex.name).join(',')}`)
     .join('|')
   const coachingDayKey = view?.schedule.coachingDay ?? 0
 
@@ -193,14 +194,15 @@ export function WorkoutModule({
   const [formExercise, setFormExercise] = useState<string | null>(null)
   const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({})
 
+  const workoutExercises = workout ? listWorkoutExercises(workout) : []
   const progress = getWorkoutProgress(workout, completion)
   const volume = computeWorkoutVolume(
     completion,
-    workout?.exercises.map((ex) => ex.id)
+    workoutExercises.map((ex) => ex.id)
   )
   const remainingMin = estimateRemainingMinutes(workout, completion)
   const currentEx = workout
-    ? getCurrentExercise(workout.exercises, completion.exercises)
+    ? getCurrentExercise(workoutExercises, completion.exercises)
     : null
   const currentExId = currentEx?.id ?? null
 
@@ -484,8 +486,8 @@ export function WorkoutModule({
       return
     }
 
-    const exIndex = workout.exercises.findIndex((item) => item.id === ex.id)
-    const nextEx = workout.exercises.slice(exIndex + 1).find((item) => item.phase === ex.phase)
+    const exIndex = workoutExercises.findIndex((item) => item.id === ex.id)
+    const nextEx = workoutExercises.slice(exIndex + 1).find((item) => item.phase === ex.phase)
     if (nextEx) {
       setRest({
         seconds: Math.min(restSeconds, 90),

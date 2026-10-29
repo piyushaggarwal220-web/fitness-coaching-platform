@@ -10,7 +10,7 @@ import type {
   TrackerWorkoutItem,
   WorkoutPhaseBlock,
 } from './types'
-import { DEFAULT_WARMUP_EXERCISES } from './exercise-utils'
+import { DEFAULT_WARMUP_EXERCISES, listWorkoutExercises } from './exercise-utils'
 
 export type TrackerSections = {
   meals: Extract<TrackerSnapshotItem, { type: 'meal' }>[]
@@ -77,18 +77,38 @@ export function splitSnapshot(
 
 /** Ensure legacy snapshots without phases still render correctly */
 export function normalizeWorkout(workout: TrackerWorkoutItem): TrackerWorkoutItem {
-  if (workout.phases?.length) return workout
-  const exercises = workout.exercises.map((ex) => ({ ...ex, phase: ex.phase ?? 'main' }))
+  if (workout.phases?.length) {
+    return { ...workout, phases: workout.phases, exercises: listWorkoutExercises(workout) }
+  }
+  const exercises = listWorkoutExercises(workout).map((ex) => ({ ...ex, phase: ex.phase ?? 'main' }))
   const phases: WorkoutPhaseBlock[] = [
     { id: 'phase-main', phase: 'main', label: 'Main Workout', exercises },
   ]
   return { ...workout, exercises, phases }
 }
 
+/** Restore the flat exercise list after compact storage (phases only). */
+export function hydrateTrackerSnapshot(snapshot: TrackerSnapshot): TrackerSnapshot {
+  return {
+    ...snapshot,
+    items: (snapshot.items ?? []).map((item) => (item.type === 'workout' ? normalizeWorkout(item) : item)),
+  }
+}
+
+/** Drop duplicated workout.exercises when phases already hold them. */
+export function compactTrackerSnapshotForStorage(snapshot: TrackerSnapshot): TrackerSnapshot {
+  return {
+    ...snapshot,
+    items: snapshot.items.map((item) => {
+      if (item.type !== 'workout' || !item.phases?.length) return item
+      const { exercises: _omit, ...rest } = item
+      return rest as TrackerWorkoutItem
+    }),
+  }
+}
+
 function isEmptyOrRestWorkout(workout: TrackerWorkoutItem): boolean {
-  const hasExercises =
-    workout.exercises.length > 0 ||
-    (workout.phases?.some((phase) => phase.exercises.length > 0) ?? false)
+  const hasExercises = listWorkoutExercises(workout).length > 0
   if (!hasExercises) return true
   const focus = String(workout.focus ?? '').toLowerCase()
   const title = String(workout.title ?? '').toLowerCase()
@@ -107,7 +127,7 @@ export function ensureWarmupPhase(workout: TrackerWorkoutItem): TrackerWorkoutIt
     return {
       ...workout,
       phases: workout.phases ?? [],
-      exercises: workout.exercises ?? [],
+      exercises: listWorkoutExercises(workout),
     }
   }
 
@@ -208,8 +228,9 @@ export function getWorkoutProgress(
   completion: TrackerCompletion
 ): { completed: number; total: number; percent: number } {
   if (!workout) return { completed: 0, total: 0, percent: 100 }
-  const total = workout.exercises.length
-  const completed = workout.exercises.filter((ex) => completion.exercises?.[ex.id]?.completed).length
+  const exercises = listWorkoutExercises(workout)
+  const total = exercises.length
+  const completed = exercises.filter((ex) => completion.exercises?.[ex.id]?.completed).length
   return { completed, total, percent: pct(completed, total) }
 }
 
@@ -219,7 +240,9 @@ export function estimateRemainingMinutes(
   minutesPerExercise = 6
 ): number {
   if (!workout) return 0
-  const remaining = workout.exercises.filter((ex) => !completion.exercises?.[ex.id]?.completed).length
+  const remaining = listWorkoutExercises(workout).filter(
+    (ex) => !completion.exercises?.[ex.id]?.completed
+  ).length
   return remaining * minutesPerExercise
 }
 
@@ -259,7 +282,9 @@ export function buildMotivationMessage(view: TodayTrackerView): string {
   const workout = sections.workout
   if (workout) {
     const postWorkout = mealsForToday.find((m) => /post[- ]?workout/i.test(m.title))
-    const workoutDone = workout.exercises.every((ex) => day.completion.exercises?.[ex.id]?.completed)
+    const workoutDone = listWorkoutExercises(workout).every(
+      (ex) => day.completion.exercises?.[ex.id]?.completed
+    )
     if (workoutDone && postWorkout && !day.completion.meals?.[postWorkout.id]?.completed) {
       return '🔥 Finish your post-workout meal for recovery.'
     }

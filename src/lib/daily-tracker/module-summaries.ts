@@ -1,4 +1,5 @@
 import { getCategoryDisplayScores, splitSnapshot } from './display'
+import { listWorkoutExercises } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 import type { DailyTrackerDay } from './types'
 
@@ -76,8 +77,9 @@ export function buildModuleSummaries(day: DailyTrackerDay): TrackerModuleSummary
         available: true,
       })
     } else if (active) {
-      const total = active.exercises.length
-      const done = active.exercises.filter((ex) => completion.exercises?.[ex.id]?.completed).length
+      const exercises = listWorkoutExercises(active)
+      const total = exercises.length
+      const done = exercises.filter((ex) => completion.exercises?.[ex.id]?.completed).length
       const focus = active.focus ?? active.dayLabel ?? "Today's session"
       modules.push({
         id: 'workout',

@@ -1,4 +1,4 @@
-import { areAllSetsComplete, getExerciseSets } from './exercise-utils'
+import { areAllSetsComplete, getExerciseSets, listWorkoutExercises } from './exercise-utils'
 import { hasSleepLogged, withDerivedSleepHours } from './sleep-duration'
 import type {
   TrackerCategoryScores,
@@ -40,8 +40,9 @@ export function calculateTrackerScores(
   if (hasWorkoutDays && !completion.selectedWorkoutDay) {
     workoutScore = 0
   } else if (workout && workout.type === 'workout') {
-    const total = workout.exercises.length
-    const done = workout.exercises.filter((ex) => {
+    const exercises = listWorkoutExercises(workout)
+    const total = exercises.length
+    const done = exercises.filter((ex) => {
       const data = completion.exercises?.[ex.id]
       if (data?.completed) return true
       return areAllSetsComplete(ex, getExerciseSets(ex, data))
@@ -152,7 +153,7 @@ export function isItemComplete(item: TrackerSnapshotItem, completion: TrackerCom
     case 'meal':
       return Boolean(completion.meals?.[item.id]?.completed)
     case 'workout':
-      return item.exercises.every((ex) => completion.exercises?.[ex.id]?.completed)
+      return listWorkoutExercises(item).every((ex) => completion.exercises?.[ex.id]?.completed)
     case 'cardio':
       return Boolean(completion.cardio?.[item.id]?.completed)
     case 'supplement':

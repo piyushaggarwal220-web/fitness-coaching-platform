@@ -9,8 +9,10 @@ import {
   resolveSuggestedDayKey,
   suggestedWorkoutDayKey,
 } from '../src/lib/daily-tracker/parser'
+import { compactTrackerSnapshotForStorage, hydrateTrackerSnapshot } from '../src/lib/daily-tracker/display'
 import { getCurrentExercise } from '../src/lib/daily-tracker/exercise-utils'
 import { calculateTrackerScores } from '../src/lib/daily-tracker/scores'
+import { trackerCompletionWritePayload } from '../src/lib/daily-tracker/service'
 import { applyTrackerDraft } from '../src/lib/daily-tracker/tracker-draft'
 import { formatPlanDayHeadersForClient } from '../src/lib/plan-day-labels'
 import type { Plan } from '../src/types/database'
@@ -1333,6 +1335,71 @@ Leg Press: 4 sets x 5 reps`,
   )
   assert('a bare prescription is not stored as an exercise name', !junkNames.includes('4 sets x 5 reps'))
   assert('the named lift next to a bare prescription still parses', junkNames.includes('Leg Press'))
+}
+
+{
+  const compact = compactTrackerSnapshotForStorage(snapV1)
+  const storedWorkout = compact.items.find((item) => item.type === 'workout')
+  assert(
+    'compact storage drops duplicated workout exercises',
+    storedWorkout?.type === 'workout' &&
+      storedWorkout.phases.length > 0 &&
+      !('exercises' in storedWorkout)
+  )
+  const hydrated = hydrateTrackerSnapshot(compact)
+  const live = snapV1.items.find((item) => item.type === 'workout')
+  const restored = hydrated.items.find((item) => item.type === 'workout')
+  assert(
+    'hydrate restores exercise ids from phases',
+    live?.type === 'workout' &&
+      restored?.type === 'workout' &&
+      restored.exercises.map((exercise) => exercise.id).join() ===
+        live.exercises.map((exercise) => exercise.id).join()
+  )
+  const before = calculateTrackerScores(snapV1, {})
+  const after = calculateTrackerScores(hydrated, {})
+  assert('compact roundtrip keeps scores', JSON.stringify(before) === JSON.stringify(after))
+
+  const loaded = {
+    id: 'd1',
+    client_id: 'c1',
+    log_date: '2026-10-29',
+    plan_id: 'plan-1',
+    plan_version: 1,
+    coaching_day: 1,
+    coaching_week: 1,
+    snapshot: snapV1,
+    completion: {},
+    scores: null,
+    overall_percent: null,
+    created_at: 't',
+    updated_at: 't',
+  }
+  const tap = trackerCompletionWritePayload({
+    loaded,
+    current: loaded,
+    completion: { water: { ml: 500 } },
+    scores: before.scores,
+    overall: before.overall,
+    now: 'now',
+  })
+  assert('completion save does not rewrite snapshot', !('snapshot' in tap))
+
+  const rebuilt = { ...loaded, snapshot: { ...snapV1, generatedAt: 'later' } }
+  const aligned = trackerCompletionWritePayload({
+    loaded,
+    current: rebuilt,
+    completion: {},
+    scores: before.scores,
+    overall: before.overall,
+    now: 'now',
+  })
+  const stored = aligned.snapshot as { items?: Array<{ type?: string; exercises?: unknown }> } | undefined
+  const storedAlignedWorkout = stored?.items?.find((item) => item.type === 'workout')
+  assert(
+    'plan change still writes compact snapshot',
+    Boolean(stored) && storedAlignedWorkout != null && !('exercises' in storedAlignedWorkout)
+  )
 }
 
 if (failed > 0) {
