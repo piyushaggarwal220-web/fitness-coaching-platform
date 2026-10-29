@@ -625,14 +625,25 @@ button, a[role="button"], input[type="submit"] {
 }
 
 @media (min-width: 900px) {
-  .coach-portal-chat .coach-chat-detail {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 16px 16px 12px;
+  /* Fill the laptop window under the navbar instead of a fixed offset. */
+  .coach-portal-chat {
+    height: 100dvh;
+    max-height: 100dvh;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    height: calc(100dvh - 72px);
+    overflow: hidden;
+  }
+
+  .coach-portal-chat .coach-chat-detail {
+    max-width: 1440px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 10px 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1 1 auto;
+    height: auto;
     min-height: 0;
     overflow: hidden;
     box-sizing: border-box;
@@ -776,6 +787,31 @@ html.client-chat-page body {
   min-height: 0;
 }
 
+.coach-chat-detail-split {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.coach-chat-assist {
+  order: -1;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  min-height: 0;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.coach-chat-assist-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
 .coach-chat-detail-header {
   display: none;
 }
@@ -915,12 +951,79 @@ html.client-chat-page body {
     background: var(--bg-primary);
   }
 
+  .coach-chat-detail-desktop-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .coach-chat-detail-desktop-bar h1 {
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .coach-chat-detail-desktop-phone {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .coach-chat-detail-desktop-phone > div {
+    margin-top: 0;
+  }
+
+  .coach-chat-detail-desktop-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .coach-chat-detail-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 12px;
+    overflow: hidden;
+  }
+
+  .coach-portal .coach-chat-bubble-mine,
+  .coach-portal .coach-chat-bubble-other {
+    max-width: min(72%, 520px) !important;
+  }
+
+  .coach-portal .coach-chat-messages img {
+    max-height: min(420px, 42vh) !important;
+  }
+
+  .coach-chat-detail-split .coach-chat-assist button {
+    width: 100%;
+  }
+
+  .coach-chat-detail-split .coach-chat-detail-viewport {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .coach-chat-detail-split .coach-chat-assist {
+    order: 0;
+    grid-column: 2;
+    grid-row: 1;
+    max-height: none;
+    height: 100%;
+    margin-bottom: 0;
+  }
+
   .coach-chat-detail-viewport {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    height: auto;
+    height: 100%;
     border-radius: 16px;
     overflow: hidden;
     border: 1px solid var(--border-subtle);

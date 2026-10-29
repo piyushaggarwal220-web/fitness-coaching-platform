@@ -76,25 +76,24 @@ export function CoachChatAssistPanel({
 
   return (
     <aside
+      className="coach-chat-assist"
       style={{
-        flexShrink: 0,
-        maxHeight: 220,
-        overflow: 'auto',
-        marginBottom: 12,
         padding: 12,
         borderRadius: 12,
         border: `1px solid ${colors.borderSubtle}`,
         background: colors.bgElevated,
       }}
     >
-      <p style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors.textMuted }}>
-        For you only
-      </p>
-      <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.45, color: colors.textPrimary }}>
-        {loading && !summary ? 'Reading what they said…' : summary || 'No summary yet.'}
-      </p>
-      {error ? <p style={{ margin: '8px 0 0', fontSize: 13, color: '#9f1239' }}>{error}</p> : null}
-      {notice ? <p style={{ margin: '8px 0 0', fontSize: 13, color: colors.textSecondary }}>{notice}</p> : null}
+      <div className="coach-chat-assist-body">
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors.textMuted }}>
+          For you only
+        </p>
+        <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.45, color: colors.textPrimary }}>
+          {loading && !summary ? 'Reading what they said…' : summary || 'No summary yet.'}
+        </p>
+        {error ? <p style={{ margin: '8px 0 0', fontSize: 13, color: '#9f1239' }}>{error}</p> : null}
+        {notice ? <p style={{ margin: '8px 0 0', fontSize: 13, color: colors.textSecondary }}>{notice}</p> : null}
+      </div>
       <button
         type="button"
         onClick={() => void publish()}

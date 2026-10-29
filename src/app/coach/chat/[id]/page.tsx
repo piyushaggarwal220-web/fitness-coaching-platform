@@ -255,27 +255,27 @@ function CoachChatDetailInner() {
           </div>
         </div>
 
-        <div className="coach-chat-detail-desktop-title" style={{ marginBottom: 12, flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-            <div style={{ minWidth: 0 }}>
-              <h1 style={{ ...styles.title, fontSize: '1.25rem', margin: 0 }}>{clientName}</h1>
-              <div style={{ marginTop: 6 }}>{phoneBlock}</div>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div className="coach-chat-detail-desktop-title">
+          <div className="coach-chat-detail-desktop-bar">
+            <h1 style={{ ...styles.title, fontSize: '1.15rem', margin: 0 }}>{clientName}</h1>
+            <div className="coach-chat-detail-desktop-phone">{phoneBlock}</div>
+            <div className="coach-chat-detail-desktop-actions">
               {profileLink}
               {editPlanBtn}
             </div>
           </div>
         </div>
 
-        <div className="coach-chat-detail-viewport">
+        <div className="coach-chat-detail-split">
+          <div className="coach-chat-detail-viewport">
+            <CoachChatThread
+              conversationId={conversation.id}
+              coachId={conversation.coach_id}
+              viewer="coach"
+              initialMessages={messages}
+            />
+          </div>
           <CoachChatAssistPanel conversationId={conversation.id} messages={messages} />
-          <CoachChatThread
-            conversationId={conversation.id}
-            coachId={conversation.coach_id}
-            viewer="coach"
-            initialMessages={messages}
-          />
         </div>
       </div>
     </CoachShell>
