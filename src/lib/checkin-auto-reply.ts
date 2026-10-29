@@ -174,7 +174,7 @@ export async function sendCheckinAutoReply(
     await supabase.from('checkins').update({ auto_reply_at: null }).eq('id', checkin.id)
     return {
       status: 'skipped',
-      reason: checkin.checkin_type === 'mid_week' ? 'midweek_in_weekly' : 'coach_writes',
+      reason: 'coach_writes',
     }
   }
 
