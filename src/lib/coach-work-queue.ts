@@ -5,7 +5,6 @@ import {
   coachUsesFifoWorkQueue,
   isAutoDeliveryCoach,
   clientRequiresJourneySetup,
-  PIYUSH_COACH_ID,
   shouldAutoProcessCoachWorkQueue,
 } from '@/lib/coach-delivery-policy'
 import { isTrialClientHiddenFromCoaches } from '@/lib/coach-roster-visibility'
@@ -641,7 +640,6 @@ export async function getCoachWorkQueue(
   }
 
   for (const conv of unreadChats ?? []) {
-    if (coachId === PIYUSH_COACH_ID) break
     if (!clientNameById.has(conv.client_id)) continue
     const name = clientNameById.get(conv.client_id) ?? 'Client'
     tasks.push({
@@ -725,6 +723,9 @@ export async function getCoachWorkQueue(
 
   const visibleTasks = tasks.filter((task) => {
     if (task.clientId && endedClientIds.has(task.clientId)) return false
+    // The conversation query only returns unread_by_coach > 0. A previous
+    // completion must not hide a thread the coach still has not read.
+    if (task.type === 'unread_chat') return true
     if (!completionByTaskId.has(task.id)) return true
     const completedSourceAt = completionByTaskId.get(task.id)
     if (!completedSourceAt) return false
@@ -787,11 +788,11 @@ export function filterWorkQueue(tasks: WorkQueueTask[], filter: WorkQueueFilter)
   return tasks.filter((t) => t.type === filter)
 }
 
-/** Auto-delivery coaches only see client-started weekly calls. AI handles the rest. */
+/** Auto-delivery coaches see client-started calls and unread coach chats. AI handles the rest. */
 export function visibleCoachWorkQueueTasks(
   tasks: WorkQueueTask[],
   coachId: string
 ): WorkQueueTask[] {
   if (!shouldAutoProcessCoachWorkQueue(coachId)) return tasks
-  return tasks.filter((task) => task.type === 'call_request')
+  return tasks.filter((task) => task.type === 'call_request' || task.type === 'unread_chat')
 }

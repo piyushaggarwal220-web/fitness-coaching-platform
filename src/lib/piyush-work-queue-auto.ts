@@ -13,10 +13,9 @@ import { getCoachWorkQueue, type WorkQueueTask } from '@/lib/coach-work-queue'
 import { processPlanChangeRequest } from '@/lib/plan-change-requests'
 import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
 import { activatePlan } from '@/lib/plans'
-import { autoReplyUnreadChat } from '@/lib/piyush-chat-auto'
 import { usesHumanCoach } from '@/lib/coach-service'
 import { runPiyushInitialPlanForClient } from '@/lib/piyush-initial-plan-auto'
-import { sendChatMessage, getOrCreateConversation, markConversationRead } from '@/lib/coach-chat'
+import { sendChatMessage, getOrCreateConversation } from '@/lib/coach-chat'
 import type { Checkin } from '@/types/database'
 
 export type AutoCoachQueueTaskResult = {
@@ -396,6 +395,7 @@ async function handleIssue(
 }
 
 type AutoCoachQueueOptions = {
+  /** Ignored. Unread coach chats stay on the queue for the coach. */
   chatLimit?: number
   checkinLimit?: number
   planChangeLimit?: number
@@ -431,14 +431,13 @@ export async function processCoachWorkQueue(
   }
 
   const limits = {
-    chat: options?.chatLimit ?? 8,
     checkin: options?.checkinLimit ?? 2,
     planChange: options?.planChangeLimit ?? 3,
     certificate: options?.certificateLimit ?? 10,
     issue: options?.issueLimit ?? 20,
     initial: options?.initialPlanLimit ?? 2,
   }
-  const used = { chat: 0, checkin: 0, planChange: 0, certificate: 0, issue: 0, initial: 0 }
+  const used = { checkin: 0, planChange: 0, certificate: 0, issue: 0, initial: 0 }
   const ignoreCheckinDelay = options?.ignoreCheckinDelay === true
 
   for (const task of tasks) {
@@ -456,59 +455,13 @@ export async function processCoachWorkQueue(
       }
 
       if (task.type === 'unread_chat') {
-        if (coachId === PIYUSH_COACH_ID) {
-          await recordCompletion(admin, coachId, task)
-          pushResult(summary, {
-            taskId: task.id,
-            type: task.type,
-            clientName: task.clientName,
-            coachId,
-            status: 'skipped',
-            detail: 'Piyush clients have no coach chat',
-          })
-          continue
-        }
-        if (used.chat >= limits.chat) continue
-        used.chat += 1
-        const conversationId = task.id.replace(/^chat-/, '')
-        const reply = await autoReplyUnreadChat(admin, {
-          conversationId,
-          clientId: task.clientId ?? '',
-          coachUserId: coach.userId,
-          coachId,
-          coachFirstName: coach.firstName,
-        })
-        if (reply.status === 'skipped' && reply.detail === 'needs_human') {
-          pushResult(summary, {
-            taskId: task.id,
-            type: task.type,
-            clientName: task.clientName,
-            coachId,
-            status: 'left_for_coach',
-            detail: 'Client asked for a human (call, refund, or emergency)',
-          })
-          continue
-        }
-        if (reply.status === 'sent') {
-          const { data: unread } = await admin
-            .from('conversation_messages')
-            .select('created_at')
-            .eq('conversation_id', conversationId)
-            .eq('sender_type', 'client')
-            .is('read_at', null)
-            .order('created_at', { ascending: false })
-            .limit(1)
-          const readThrough = unread?.[0]?.created_at ?? null
-          if (readThrough) await markConversationRead(admin, conversationId, 'coach', readThrough)
-          await recordCompletion(admin, coachId, task)
-        }
         pushResult(summary, {
           taskId: task.id,
           type: task.type,
           clientName: task.clientName,
           coachId,
-          status: reply.status,
-          detail: reply.detail,
+          status: 'left_for_coach',
+          detail: 'Unread coach chat — reply in the thread',
         })
         continue
       }

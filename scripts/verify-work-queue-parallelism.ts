@@ -3,7 +3,8 @@
  * Uses a fake Supabase client that records query start/end to prove waves run concurrently.
  */
 import assert from 'node:assert/strict'
-import { getCoachWorkQueue } from '../src/lib/coach-work-queue'
+import { PIYUSH_COACH_ID } from '../src/lib/coach-delivery-policy'
+import { getCoachWorkQueue, visibleCoachWorkQueueTasks, type WorkQueueTask } from '../src/lib/coach-work-queue'
 
 type FakeRow = Record<string, unknown>
 
@@ -84,7 +85,9 @@ function createFakeSupabase(opts: {
     api.is = chain(() => {})
     api.not = chain(() => {})
     api.neq = chain(() => {})
+    api.ilike = chain(() => {})
     api.gt = chain(() => {})
+    api.gte = chain(() => {})
     api.lt = chain(() => {})
     api.order = chain(() => {})
     api.limit = chain(() => {})
@@ -206,7 +209,9 @@ async function main() {
     'coach_conversations',
     'coach_work_queue_completions',
   ])
-  const wave1 = logs.filter((l) => wave1Tables.has(l.table))
+  const wave1 = logs.filter(
+    (l) => wave1Tables.has(l.table) && l.select !== 'client_id'
+  )
   assert.equal(wave1.length, 6)
 
   // All wave-1 queries should overlap (start before the slowest wave-1 query finishes).
@@ -223,6 +228,87 @@ async function main() {
   console.log(
     `✓ getCoachWorkQueue parallel waves ok (${elapsed}ms wall vs ~${sequentialEstimateMs}ms sequential estimate, ${logs.length} queries)`
   )
+
+  const piyush = createFakeSupabase({
+    latencyMs: 0,
+    clients: [
+      {
+        id: 'c2',
+        name: 'Sam',
+        email: 's@example.com',
+        plan_delivered: true,
+        onboarding_complete: true,
+        payment_confirmed: true,
+        access_source: 'purchase',
+        coach_service: 'human',
+        created_at: '2026-01-02T00:00:00.000Z',
+      },
+    ],
+    chats: [
+      {
+        id: 'ch1',
+        client_id: 'c2',
+        unread_by_coach: 2,
+        last_message_at: '2026-01-05T00:00:00.000Z',
+        last_message_preview: 'Hi coach',
+      },
+    ],
+    callRequests: [
+      {
+        id: 'call1',
+        conversation_id: 'ch1',
+        client_id: 'c2',
+        status: 'requested',
+        requested_at: '2026-01-06T00:00:00.000Z',
+        scheduled_for: null,
+        source: 'client',
+      },
+    ],
+    checkins: [
+      {
+        id: 'ck1',
+        client_id: 'c2',
+        submitted_at: '2026-01-04T00:00:00.000Z',
+        checkin_type: 'weekly',
+        coaching_week: 1,
+        reviewed: false,
+      },
+    ],
+    completions: [
+      {
+        task_id: 'chat-ch1',
+        task_created_at: '2026-01-05T00:00:00.000Z',
+      },
+    ],
+  })
+  const piyushTasks = await getCoachWorkQueue(piyush.client as never, PIYUSH_COACH_ID)
+  assert.ok(piyushTasks.some((task) => task.id === 'chat-ch1'), 'Piyush unread chat stays on the queue')
+  assert.ok(piyushTasks.some((task) => task.id === 'call-call1'), 'Piyush call stays on the queue')
+
+  const visible = visibleCoachWorkQueueTasks(piyushTasks, PIYUSH_COACH_ID)
+  const visibleTypes = new Set(visible.map((task) => task.type))
+  assert.ok(visibleTypes.has('unread_chat'))
+  assert.ok(visibleTypes.has('call_request'))
+  assert.equal(visible.some((task) => task.type === 'checkin_review'), false)
+
+  const manualCoachTasks: WorkQueueTask[] = [
+    ...visible,
+    {
+      id: 'checkin-ck1',
+      type: 'checkin_review',
+      title: 'Review Weekly Check-in',
+      subtitle: 'Sam',
+      href: '/coach/checkin/ck1',
+      priority: 1,
+      createdAt: '2026-01-04T00:00:00.000Z',
+    },
+  ]
+  assert.equal(
+    visibleCoachWorkQueueTasks(manualCoachTasks, 'coach-1').some((task) => task.type === 'checkin_review'),
+    true
+  )
+
+  console.log('✓ Piyush work queue keeps unread coach chats and calls')
 }
 
 main().catch((err) => {

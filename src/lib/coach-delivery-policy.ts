@@ -8,7 +8,7 @@ export const RAKSHIT_COACH_ID = 'c0e44f5c-28c6-4a93-8a2f-d7ed69172b2a'
 
 /**
  * Coaches who own ongoing delivery manually (weekly replies, publish from queue).
- * Piyush is fully automatic except phone calls and chats that need a human.
+ * Piyush is fully automatic except phone calls and unread coach chats.
  * Mid-week replies auto-send for every coach.
  */
 const MANUAL_PLAN_DELIVERY_COACH_IDS = new Set<string>()
@@ -116,7 +116,7 @@ export function shouldScheduleCheckinAutoReply(
   return !coachRequiresManualPlanDelivery(coachId)
 }
 
-/** Remaining human work: phone calls, plus chats the AI refuses (refunds, emergencies). */
+/** Remaining human work on the coach queue: phone calls and unread coach chats. */
 export function shouldAutoProcessCoachWorkQueue(coachId: string | null | undefined): boolean {
   return isAutoDeliveryCoach(coachId)
 }
