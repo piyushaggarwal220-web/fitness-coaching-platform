@@ -4,6 +4,7 @@ import {
   crosscheckPlannerSections,
   estimateTokens,
   formatPlannerCheckinBrief,
+  formatPlannerMidWeekBrief,
   labeledDayCount,
   meaningfulConstraint,
   parseConstraintFailures,
@@ -80,6 +81,22 @@ assert.match(formatPlannerCheckinBrief({
   painInjuries: 'knee',
   questions: null,
 }), /Weekly check-in abc/)
+assert.match(
+  formatPlannerMidWeekBrief({
+    checkinId: 'mid-1',
+    coachingWeek: 4,
+    dietAdherence: 6,
+    workoutAdherence: 7,
+    energyLevel: 5,
+    sleepQuality: 6,
+    stressLevel: 4,
+    wins: 'Hit protein',
+    struggles: 'Late dinners',
+    painInjuries: null,
+    questions: 'Drop rice?',
+  }),
+  /Mid-week check-in mid-1/
+)
 assert.match(
   crosscheckPlannerSections({
     nutrition: diet,

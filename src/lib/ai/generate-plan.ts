@@ -41,6 +41,7 @@ import {
 } from '@/lib/ai/nutrition-macro-sync'
 import { formatCalorieGuidanceBlock, resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
 import { assessDietFollowsRequest } from '@/lib/ai/diet-update-check'
+import { combineCheckinFreeText } from '@/lib/ai/same-week-midweek'
 import { assessWorkoutStructure } from '@/lib/ai/workout-structure'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
@@ -112,6 +113,7 @@ export type GeneratedPlan = {
 export type GeneratePlanInput = {
   profile: OnboardingProfile
   latestCheckin?: Checkin | null
+  sameWeekMidWeekCheckin?: Checkin | null
   coachInstructions?: string | null
   /** Relaxes schema checks for single-section generation (workout/diet/analysis). */
   validationMode?: PlanValidationMode
@@ -584,6 +586,7 @@ async function buildPlanPrompts(
     completenessHint?: string | null
     activePlan?: Plan | null
     updatedDietPlan?: Plan | null
+    sameWeekMidWeekCheckin?: Checkin | null
     libraryPrompts?: {
       actionTemplate: string
       systemTemplate: string | null
@@ -597,6 +600,7 @@ async function buildPlanPrompts(
   const { result: base, report } = await compileCachedPrompt({
     profile,
     latestCheckin,
+    sameWeekMidWeekCheckin: options.sameWeekMidWeekCheckin,
     complexityScore,
     knowledgeEntries,
     coachInstructions,
@@ -823,6 +827,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         completenessHint: attempt > 0 ? completenessHint : null,
         activePlan: input.activePlan,
         updatedDietPlan: input.updatedDietPlan,
+        sameWeekMidWeekCheckin: input.sameWeekMidWeekCheckin,
         libraryPrompts,
         validationMode,
         actionId: input.actionId,
@@ -918,16 +923,10 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       input.actionId === 'review_update_workout' &&
       (validationMode === 'workout_focus' || validationMode === 'full')
     ) {
-      const checkinNote = [
-        input.latestCheckin?.progress_notes,
-        input.latestCheckin?.notes,
-        input.latestCheckin?.questions_for_coach,
-        input.latestCheckin?.adherence_struggles,
-        input.latestCheckin?.pain_injuries,
-        input.latestCheckin?.digestion,
-      ]
-        .filter((part) => typeof part === 'string' && part.trim())
-        .join('\n')
+      const checkinNote = combineCheckinFreeText(
+        input.latestCheckin,
+        input.sameWeekMidWeekCheckin
+      )
       const structure = assessWorkoutStructure(
         workoutProse(plan),
         input.activePlan?.workout_plan,
@@ -946,15 +945,10 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       input.actionId === 'review_update_diet' &&
       (validationMode === 'nutrition_focus' || validationMode === 'full')
     ) {
-      const requestText = [
-        input.latestCheckin?.progress_notes,
-        input.latestCheckin?.notes,
-        input.latestCheckin?.questions_for_coach,
-        input.latestCheckin?.adherence_struggles,
-        input.latestCheckin?.digestion,
-      ]
-        .filter((part) => typeof part === 'string' && part.trim())
-        .join('\n')
+      const requestText = combineCheckinFreeText(
+        input.latestCheckin,
+        input.sameWeekMidWeekCheckin
+      )
       const dietMiss = assessDietFollowsRequest(
         collectDietProse(plan.nutrition_plan.meals),
         requestText,

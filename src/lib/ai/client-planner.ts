@@ -7,6 +7,8 @@ import { generateOpenAIResponse } from '@/lib/ai/openai'
 import {
   PLANNER_DECISION_LOG_PROMPT,
   checkinBriefMarker,
+  formatPlannerMidWeekBrief,
+  midWeekBriefMarker,
   crosscheckPlannerSections,
   estimateTokens,
   formatPlannerCheckinBrief,
@@ -22,6 +24,7 @@ import {
   type PlannerUpdate,
 } from '@/lib/ai/client-planner-pure'
 import { inferPlanChangeScope } from '@/lib/ai/ai-coach-plan-change-pure'
+import { loadSameWeekMidWeekCheckin } from '@/lib/ai/same-week-midweek'
 import { activatePlan, persistAiPlanDraft } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile } from '@/types/database'
@@ -493,6 +496,42 @@ export async function seedPlannerCheckin(
       stressLevel: checkin.stress_level,
       painInjuries: checkin.pain_injuries,
       questions: checkin.questions_for_coach,
+    }),
+  })
+
+  const midWeek = await loadSameWeekMidWeekCheckin(admin, {
+    id: checkin.id,
+    client_id: checkin.client_id,
+    coaching_week: checkin.coaching_week,
+    checkin_type: 'weekly',
+  })
+  if (!midWeek) return
+  const midMarker = midWeekBriefMarker(midWeek.id)
+  const { data: existingMid } = await admin
+    .from('client_planner_messages')
+    .select('id')
+    .eq('client_id', input.clientId)
+    .eq('role', 'request')
+    .like('content', `${midMarker}%`)
+    .limit(1)
+    .maybeSingle()
+  if (existingMid?.id) return
+  await insertMessage(admin, {
+    clientId: input.clientId,
+    coachId: input.coachId,
+    role: 'request',
+    content: formatPlannerMidWeekBrief({
+      checkinId: midWeek.id,
+      coachingWeek: midWeek.coaching_week,
+      dietAdherence: midWeek.diet_adherence,
+      workoutAdherence: midWeek.workout_adherence,
+      energyLevel: midWeek.energy_level,
+      sleepQuality: midWeek.sleep_quality,
+      stressLevel: midWeek.stress_level,
+      wins: midWeek.adherence_wins,
+      struggles: midWeek.adherence_struggles,
+      painInjuries: midWeek.pain_injuries,
+      questions: midWeek.questions_for_coach,
     }),
   })
 }

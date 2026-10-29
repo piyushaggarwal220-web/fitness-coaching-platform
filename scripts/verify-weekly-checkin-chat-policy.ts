@@ -64,6 +64,9 @@ pass('mid-week submit still posts to chat')
 assert.match(submitSrc, /generateWeeklyPlanDraft/)
 pass('weekly submit still triggers AI draft generation')
 
+assert.equal(submitSrc.includes('generateMidWeekAnalysis'), false)
+pass('mid-week submit no longer generates an AI client reply')
+
 const chatSrc = readFileSync(join(process.cwd(), 'src/lib/coach-chat.ts'), 'utf8')
 assert.match(
   chatSrc,

@@ -74,6 +74,8 @@ export const TRAINING_KNOWLEDGE_CATEGORY: Record<string, AiKnowledgeCategory> = 
 export type PromptBuilderInput = {
   profile: OnboardingProfile
   latestCheckin?: Checkin | null
+  /** Same-week Day 3 check-in. Used with the Sunday weekly check-in for next-week plans. */
+  sameWeekMidWeekCheckin?: Checkin | null
   complexityScore: ComplexityScoreResult
   knowledgeEntries: AiKnowledge[]
   coachInstructions?: string | null
@@ -214,9 +216,12 @@ function buildClientProfileSection(profile: OnboardingProfile): string {
   return lines.join('\n')
 }
 
-function buildCheckinSection(checkin: Checkin): string {
+function buildCheckinSection(
+  checkin: Checkin,
+  heading = '## Latest Check-In'
+): string {
   const lines = [
-    '## Latest Check-In',
+    heading,
     `- Submitted: ${checkin.submitted_at}`,
     `- Coaching week: ${formatValue(checkin.coaching_week)}`,
     `- Coaching day: ${formatValue(checkin.coaching_day)}`,
@@ -252,6 +257,29 @@ function buildCheckinSection(checkin: Checkin): string {
     `- Notes: ${hasMeaningfulText(checkin.notes) ? checkin.notes!.trim() : 'None'}`,
   ]
   return lines.join('\n')
+}
+
+function buildSameWeekMidWeekSection(checkin: Checkin): string {
+  return [
+    buildCheckinSection(
+      checkin,
+      '## Same-week mid-week check-in (Day 3 — fold this into Sunday\'s next-week plan; do not send the client a mid-week reply)'
+    ),
+  ].join('\n')
+}
+
+function buildLatestAndMidWeekCheckinSection(
+  latestCheckin: Checkin | null | undefined,
+  sameWeekMidWeekCheckin: Checkin | null | undefined
+): string {
+  const weekly = latestCheckin
+    ? buildCheckinSection(
+        latestCheckin,
+        latestCheckin.checkin_type === 'weekly' ? '## Weekly Check-In' : '## Latest Check-In'
+      )
+    : '## Latest Check-In\nNo check-in provided for this request.'
+  if (!sameWeekMidWeekCheckin) return weekly
+  return `${weekly}\n\n${buildSameWeekMidWeekSection(sameWeekMidWeekCheckin)}`
 }
 
 function buildMesocycleSection(
@@ -833,9 +861,10 @@ export function buildPromptContextSections(
     activeDiet: buildActiveDietSection(input.activePlan),
     activeWorkout: buildActiveWorkoutSection(input.activePlan),
     updatedDiet: buildUpdatedDietSection(input.updatedDietPlan),
-    checkin: input.latestCheckin
-      ? buildCheckinSection(input.latestCheckin)
-      : '## Latest Check-In\nNo check-in provided for this request.',
+    checkin: buildLatestAndMidWeekCheckinSection(
+      input.latestCheckin,
+      input.sameWeekMidWeekCheckin
+    ),
     mesocycle: buildMesocycleSection(input.latestCheckin, input.activePlan, input.profile),
     coachNotes: hasMeaningfulText(input.coachInstructions)
       ? [
@@ -1032,12 +1061,15 @@ function buildUserPrompt(
   latestCheckin: Checkin | null | undefined,
   complexityScore: ComplexityScoreResult,
   coachInstructions: string | null | undefined,
-  activePlan?: Plan | null
+  activePlan?: Plan | null,
+  sameWeekMidWeekCheckin?: Checkin | null
 ): string {
   const sections = [
     buildClientProfileSection(profile),
     buildMesocycleSection(latestCheckin, activePlan, profile),
-    latestCheckin ? buildCheckinSection(latestCheckin) : null,
+    latestCheckin || sameWeekMidWeekCheckin
+      ? buildLatestAndMidWeekCheckinSection(latestCheckin, sameWeekMidWeekCheckin)
+      : null,
     buildComplexitySection(complexityScore),
     hasMeaningfulText(coachInstructions)
       ? [
@@ -1074,7 +1106,8 @@ export function buildPrompt(input: PromptBuilderInput): PromptBuilderResult {
     input.latestCheckin,
     input.complexityScore,
     input.coachInstructions,
-    input.activePlan
+    input.activePlan,
+    input.sameWeekMidWeekCheckin
   )
 
   return {

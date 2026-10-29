@@ -9,7 +9,7 @@ export const RAKSHIT_COACH_ID = 'c0e44f5c-28c6-4a93-8a2f-d7ed69172b2a'
 /**
  * Coaches who own ongoing delivery manually (weekly replies, publish from queue).
  * Piyush is fully automatic except phone calls and unread coach chats.
- * Mid-week replies auto-send for every coach.
+ * Mid-week check-ins are not auto-replied; they feed Sunday's next-week plan.
  */
 const MANUAL_PLAN_DELIVERY_COACH_IDS = new Set<string>()
 
@@ -107,12 +107,12 @@ export function shouldAutoJourneyAndDeliverInitialPlan(
   return isAutoDeliveryCoach(coachId)
 }
 
-/** Mid-week replies stay automatic for every coach. Weekly replies auto-send unless the coach is still on manual delivery. */
+/** Mid-week is never auto-replied. Weekly replies auto-send unless the coach is still on manual delivery. */
 export function shouldScheduleCheckinAutoReply(
   checkinType: 'mid_week' | 'weekly',
   coachId: string | null | undefined
 ): boolean {
-  if (checkinType === 'mid_week') return true
+  if (checkinType === 'mid_week') return false
   return !coachRequiresManualPlanDelivery(coachId)
 }
 

@@ -172,9 +172,19 @@ export function buildActionCoachInstructions(
     coachNote?: string | null
     activePlan?: Plan | null
     checkin?: Checkin | null
+    midWeekCheckin?: Checkin | null
   }
 ): string {
-  const { coachNote, activePlan, checkin } = options
+  const { coachNote, activePlan, checkin, midWeekCheckin } = options
+  const midWeekContext = midWeekCheckin
+    ? [
+        'Same-week mid-week check-in (Day 3). Fold this into Sunday\'s next-week plan. Do not send the client a mid-week reply.',
+        checkinContext(midWeekCheckin),
+        formatAdherenceDaysForPrompt(midWeekCheckin, 3),
+      ]
+        .filter(Boolean)
+        .join('\n')
+    : ''
 
   switch (actionId) {
     case 'initial_diet':
@@ -241,6 +251,7 @@ export function buildActionCoachInstructions(
           'CRITICAL: Respect the client\'s lifestyle and current diet — meal times, favorite foods, cooking ability, work schedule, budget — adjust what check-in requires; never replace with a random generic chart.',
           checkin ? checkinContext(checkin) : '',
           checkin ? formatAdherenceDaysForPrompt(checkin, checkin.checkin_type === 'mid_week' ? 3 : 7) : '',
+          midWeekContext,
           planContext(activePlan ?? null, ['nutrition']),
           'CRITICAL: Address every client request, struggle, question, and check-in flag with concrete meal/macro changes.',
           'If the check-in names a food to add, remove, or swap, that food change must appear in the meals. Do not hand back the previous chart.',
@@ -264,6 +275,7 @@ export function buildActionCoachInstructions(
           'Update the workout plan based on the latest check-in and Training Mesocycle context.',
           checkin ? checkinContext(checkin) : '',
           checkin ? formatAdherenceDaysForPrompt(checkin, checkin.checkin_type === 'mid_week' ? 3 : 7) : '',
+          midWeekContext,
           planContext(activePlan ?? null, ['workout']),
           'CRITICAL: Address every client request, struggle, pain note, and check-in flag with concrete exercise/volume/split changes.',
           'KEEP the current split and day order. A new month is not a new split. Do not copy two or three lifts onto the next calendar day.',
@@ -286,6 +298,7 @@ export function buildActionCoachInstructions(
           'Update the cardio plan based on the latest check-in.',
           checkin ? checkinContext(checkin) : '',
           checkin ? formatAdherenceDaysForPrompt(checkin, checkin.checkin_type === 'mid_week' ? 3 : 7) : '',
+          midWeekContext,
           planContext(activePlan ?? null, ['cardio', 'workout']),
           'Write ONLY the daily step count in cardio_plan.sessions (one item). No LISS, HIIT, water, or sleep notes.',
           'If steps days are low, pick a realistic step floor. If high, progress slightly. Output is still just the number of steps.',
@@ -301,6 +314,7 @@ export function buildActionCoachInstructions(
           'Update the supplement plan based on the latest check-in.',
           checkin ? checkinContext(checkin) : '',
           checkin ? formatAdherenceDaysForPrompt(checkin, checkin.checkin_type === 'mid_week' ? 3 : 7) : '',
+          midWeekContext,
           planContext(activePlan ?? null, ['supplements', 'nutrition']),
           'Put updates only in supplement_plan.items.',
           'Refresh timing notes if sleep or diet days were low (simpler stack).',

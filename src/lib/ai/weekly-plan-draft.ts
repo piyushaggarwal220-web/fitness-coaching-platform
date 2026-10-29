@@ -31,6 +31,7 @@ import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
 import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
+import { loadSameWeekMidWeekCheckin } from '@/lib/ai/same-week-midweek'
 import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -418,6 +419,7 @@ export async function generateWeeklyPlanDraft(input: {
     const active = (activePlan as Plan | null) ?? null
     const checkinTyped = checkin as Checkin
     const profileTyped = profile as OnboardingProfile
+    const sameWeekMidWeek = await loadSameWeekMidWeekCheckin(admin, checkinTyped)
     const clientJourney = await loadClientJourneySnapshot(admin, {
       clientId: input.clientId,
       profile: profileTyped,
@@ -429,6 +431,7 @@ export async function generateWeeklyPlanDraft(input: {
     const skipDietRefresh =
       Boolean(active?.nutrition_plan?.trim()) &&
       !clientRequestedDietChange(checkinTyped) &&
+      !(sameWeekMidWeek && clientRequestedDietChange(sameWeekMidWeek)) &&
       !dietTextHasCalorieConflict(active?.nutrition_plan)
 
     let dietForm: PlanFormData
@@ -447,6 +450,7 @@ export async function generateWeeklyPlanDraft(input: {
         const dietResult = await generatePlan({
           profile: profileTyped,
           latestCheckin: checkinTyped,
+          sameWeekMidWeekCheckin: sameWeekMidWeek,
           actionId: 'review_update_diet',
           activePlan: active,
           validationMode: 'nutrition_focus',
@@ -454,6 +458,7 @@ export async function generateWeeklyPlanDraft(input: {
           coachInstructions: buildActionCoachInstructions('review_update_diet', {
             activePlan: active,
             checkin: checkinTyped,
+            midWeekCheckin: sameWeekMidWeek,
             coachNote,
           }),
         })
@@ -492,6 +497,7 @@ export async function generateWeeklyPlanDraft(input: {
         const workoutResult = await generatePlan({
           profile: profileTyped,
           latestCheckin: checkinTyped,
+          sameWeekMidWeekCheckin: sameWeekMidWeek,
           actionId: 'review_update_workout',
           activePlan: active,
           updatedDietPlan: updatedDietContext,
@@ -500,6 +506,7 @@ export async function generateWeeklyPlanDraft(input: {
           coachInstructions: buildActionCoachInstructions('review_update_workout', {
             activePlan: active,
             checkin: checkinTyped,
+            midWeekCheckin: sameWeekMidWeek,
             coachNote,
           }),
         })
@@ -606,6 +613,7 @@ export async function generateWeeklyPlanDraft(input: {
         const cardioResult = await generatePlan({
           profile: profileTyped,
           latestCheckin: checkinTyped,
+          sameWeekMidWeekCheckin: sameWeekMidWeek,
           actionId: 'review_update_cardio',
           activePlan: active,
           updatedDietPlan: updatedDietContext,
@@ -614,6 +622,7 @@ export async function generateWeeklyPlanDraft(input: {
           coachInstructions: buildActionCoachInstructions('review_update_cardio', {
             activePlan: active,
             checkin: checkinTyped,
+            midWeekCheckin: sameWeekMidWeek,
             coachNote,
           }),
         })
@@ -636,6 +645,7 @@ export async function generateWeeklyPlanDraft(input: {
         const supplementResult = await generatePlan({
           profile: profileTyped,
           latestCheckin: checkinTyped,
+          sameWeekMidWeekCheckin: sameWeekMidWeek,
           actionId: 'review_update_supplements',
           activePlan: active,
           updatedDietPlan: updatedDietContext,
@@ -644,6 +654,7 @@ export async function generateWeeklyPlanDraft(input: {
           coachInstructions: buildActionCoachInstructions('review_update_supplements', {
             activePlan: active,
             checkin: checkinTyped,
+            midWeekCheckin: sameWeekMidWeek,
             coachNote,
           }),
         })

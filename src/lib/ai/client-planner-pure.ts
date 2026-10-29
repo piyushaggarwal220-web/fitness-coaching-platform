@@ -166,6 +166,44 @@ export function checkinBriefMarker(checkinId: string): string {
   return `Weekly check-in ${checkinId}`
 }
 
+export function formatPlannerMidWeekBrief(input: {
+  checkinId: string
+  coachingWeek: number | null
+  dietAdherence: number | null
+  workoutAdherence: number | null
+  energyLevel: number | null
+  sleepQuality: number | null
+  stressLevel: number | null
+  wins: string | null
+  struggles: string | null
+  painInjuries: string | null
+  questions: string | null
+}): string {
+  const lines = [`Mid-week check-in ${input.checkinId}`]
+  if (input.coachingWeek) lines.push(`Week ${input.coachingWeek} Day 3`)
+  if (input.dietAdherence != null) lines.push(`Diet adherence: ${input.dietAdherence}/10`)
+  if (input.workoutAdherence != null) lines.push(`Workout adherence: ${input.workoutAdherence}/10`)
+  if (input.energyLevel != null) lines.push(`Energy: ${input.energyLevel}/10`)
+  if (input.sleepQuality != null) lines.push(`Sleep quality: ${input.sleepQuality}/10`)
+  if (input.stressLevel != null) lines.push(`Stress: ${input.stressLevel}/10`)
+  const wins = input.wins?.trim()
+  if (wins) lines.push(`Wins: ${wins}`)
+  const struggles = input.struggles?.trim()
+  if (struggles) lines.push(`Struggles: ${struggles}`)
+  const pain = input.painInjuries?.trim()
+  if (pain) lines.push(`Pain or injuries: ${pain}`)
+  const questions = input.questions?.trim()
+  if (questions) lines.push(`Questions: ${questions}`)
+  lines.push(
+    'Use this with the Sunday weekly check-in for next week\'s plan. Do not send the client a mid-week reply.'
+  )
+  return lines.join('\n')
+}
+
+export function midWeekBriefMarker(checkinId: string): string {
+  return `Mid-week check-in ${checkinId}`
+}
+
 export type PlannerUpdate = {
   sections: PlannerSection[]
   instruction: string

@@ -13,6 +13,7 @@ import {
   getCheckinTypeDisplayName,
   isCheckinSubmissionWindowClosed,
 } from '@/lib/checkin-schedule'
+import { pickSameWeekMidWeekCheckin } from '@/lib/ai/same-week-midweek'
 
 export type ClientJourneyInput = {
   profile: Pick<
@@ -193,6 +194,31 @@ export function buildClientJourneySnapshot(input: ClientJourneyInput): string {
     lines.push(
       `- Latest check-in days followed: diet ${current.days_followed_diet ?? 'n/a'}, workout ${current.days_followed_workout ?? 'n/a'}, sleep ${current.days_followed_sleep ?? 'n/a'}, water ${current.days_followed_water ?? 'n/a'}, steps ${current.days_followed_steps ?? 'n/a'}.`
     )
+    const sameWeekMidWeek = pickSameWeekMidWeekCheckin(current, checkins)
+    if (sameWeekMidWeek) {
+      const bits = [
+        `diet ${sameWeekMidWeek.diet_adherence ?? sameWeekMidWeek.adherence_score ?? 'n/a'}/10`,
+        `workout ${sameWeekMidWeek.workout_adherence ?? sameWeekMidWeek.training_performance ?? 'n/a'}/10`,
+        `energy ${sameWeekMidWeek.energy_level ?? 'n/a'}/10`,
+        `sleep ${sameWeekMidWeek.sleep_quality ?? 'n/a'}/10`,
+        `stress ${sameWeekMidWeek.stress_level ?? 'n/a'}/10`,
+      ]
+      if (sameWeekMidWeek.adherence_wins?.trim()) {
+        bits.push(`wins: ${truncate(sameWeekMidWeek.adherence_wins, 120)}`)
+      }
+      if (sameWeekMidWeek.adherence_struggles?.trim()) {
+        bits.push(`struggles: ${truncate(sameWeekMidWeek.adherence_struggles, 120)}`)
+      }
+      if (sameWeekMidWeek.questions_for_coach?.trim()) {
+        bits.push(`questions: ${truncate(sameWeekMidWeek.questions_for_coach, 160)}`)
+      }
+      if (sameWeekMidWeek.pain_injuries?.trim()) {
+        bits.push(`pain: ${truncate(sameWeekMidWeek.pain_injuries, 120)}`)
+      }
+      lines.push(
+        `- Same-week mid-week check-in (Day 3 — fold into this Sunday plan, do not send a mid-week reply): ${bits.join('; ')}.`
+      )
+    }
   }
 
   // Missed / skipped check-ins.

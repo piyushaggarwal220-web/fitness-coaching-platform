@@ -119,16 +119,25 @@ export function planSectionVersion(
   return `${clientId}:v${hashContent(content ?? '')}`
 }
 
-export function checkinVersion(clientId: string, checkin: Checkin | null | undefined): string {
-  if (!checkin) return `${clientId}:vnone`
+export function checkinVersion(
+  clientId: string,
+  checkin: Checkin | null | undefined,
+  sameWeekMidWeekCheckin?: Checkin | null
+): string {
+  if (!checkin && !sameWeekMidWeekCheckin) return `${clientId}:vnone`
   const sig = stableStringify({
-    id: checkin.id,
-    submitted_at: checkin.submitted_at,
-    weight: checkin.weight,
-    adherence_score: checkin.adherence_score,
-    energy_level: checkin.energy_level,
-    notes: checkin.notes,
-    coach_response: checkin.coach_response,
+    id: checkin?.id ?? null,
+    submitted_at: checkin?.submitted_at ?? null,
+    weight: checkin?.weight ?? null,
+    adherence_score: checkin?.adherence_score ?? null,
+    energy_level: checkin?.energy_level ?? null,
+    notes: checkin?.notes ?? null,
+    coach_response: checkin?.coach_response ?? null,
+    mid_week_id: sameWeekMidWeekCheckin?.id ?? null,
+    mid_week_submitted_at: sameWeekMidWeekCheckin?.submitted_at ?? null,
+    mid_week_notes: sameWeekMidWeekCheckin?.notes ?? null,
+    mid_week_struggles: sameWeekMidWeekCheckin?.adherence_struggles ?? null,
+    mid_week_questions: sameWeekMidWeekCheckin?.questions_for_coach ?? null,
   })
   return `${clientId}:v${hashContent(sig)}`
 }

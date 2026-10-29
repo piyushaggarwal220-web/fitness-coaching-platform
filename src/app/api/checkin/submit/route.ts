@@ -5,7 +5,6 @@ import { seedPlannerCheckin } from '@/lib/ai/client-planner'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { openAiBillingHoldUntil } from '@/lib/ai/openai-quota-guard'
-import { generateMidWeekAnalysis } from '@/lib/ai/midweek-analysis'
 import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
 import { shouldBypassCheckinScheduleServer } from '@/lib/config'
 import {
@@ -425,27 +424,6 @@ export async function POST(request: Request) {
           checkinId: inserted.id,
           checkinType: 'mid_week',
         }).catch((err) => console.error('[checkin-submit] chat post failed:', err))
-      }
-
-      const billingHold = await openAiBillingHoldUntil()
-      if (!billingHold) {
-        after(async () => {
-          try {
-            const adminClient = createAdminClient()
-            const [{ data: fullCheckin }, { data: fullProfile }] = await Promise.all([
-              adminClient.from('checkins').select('*').eq('id', inserted.id).single(),
-              adminClient.from('profiles').select('*').eq('id', user.id).single(),
-            ])
-            if (!fullCheckin || !fullProfile) return
-            await generateMidWeekAnalysis({
-              profile: fullProfile,
-              checkin: fullCheckin,
-              coachId: profile.coach_id,
-            })
-          } catch (err) {
-            console.error('[checkin-submit] mid-week analysis failed:', err)
-          }
-        })
       }
     }
 

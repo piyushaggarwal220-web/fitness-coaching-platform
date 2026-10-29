@@ -225,7 +225,7 @@ function buildBlockSpecs(
     {
       blockId: 'checkins',
       scope: clientId,
-      version: checkinVersion(clientId, input.latestCheckin),
+      version: checkinVersion(clientId, input.latestCheckin, input.sameWeekMidWeekCheckin),
       build: () => buildBlockContent('checkins', ctx),
     },
     {
@@ -303,7 +303,7 @@ export async function compileCachedPrompt(input: PromptCacheInput): Promise<Comp
           input.complexityScore,
           input.latestCheckin?.submitted_at
         ),
-        checkins: checkinVersion(input.clientId, input.latestCheckin),
+        checkins: checkinVersion(input.clientId, input.latestCheckin, input.sameWeekMidWeekCheckin),
         'knowledge-base': knowledgeBaseVersion(input.knowledgeEntries),
       }
       const compiledVer = compiledPromptVersion({
