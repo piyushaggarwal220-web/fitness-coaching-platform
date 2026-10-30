@@ -59,6 +59,11 @@ import {
  loadRazorpayCheckout,
 } from '@/lib/payments/load-razorpay';
 import { normalizePhoneForWhatsApp } from '@/lib/phone';
+import {
+ clearPendingCheckout,
+ razorpayCallbackUrl,
+ rememberPendingCheckout,
+} from '@/lib/payments/razorpay-return';
 
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
@@ -417,15 +422,32 @@ function CheckoutForm() {
  };
 
  useEffect(() => {
+ const flag = searchParams.get('paymentReturn');
+ if (flag === 'failed') {
+ setError('That payment did not go through. You can try again.');
+ } else if (flag === 'unconfirmed') {
+ setError('If money already left your account, open the email and use the create-password link. Do not pay again.');
+ }
+ }, [searchParams]);
+
+ useEffect(() => {
  try {
  const stored = sessionStorage.getItem(PAYMENT_SUCCESS_KEY);
- if (stored) {
+ if (!stored) return;
+ const next = new URL(stored, window.location.origin);
+ if (next.pathname === '/checkout' || next.pathname.startsWith('/checkout/')) {
+ sessionStorage.removeItem(PAYMENT_SUCCESS_KEY);
+ return;
+ }
  paymentSucceededRef.current = true;
  setPaymentConfirmed(true);
  window.location.replace(stored);
- }
+ } catch {
+ try {
+ sessionStorage.removeItem(PAYMENT_SUCCESS_KEY);
  } catch {
  // ignore storage errors
+ }
  }
  }, []);
 
@@ -810,6 +832,11 @@ function CheckoutForm() {
  throw new Error('Razorpay checkout failed to load. Refresh and try again.');
  }
 
+ rememberPendingCheckout({
+ orderId: orderData.orderId,
+ email: email.trim().toLowerCase(),
+ planSlug: plan.slug,
+ });
  const rzp = new RazorpayCheckout({
  key: orderData.keyId,
  amount: orderData.amount,
@@ -818,6 +845,8 @@ function CheckoutForm() {
  description: `${plan.name} coaching plan`,
  order_id: orderData.orderId,
  prefill: { name, email, contact: payPhone },
+ callback_url: razorpayCallbackUrl(plan.slug),
+ redirect: true,
  handler: async (response: RazorpayHandlerResponse) => {
  try {
  setLoading(true);

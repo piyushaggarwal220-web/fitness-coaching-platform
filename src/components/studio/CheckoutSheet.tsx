@@ -12,6 +12,7 @@ import {
   isInAppBrowser,
   loadRazorpayCheckout,
 } from '@/lib/payments/load-razorpay'
+import { razorpayCallbackUrl, rememberPendingCheckout } from '@/lib/payments/razorpay-return'
 import { FIRST_PLAN_TARGET, planName, planPrice, type StudioPlan } from './content'
 
 type RazorpayResponse = {
@@ -154,6 +155,11 @@ export function CheckoutSheet({
       await loadRazorpayCheckout()
       const RazorpayCheckout = window.Razorpay
       if (!RazorpayCheckout) throw new Error('Razorpay checkout failed to load.')
+      rememberPendingCheckout({
+        orderId: orderData.orderId,
+        email: email.trim().toLowerCase(),
+        planSlug: plan!.slug,
+      })
       const checkout = new RazorpayCheckout({
         key: orderData.keyId,
         amount: orderData.amount,
@@ -163,6 +169,8 @@ export function CheckoutSheet({
         order_id: orderData.orderId,
         prefill: { name: name.trim(), email: email.trim(), contact: cleanPhone },
         theme: { color: '#FF5A1F' },
+        callback_url: razorpayCallbackUrl(plan!.slug),
+        redirect: true,
         handler: (response: RazorpayResponse) => {
           void finish(response).catch((err: unknown) => {
             setError(err instanceof Error ? err.message : 'Payment could not be confirmed.')

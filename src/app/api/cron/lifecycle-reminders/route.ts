@@ -231,7 +231,7 @@ export async function GET(request: Request) {
   const { data: purchases, error } = await admin
     .from('purchases')
     .select(
-      'id, user_id, customer_email, customer_phone, customer_name, claimed_at, created_at, plan_slug, plan_name, profiles:user_id(id, email, phone, name, gender, onboarding_complete, progress_photo_front, progress_photo_side, progress_photo_back, payment_confirmed)'
+      'id, user_id, customer_email, customer_phone, customer_name, claimed_at, created_at, plan_slug, plan_name, razorpay_payment_id, profiles:user_id(id, email, phone, name, gender, onboarding_complete, progress_photo_front, progress_photo_side, progress_photo_back, payment_confirmed)'
     )
     .eq('status', 'captured')
     .lt('created_at', cutoff)
@@ -268,6 +268,7 @@ export async function GET(request: Request) {
         const result = await sendAccountSetupRecovery({
           purchaseId: row.id,
           token,
+          paymentId: row.razorpay_payment_id,
           email: row.customer_email,
           phone: row.customer_phone,
           name: row.customer_name,

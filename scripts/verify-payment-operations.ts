@@ -77,7 +77,12 @@ assert.equal(
   isMetaPurchaseEligibleSale({ status: 'captured', amountPaise: 169900, razorpayPaymentId: 'test_payment_1' }),
   false
 )
-assert.match(read('src/app/api/payment/verify/route.ts'), /queueMetaPurchaseForRecordedSale/)
+assert.match(read('src/lib/payments/complete-checkout-payment.ts'), /queueMetaPurchaseForRecordedSale/)
+assert.match(read('src/app/api/payment/verify/route.ts'), /completeCheckoutPayment/)
+assert.match(read('src/app/checkout/page.tsx'), /callback_url: razorpayCallbackUrl/)
+assert.match(read('src/components/landing/DirectCheckout.tsx'), /callback_url: razorpayCallbackUrl/)
+assert.match(read('src/app/api/payment/razorpay-callback/route.ts'), /identityFromOrder: true/)
+assert.match(read('src/components/payments/RazorpayReturnCatch.tsx'), /\/api\/payment\/resume/)
 assert.match(read('src/lib/payments/exercise-library-addon.ts'), /queueMetaPurchaseForRecordedSale/)
 assert.match(read('src/lib/payments/exercise-videos-monthly.ts'), /queueMetaPurchaseForRecordedSale/)
 assert.match(read('src/app/api/payment/webhook/route.ts'), /isExerciseVideosMonthlyOrder/)
@@ -122,6 +127,7 @@ assert.equal(setupLinkLookupState({ claimed: false, expiresAt: '2999-01-01T00:00
 assert.match(fulfillment, /Keep claim_token_hash/)
 assert.doesNotMatch(fulfillment, /claim_token_hash:\s*null/)
 assert.doesNotMatch(read('src/app/api/payment/verify/route.ts'), /issuePurchaseClaimToken/)
+assert.doesNotMatch(read('src/lib/payments/complete-checkout-payment.ts'), /issuePurchaseClaimToken/)
 assert.match(read('src/app/api/payment/claim/route.ts'), /result\.alreadyClaimed/)
 assert.match(read('src/app/api/payment/claim-lookup/route.ts'), /alreadyClaimed: purchase\.alreadyClaimed/)
 assert.match(read('src/app/create-account/page.tsx'), /accountReady/)

@@ -135,6 +135,8 @@ function summarize(results: ('sent' | 'skipped' | 'failed')[]): DeliveryResult {
 export async function sendAccountSetupRecovery(input: {
   purchaseId: string
   token?: string | null
+  /** Used when the one-time token was already issued, so the email still has a password link. */
+  paymentId?: string | null
   email: string
   phone?: string | null
   name?: string | null
@@ -145,9 +147,15 @@ export async function sendAccountSetupRecovery(input: {
   const loginUrl = `${appBaseUrl()}/login`
   const onboardingUrl = `${appBaseUrl()}/onboarding`
   const dashboardUrl = `${appBaseUrl()}/dashboard`
-  const setupUrl = input.token
+  const passwordUrl = input.token
     ? `${appBaseUrl()}/create-account?token=${encodeURIComponent(input.token)}`
-    : loginUrl
+    : input.paymentId
+      ? `${appBaseUrl()}/create-account?${new URLSearchParams({
+          email: input.email.trim().toLowerCase(),
+          paymentId: input.paymentId,
+        }).toString()}`
+      : null
+  const setupUrl = passwordUrl ?? loginUrl
   const greeting = firstName(input.name)
   const kind = `account_setup_${input.stage}`
   const digital = Boolean(input.planSlug && input.planSlug.startsWith('digital_'))
@@ -157,9 +165,14 @@ export async function sendAccountSetupRecovery(input: {
   const text = [
     `Hi ${greeting}, your payment is confirmed.`,
     '',
-    'If you feel lost, follow these steps in order:',
-    `1. Create your login (link expires in 7 days): ${setupUrl}`,
+    'If the site sends you back to the payment page, do not pay again.',
+    passwordUrl
+      ? `Create your password here (link expires in 7 days when it is the secure setup link): ${passwordUrl}`
+      : `Create your password, or sign in, here: ${setupUrl}`,
     'If you already saved a password, open that same link and choose Sign in.',
+    '',
+    'If you feel lost, follow these steps in order:',
+    `1. Create your password: ${setupUrl}`,
     `2. Sign in anytime at ${loginUrl}`,
     digital
       ? `3. Open Plan setup / onboarding and answer the short questionnaire: ${onboardingUrl}`
@@ -174,12 +187,14 @@ export async function sendAccountSetupRecovery(input: {
   const html = `
     <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:560px;line-height:1.5;color:#111">
       <p>Hi ${escapeHtml(greeting)},</p>
-      <p>Your payment is confirmed. If you feel lost, do these steps in order — you do not need to guess.</p>
+      <p>Your payment is confirmed. If the site sends you back to the payment page, do not pay again.</p>
+      <p><strong>Create your password:</strong><br/><a href="${escapeHtml(setupUrl)}">${escapeHtml(setupUrl)}</a></p>
+      <p>If you feel lost, do these steps in order — you do not need to guess.</p>
       <ol>
-        <li style="margin:0 0 10px"><strong>Create your account</strong><br/>Tap the button below. This secure link expires in 7 days.${
+        <li style="margin:0 0 10px"><strong>Create your password</strong><br/>Use the link above. ${
           input.token
-            ? ' If you already saved a password, the same link takes you to sign in.'
-            : ' If you already have a login, sign in instead.'
+            ? 'This secure link expires in 7 days. If you already saved a password, the same link takes you to sign in.'
+            : 'If you already saved a password, the same link takes you to sign in.'
         }</li>
         <li style="margin:0 0 10px"><strong>Sign in next time</strong><br/>Use <a href="${escapeHtml(loginUrl)}">${escapeHtml(loginUrl)}</a></li>
         <li style="margin:0 0 10px"><strong>${
@@ -194,7 +209,7 @@ export async function sendAccountSetupRecovery(input: {
         }</li>
         <li style="margin:0 0 10px"><strong>Your home in the app</strong><br/><a href="${escapeHtml(dashboardUrl)}">Open dashboard</a></li>
       </ol>
-      <p><a href="${escapeHtml(setupUrl)}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;font-weight:700;padding:12px 18px;border-radius:10px">Continue setup</a></p>
+      <p><a href="${escapeHtml(setupUrl)}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;font-weight:700;padding:12px 18px;border-radius:10px">Create your password</a></p>
       <p style="color:#555;font-size:14px">Stuck? Reply to this email and we will point you to the exact next screen.</p>
     </div>
   `

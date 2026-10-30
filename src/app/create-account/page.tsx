@@ -9,6 +9,7 @@ import { clientColors as colors, spacing, radius } from '@/lib/design-tokens'
 import { isLeakedPasswordAuthError } from '@/lib/auth-password-errors'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
+import { clearPendingCheckout } from '@/lib/payments/razorpay-return'
 
 const supabase = createClient()
 const marketingBaseUrl = resolveMarketingBaseUrl()
@@ -40,6 +41,7 @@ function CreateAccountForm() {
   useEffect(() => {
     try {
       sessionStorage.removeItem('lurvox_checkout_success_redirect')
+      clearPendingCheckout()
     } catch {
       // ignore
     }

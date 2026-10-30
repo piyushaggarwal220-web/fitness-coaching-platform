@@ -319,6 +319,7 @@ export async function resendPurchaseSetup(input: {
     const result = await sendAccountSetupRecovery({
       purchaseId: purchase.id,
       token,
+      paymentId: purchase.razorpay_payment_id,
       email: purchase.customer_email,
       phone: purchase.customer_phone,
       name: purchase.customer_name,

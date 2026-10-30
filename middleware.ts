@@ -79,7 +79,9 @@ function shouldSkipAuthRefresh(pathname: string): boolean {
   if (
     pathname === '/api/payment/webhook' ||
     pathname === '/api/payment/create-order' ||
-    pathname === '/api/payment/verify'
+    pathname === '/api/payment/verify' ||
+    pathname === '/api/payment/razorpay-callback' ||
+    pathname === '/api/payment/resume'
   ) {
     return true
   }

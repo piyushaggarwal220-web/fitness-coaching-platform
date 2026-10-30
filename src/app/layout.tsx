@@ -9,6 +9,7 @@ import { PhoneViewportLock } from "@/components/pwa/PhoneViewportLock";
 import { PwaRegister } from "@/components/pwa/PwaRegister";
 import { ChunkLoadRecovery } from "@/components/pwa/ChunkLoadRecovery";
 import { SessionKeepalive } from "@/components/auth/SessionKeepalive";
+import { RazorpayReturnCatch } from "@/components/payments/RazorpayReturnCatch";
 import { ClientPortalRoot } from "@/components/ui/ClientPortalRoot";
 import { initWhatsAppProvider } from "@/lib/notifications/whatsapp-provider";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
@@ -69,6 +70,7 @@ export default function RootLayout({
         <ClientPortalRoot />
         {children}
         <SessionKeepalive />
+        <RazorpayReturnCatch />
         <ChunkLoadRecovery />
         <PhoneViewportLock />
         <PwaRegister />

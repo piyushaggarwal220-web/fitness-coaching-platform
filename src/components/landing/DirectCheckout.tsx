@@ -15,6 +15,7 @@ import {
   isInAppBrowser,
   loadRazorpayCheckout,
 } from '@/lib/payments/load-razorpay'
+import { razorpayCallbackUrl, rememberPendingCheckout } from '@/lib/payments/razorpay-return'
 import { usePreviewSale } from './PreviewSaleCode'
 import styles from './DirectCheckout.module.css'
 
@@ -176,6 +177,11 @@ export function DirectCheckout({
       const RazorpayCheckout = window.Razorpay
       if (!RazorpayCheckout) throw new Error('Razorpay checkout failed to load.')
       const accent = tone === 'purple' ? '#7c3aed' : tone === 'colour' ? '#f59e0b' : tone === 'orange' ? '#ff6200' : '#1e4d3d'
+      rememberPendingCheckout({
+        orderId: orderData.orderId,
+        email: email.trim().toLowerCase(),
+        planSlug: plan.slug,
+      })
       const checkout = new RazorpayCheckout({
         key: orderData.keyId,
         amount: orderData.amount,
@@ -185,6 +191,8 @@ export function DirectCheckout({
         order_id: orderData.orderId,
         prefill: { name: name.trim(), email: email.trim(), contact: cleanPhone },
         theme: { color: accent },
+        callback_url: razorpayCallbackUrl(plan.slug),
+        redirect: true,
         handler: (response: RazorpayResponse) => {
           void finish(response).catch((err: unknown) => {
             setError(err instanceof Error ? err.message : 'Payment could not be confirmed.')

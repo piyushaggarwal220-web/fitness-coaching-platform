@@ -451,6 +451,7 @@ export async function POST(request: Request) {
       sendAccountSetupRecovery({
         purchaseId: result.purchaseId,
         token: result.claimToken,
+        paymentId: result.razorpayPaymentId,
         email: result.customerEmail,
         phone,
         name: result.customerName,
