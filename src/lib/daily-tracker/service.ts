@@ -21,6 +21,7 @@ import {
 import { compactTrackerSnapshotForStorage, hydrateTrackerSnapshot } from './display'
 import { listWorkoutExercises } from './exercise-utils'
 import { queryInBatches } from '@/lib/supabase/chunked-in'
+import { reconcileWorkoutSessionDuration } from './session-clock'
 import { averageRpe, calculateTrackerScores } from './scores'
 import { buildWeekProgress } from './week-progress'
 import type {
@@ -689,10 +690,15 @@ export async function updateTrackerCompletion(
 
     const loaded = rowToDay(existing as Record<string, unknown>)
     const current = await alignTrackerSnapshotWithPlan(supabase, clientId, loaded)
-    const completion = sanitizeCompletionForSnapshot(
+    const merged = sanitizeCompletionForSnapshot(
       mergeCompletion(current.completion, patch),
       current.snapshot
     )
+    const reconciledSession = reconcileWorkoutSessionDuration(merged.workoutSession, Date.now())
+    const completion =
+      reconciledSession === merged.workoutSession
+        ? merged
+        : { ...merged, workoutSession: reconciledSession }
     const { scores, overall } = calculateTrackerScores(current.snapshot, completion)
     const now = new Date().toISOString()
     const expectedUpdatedAt = current.updated_at

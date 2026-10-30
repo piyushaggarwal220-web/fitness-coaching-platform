@@ -32,6 +32,10 @@ import {
   getWorkoutProgress,
 } from '@/lib/daily-tracker/display'
 import { resolveSuggestedDayKey } from '@/lib/daily-tracker/parser'
+import {
+  displayedSavedDurationSeconds,
+  resolveWorkoutSaveDurationSeconds,
+} from '@/lib/daily-tracker/session-clock'
 import { shouldSkipExerciseForm } from '@/lib/exercise-form/normalize'
 import { getCoachingDayInWeek } from '@/lib/checkin-schedule'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
@@ -75,26 +79,28 @@ function restoreSessionClock(session: TrackerCompletion['workoutSession']): {
   running: boolean
   startedAt: number | null
   elapsedMs: number
+  paused: boolean
 } {
   if (session?.status !== 'in_progress') {
-    return { running: false, startedAt: null, elapsedMs: 0 }
+    return { running: false, startedAt: null, elapsedMs: 0, paused: false }
   }
   const durationMs = Math.min(
     MAX_SESSION_MS,
     Math.max(0, (session.durationSeconds ?? 0) * 1000)
   )
   if (session.paused || !session.startedAt) {
-    return { running: false, startedAt: null, elapsedMs: durationMs }
+    return { running: false, startedAt: null, elapsedMs: durationMs, paused: true }
   }
   const startedAt = Date.parse(session.startedAt)
   if (Number.isNaN(startedAt)) {
-    return { running: false, startedAt: null, elapsedMs: durationMs }
+    return { running: false, startedAt: null, elapsedMs: durationMs, paused: true }
   }
   const elapsed = Math.min(MAX_SESSION_MS, Math.max(0, Date.now() - startedAt))
   return {
     running: elapsed < MAX_SESSION_MS,
     startedAt,
     elapsedMs: elapsed,
+    paused: false,
   }
 }
 
@@ -153,7 +159,6 @@ export function WorkoutModule({
   workoutDays,
   completion,
   workoutScore,
-  saving,
   error,
   onPatch,
 }: Props) {
@@ -185,6 +190,12 @@ export function WorkoutModule({
   const [sessionRunning, setSessionRunning] = useState(bootClock.running)
   const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(bootClock.startedAt)
   const [elapsedMs, setElapsedMs] = useState(bootClock.elapsedMs)
+  const [confirming, setConfirming] = useState(false)
+  const userPausedRef = useRef(bootClock.paused)
+  const sessionStartedAtRef = useRef(sessionStartedAt)
+  const sessionRunningRef = useRef(sessionRunning)
+  sessionStartedAtRef.current = sessionStartedAt
+  sessionRunningRef.current = sessionRunning
   const [rest, setRest] = useState<RestState | null>(null)
   const [autoStopped, setAutoStopped] = useState(
     bootClock.elapsedMs >= MAX_SESSION_MS && completion.workoutSession?.status === 'in_progress'
@@ -276,6 +287,7 @@ export function WorkoutModule({
   )
 
   const stopSession = useCallback(() => {
+    userPausedRef.current = true
     const ms =
       sessionStartedAt != null ? Math.min(MAX_SESSION_MS, Date.now() - sessionStartedAt) : elapsedMs
     setElapsedMs(ms)
@@ -285,6 +297,7 @@ export function WorkoutModule({
   }, [elapsedMs, persistSession, sessionStartedAt])
 
   const startSession = useCallback(() => {
+    userPausedRef.current = false
     setAutoStopped(false)
     setSaveMessage('')
     const startedAt = Date.now() - elapsedMs
@@ -294,6 +307,7 @@ export function WorkoutModule({
   }, [elapsedMs, persistSession])
 
   const resetSession = useCallback(() => {
+    userPausedRef.current = false
     setSessionRunning(false)
     setSessionStartedAt(null)
     setElapsedMs(0)
@@ -306,6 +320,7 @@ export function WorkoutModule({
   const selectWorkoutDay = useCallback(
     (key: string | null) => {
       userClearedDay.current = key == null
+      userPausedRef.current = false
       setSessionRunning(false)
       setSessionStartedAt(null)
       setElapsedMs(0)
@@ -370,6 +385,31 @@ export function WorkoutModule({
     }, 30_000)
     return () => window.clearInterval(id)
   }, [persistSession, sessionRunning, sessionStartedAt])
+
+  // Phone sleep kills the 1s ticker. On return, catch the clock up from the real start
+  // unless the client pressed Stop.
+  useEffect(() => {
+    const syncClock = () => {
+      if (document.visibilityState === 'hidden') return
+      if (userPausedRef.current) return
+      const stored = completion.workoutSession
+      if (stored?.status === 'saved' && !sessionRunningRef.current) return
+      const storedStart =
+        stored?.startedAt && !stored.paused ? Date.parse(stored.startedAt) : NaN
+      const started = sessionStartedAtRef.current ?? storedStart
+      if (!Number.isFinite(started)) return
+      const ms = Math.min(MAX_SESSION_MS, Math.max(0, Date.now() - started))
+      setSessionStartedAt(started)
+      setSessionRunning(true)
+      setElapsedMs(ms)
+    }
+    document.addEventListener('visibilitychange', syncClock)
+    window.addEventListener('pageshow', syncClock)
+    return () => {
+      document.removeEventListener('visibilitychange', syncClock)
+      window.removeEventListener('pageshow', syncClock)
+    }
+  }, [completion.workoutSession])
 
   // Checkpoint immediately when the user backgrounds the app.
   useEffect(() => {
@@ -527,21 +567,42 @@ export function WorkoutModule({
   }
 
   const confirmSaveWorkout = async () => {
-    const ms =
-      sessionStartedAt != null ? Math.min(MAX_SESSION_MS, Date.now() - sessionStartedAt) : elapsedMs
-    setElapsedMs(ms)
+    const now = Date.now()
+    const localSeconds =
+      sessionStartedAt != null
+        ? Math.floor(Math.min(MAX_SESSION_MS, Math.max(0, now - sessionStartedAt)) / 1000)
+        : Math.floor(elapsedMs / 1000)
+    const seconds = resolveWorkoutSaveDurationSeconds({
+      nowMs: now,
+      localElapsedSeconds: localSeconds,
+      userPaused: userPausedRef.current,
+      session: {
+        ...completion.workoutSession,
+        startedAt:
+          completion.workoutSession?.startedAt ??
+          (sessionStartedAt != null ? new Date(sessionStartedAt).toISOString() : undefined),
+      },
+    })
+    const startedAt =
+      sessionStartedAt != null
+        ? new Date(sessionStartedAt).toISOString()
+        : completion.workoutSession?.startedAt
+    setElapsedMs(seconds * 1000)
     setSessionRunning(false)
     setSessionStartedAt(null)
     setRest(null)
     setSaveMessage('')
+    setConfirming(true)
     const ok = await onPatch({
       workoutSession: {
         status: 'saved',
-        savedAt: new Date().toISOString(),
-        durationSeconds: Math.floor(ms / 1000),
-        paused: false,
+        savedAt: new Date(now).toISOString(),
+        startedAt,
+        durationSeconds: seconds,
+        paused: userPausedRef.current,
       },
     })
+    setConfirming(false)
     if (!ok) {
       setSaveMessage('')
       return
@@ -550,7 +611,27 @@ export function WorkoutModule({
     setSaveMessage('Workout saved.')
   }
 
-  const elapsedSeconds = Math.floor(elapsedMs / 1000)
+  const tickingSeconds =
+    sessionRunning && sessionStartedAt != null
+      ? Math.floor(
+          Math.min(MAX_SESSION_MS, Math.max(elapsedMs, Date.now() - sessionStartedAt)) / 1000
+        )
+      : Math.floor(elapsedMs / 1000)
+  const elapsedSeconds =
+    workoutSaved && !sessionRunning
+      ? displayedSavedDurationSeconds(completion.workoutSession, tickingSeconds)
+      : tickingSeconds
+  const savePreviewSeconds = resolveWorkoutSaveDurationSeconds({
+    nowMs: Date.now(),
+    localElapsedSeconds: tickingSeconds,
+    userPaused: userPausedRef.current,
+    session: {
+      ...completion.workoutSession,
+      startedAt:
+        completion.workoutSession?.startedAt ??
+        (sessionStartedAt != null ? new Date(sessionStartedAt).toISOString() : undefined),
+    },
+  })
 
   return (
     <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'hidden' }}>
@@ -1066,7 +1147,7 @@ export function WorkoutModule({
         <button
           type="button"
           onClick={() => setConfirmSaveOpen(true)}
-          disabled={saving}
+          disabled={confirming}
           style={{
             flex: 1,
             minWidth: 0,
@@ -1076,7 +1157,7 @@ export function WorkoutModule({
             background: colors.accent,
             color: colors.textInverse,
             fontWeight: 800,
-            cursor: saving ? 'wait' : 'pointer',
+            cursor: confirming ? 'wait' : 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1085,7 +1166,7 @@ export function WorkoutModule({
           }}
         >
           <Save size={18} />
-          {saving ? 'Saving…' : workoutSaved ? 'Save again' : 'Save workout'}
+          {confirming ? 'Saving…' : workoutSaved ? 'Save again' : 'Save workout'}
         </button>
       </div>
 
@@ -1124,7 +1205,7 @@ export function WorkoutModule({
             </h2>
             <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
               This will save your logged sets, warm-up progress, and session time (
-              {formatDuration(elapsedSeconds)}). You can keep editing after saving.
+              {formatDuration(savePreviewSeconds)}). You can keep editing after saving.
             </p>
             <p style={{ margin: '12px 0 0', fontSize: 14, color: colors.textMuted }}>
               {progress.completed}/{progress.total} exercises complete
@@ -1134,7 +1215,7 @@ export function WorkoutModule({
               <button
                 type="button"
                 onClick={() => setConfirmSaveOpen(false)}
-                disabled={saving}
+                disabled={confirming}
                 style={{
                   height: 48,
                   borderRadius: 12,
@@ -1150,7 +1231,7 @@ export function WorkoutModule({
               <button
                 type="button"
                 onClick={() => void confirmSaveWorkout()}
-                disabled={saving}
+                disabled={confirming}
                 style={{
                   height: 48,
                   borderRadius: 12,
@@ -1158,10 +1239,10 @@ export function WorkoutModule({
                   background: colors.accent,
                   color: colors.textInverse,
                   fontWeight: 800,
-                  cursor: saving ? 'wait' : 'pointer',
+                  cursor: confirming ? 'wait' : 'pointer',
                 }}
               >
-                {saving ? 'Saving…' : 'Confirm save'}
+                {confirming ? 'Saving…' : 'Confirm save'}
               </button>
             </div>
           </div>

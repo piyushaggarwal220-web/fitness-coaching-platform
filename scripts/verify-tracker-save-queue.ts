@@ -3,6 +3,11 @@
  * Run: npx tsx scripts/verify-tracker-save-queue.ts
  */
 import { mergeCompletion } from '../src/lib/daily-tracker/parser'
+import {
+  displayedSavedDurationSeconds,
+  reconcileWorkoutSessionDuration,
+  resolveWorkoutSaveDurationSeconds,
+} from '../src/lib/daily-tracker/session-clock'
 import type { TrackerCompletion } from '../src/lib/daily-tracker/types'
 
 let failed = 0
@@ -84,6 +89,48 @@ const afterChangeDay = mergeCompletion(serverWithOldDay, {
 assert(
   'Change day overwrites previous Day 1 selection',
   afterChangeDay.selectedDietDay === 'day-4' && afterChangeDay.selectedWorkoutDay === 'day-5'
+)
+
+const startedAt = '2026-10-30T17:33:32.411Z'
+const savedAt = '2026-10-30T17:43:05.468Z'
+const stuck = {
+  status: 'saved' as const,
+  startedAt,
+  savedAt,
+  durationSeconds: 24,
+  paused: false,
+}
+assert(
+  'save uses the session start when the on-screen clock froze at 24s',
+  resolveWorkoutSaveDurationSeconds({
+    nowMs: Date.parse(savedAt),
+    localElapsedSeconds: 24,
+    userPaused: false,
+    session: stuck,
+  }) === Math.floor((Date.parse(savedAt) - Date.parse(startedAt)) / 1000)
+)
+assert(
+  'a paused timer keeps the short duration',
+  resolveWorkoutSaveDurationSeconds({
+    nowMs: Date.parse(savedAt),
+    localElapsedSeconds: 24,
+    userPaused: true,
+    session: { ...stuck, paused: true },
+  }) === 24
+)
+assert(
+  'saved display shows start-to-save time, not the frozen 24s',
+  displayedSavedDurationSeconds(stuck, 0) ===
+    Math.floor((Date.parse(savedAt) - Date.parse(startedAt)) / 1000)
+)
+const repaired = reconcileWorkoutSessionDuration(stuck, Date.parse(savedAt) + 60_000)
+assert(
+  'server save repairs a stuck duration without stretching past savedAt',
+  repaired?.durationSeconds === Math.floor((Date.parse(savedAt) - Date.parse(startedAt)) / 1000)
+)
+assert(
+  'a paused session is not rewritten',
+  reconcileWorkoutSessionDuration({ ...stuck, paused: true }, Date.parse(savedAt))?.durationSeconds === 24
 )
 
 if (failed > 0) {
