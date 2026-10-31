@@ -1,7 +1,10 @@
 /**
  * Indian plates for coaching intake.
- * A place pre-fills foods. Search adds anything else. The saved list is what the plan uses.
+ * A place pre-fills foods. Search or a typed name adds anything else.
+ * The saved list is what the plan uses.
  */
+
+import { INDIAN_CITIES, type IndianCity } from '@/lib/diet/indian-cities'
 
 export type FoodTag = 'egg' | 'chicken' | 'fish' | 'mutton' | 'beef' | 'dairy'
 
@@ -211,6 +214,13 @@ export const FOOD_REGIONS: readonly FoodRegion[] = [
 
 const ANIMAL: FoodTag[] = ['egg', 'chicken', 'fish', 'mutton', 'beef']
 const MIN_CONFIRMED_FOODS = 3
+export const CUSTOM_FOOD_PREFIX = 'custom:'
+
+const CITY_NAME_COUNTS = new Map<string, number>()
+for (const city of INDIAN_CITIES) {
+  const key = normalize(city.name)
+  CITY_NAME_COUNTS.set(key, (CITY_NAME_COUNTS.get(key) ?? 0) + 1)
+}
 
 function normalize(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -220,11 +230,37 @@ export function foodById(id: string): FoodItem | null {
   return FOOD_BY_ID.get(id) ?? null
 }
 
+export function customFoodId(label: string): string | null {
+  const clean = label.trim().replace(/\s+/g, ' ')
+  if (clean.length < 2 || clean.length > 48) return null
+  if (clean.toLowerCase().startsWith(CUSTOM_FOOD_PREFIX)) return null
+  return `${CUSTOM_FOOD_PREFIX}${clean}`
+}
+
+export function findCatalogFood(label: string): FoodItem | null {
+  const q = normalize(label)
+  if (!q) return null
+  return (
+    INDIAN_FOODS.find(
+      (food) => normalize(food.label) === q || food.aliases.some((alias) => normalize(alias) === q)
+    ) ?? null
+  )
+}
+
 export function foodLabel(id: string): string {
+  if (id.startsWith(CUSTOM_FOOD_PREFIX)) {
+    const label = id.slice(CUSTOM_FOOD_PREFIX.length).trim()
+    return label || id
+  }
   return foodById(id)?.label ?? id.replace(/_/g, ' ')
 }
 
 export function foodAllowed(id: string, dietPreference: string | null | undefined): boolean {
+  if (id.startsWith(CUSTOM_FOOD_PREFIX)) {
+    const match = findCatalogFood(id.slice(CUSTOM_FOOD_PREFIX.length))
+    if (!match) return true
+    return foodAllowed(match.id, dietPreference)
+  }
   const food = foodById(id)
   if (!food) return false
   const tags = food.tags
@@ -270,45 +306,71 @@ function toResolved(region: FoodRegion, label: string, extras?: string[]): Resol
   return { regionId: region.id, label, extraFoodIds: extras ?? [] }
 }
 
-/** Exact city, then a city prefix, then a region name. */
-export function resolvePlace(query: string): ResolvedPlace | null {
+function cityPlace(city: IndianCity): ResolvedPlace {
+  const shared = (CITY_NAME_COUNTS.get(normalize(city.name)) ?? 1) > 1
+  return {
+    regionId: city.regionId,
+    label: shared ? `${city.name}, ${city.state}` : city.name,
+    extraFoodIds: [...(city.extras ?? [])],
+  }
+}
+
+function regionFromQuery(query: string): FoodRegion | null {
+  const q = normalize(query)
+  return FOOD_REGIONS.find((row) => normalize(row.label) === q || normalize(row.chip) === q) ?? null
+}
+
+/** A city only. Region names such as “North India” are not cities. */
+export function resolveCity(query: string): ResolvedPlace | null {
   const q = normalize(query)
   if (q.length < 2) return null
 
-  const cities = FOOD_REGIONS.flatMap((region) =>
-    region.cities.map((city) => ({ region, city, key: normalize(city.name) }))
-  )
-  const exact = cities.find((row) => row.key === q)
-  if (exact) return toResolved(exact.region, exact.city.name, exact.city.extras)
+  const labeled = INDIAN_CITIES.find((city) => normalize(`${city.name}, ${city.state}`) === q)
+  if (labeled) return cityPlace(labeled)
 
-  if (q.length >= 3) {
-    const prefix = cities
-      .filter((row) => row.key.startsWith(q))
-      .sort((a, b) => a.key.length - b.key.length)[0]
-    if (prefix) return toResolved(prefix.region, prefix.city.name, prefix.city.extras)
-  }
-
-  const region = FOOD_REGIONS.find((row) => normalize(row.label) === q || normalize(row.chip) === q)
-  if (!region) return null
-  return toResolved(region, region.label)
+  const exact = INDIAN_CITIES.filter((city) => normalize(city.name) === q)
+  if (exact.length === 1) return cityPlace(exact[0])
+  return null
 }
 
-export function searchPlaces(query: string, limit = 6): ResolvedPlace[] {
+/** A saved city, including “Aurangabad, Bihar” when the name exists in two states. */
+export function resolvePlace(query: string): ResolvedPlace | null {
+  return resolveCity(query) ?? (() => {
+    const region = regionFromQuery(query)
+    if (!region) return null
+    return toResolved(region, region.label)
+  })()
+}
+
+export type PlaceSearch = {
+  matches: ResolvedPlace[]
+  total: number
+}
+
+/** Cities whose name matches. State names match once the query is at least 4 letters. */
+export function searchPlaceResults(query: string, limit = 12): PlaceSearch {
   const q = normalize(query)
-  if (q.length < 2) return []
-  const matches: ResolvedPlace[] = []
-  const seen = new Set<string>()
-  for (const region of FOOD_REGIONS) {
-    for (const city of region.cities) {
-      if (!normalize(city.name).includes(q)) continue
-      const key = normalize(city.name)
-      if (seen.has(key)) continue
-      seen.add(key)
-      matches.push({ regionId: region.id, label: city.name, extraFoodIds: city.extras ?? [] })
-      if (matches.length >= limit) return matches
-    }
+  if (q.length < 2) return { matches: [], total: 0 }
+  const ranked = INDIAN_CITIES.map((city) => {
+    const name = normalize(city.name)
+    const state = normalize(city.state)
+    const nameStarts = name.startsWith(q)
+    const nameHas = name.includes(q)
+    const stateStarts = q.length >= 4 && state.startsWith(q)
+    const rank = nameStarts ? 0 : nameHas ? 1 : stateStarts ? 2 : 3
+    return { city, rank }
+  })
+    .filter((row) => row.rank < 3)
+    .sort((a, b) => a.rank - b.rank || a.city.name.localeCompare(b.city.name) || a.city.state.localeCompare(b.city.state))
+
+  return {
+    total: ranked.length,
+    matches: ranked.slice(0, limit).map((row) => cityPlace(row.city)),
   }
-  return matches
+}
+
+export function searchPlaces(query: string, limit = 12): ResolvedPlace[] {
+  return searchPlaceResults(query, limit).matches
 }
 
 export function presetFoodIds(

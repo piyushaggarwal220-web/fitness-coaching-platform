@@ -4,13 +4,16 @@ import { useMemo, useState } from 'react'
 import { onboardingStyles as s } from '@/components/onboarding/styles'
 import {
   FOOD_REGIONS,
+  customFoodId,
+  findCatalogFood,
   foodAllowed,
   foodLabel,
   mergePlaceFoods,
   presetFoodIds,
+  resolveCity,
   resolvePlace,
   searchFoods,
-  searchPlaces,
+  searchPlaceResults,
   type FoodSetting,
 } from '@/lib/diet/indian-food-plate'
 
@@ -49,8 +52,21 @@ export function FoodPlatePicker({
   const extras = place && place.regionId === placeId ? place.extraFoodIds : []
   const preset = placeId && activeSetting ? presetFoodIds(placeId, activeSetting, dietPreference, extras) : []
   const selected = foods.filter((id) => foodAllowed(id, dietPreference))
-  const placeHits = useMemo(() => searchPlaces(placeQuery), [placeQuery])
+  const placeResults = useMemo(() => searchPlaceResults(placeQuery), [placeQuery])
+  const placeHits = placeResults.matches
   const foodHits = useMemo(() => searchFoods(foodQuery, dietPreference), [foodQuery, dietPreference])
+  const typedFood = foodQuery.trim()
+  const catalogFood = findCatalogFood(typedFood)
+  const typedCustomId = customFoodId(typedFood)
+  const customAllowed = Boolean(typedCustomId && foodAllowed(typedCustomId, dietPreference))
+  const showCustomAdd = Boolean(
+    typedCustomId &&
+      customAllowed &&
+      !catalogFood &&
+      !selected.includes(typedCustomId) &&
+      !foodHits.some((food) => food.label.toLowerCase() === typedFood.toLowerCase())
+  )
+  const customBlocked = Boolean(typedFood.length >= 2 && typedCustomId && !customAllowed)
   const added = selected.filter((id) => !preset.includes(id))
 
   function applyPlace(next: { regionId: string; label: string; extraFoodIds: string[] }, nextSetting: FoodSetting) {
@@ -88,8 +104,8 @@ export function FoodPlatePicker({
   return (
     <div>
       <p style={s.stepHint}>
-        Start from a city or region, remove anything you do not eat, and search if a food is missing. Skip the place
-        and search foods directly if you want.
+        Search your city, or pick a region. Remove foods you do not eat. If something you eat is missing, type it
+        under “Add a food” — it stays even when it is not on that city’s list.
       </p>
 
       <label style={s.label} htmlFor="food-place-search">
@@ -99,7 +115,7 @@ export function FoodPlatePicker({
         id="food-place-search"
         value={placeQuery}
         onChange={(event) => setPlaceQuery(event.target.value)}
-        placeholder="Hyderabad, Ludhiana, Kochi…"
+        placeholder="Sitamarhi, Varanasi, Kochi…"
         style={s.input}
         autoComplete="off"
       />
@@ -107,7 +123,7 @@ export function FoodPlatePicker({
         <div style={s.chipGrid}>
           {placeHits.map((hit) => (
             <button
-              key={hit.label}
+              key={`${hit.regionId}-${hit.label}`}
               type="button"
               style={{ ...s.chip, marginTop: 8 }}
               onClick={() => applyPlace(hit, activeSetting ?? 'home')}
@@ -116,6 +132,16 @@ export function FoodPlatePicker({
             </button>
           ))}
         </div>
+      )}
+      {placeResults.total > placeHits.length && (
+        <p style={{ ...s.stepHint, marginTop: 8 }}>
+          {placeResults.total} cities match. Keep typing to narrow them.
+        </p>
+      )}
+      {placeQuery.trim().length >= 2 && placeResults.total === 0 && !resolveCity(placeQuery) && (
+        <p style={{ ...s.stepHint, marginTop: 8 }}>
+          That city is not in the list. Pick a region below and “{placeQuery.trim()}” will still be saved as the place.
+        </p>
       )}
 
       <div style={{ ...s.chipGrid, marginTop: 12 }}>
@@ -126,7 +152,20 @@ export function FoodPlatePicker({
               key={region.id}
               type="button"
               style={{ ...s.chip, ...(selectedRegion ? s.chipSelected : {}) }}
-              onClick={() => applyPlace({ regionId: region.id, label: region.label, extraFoodIds: [] }, activeSetting ?? 'home')}
+              onClick={() => {
+                const typed = placeQuery.trim()
+                const city = resolveCity(typed)
+                const unknownCity =
+                  !city && typed.length >= 2 && typed !== placeLabel && searchPlaceResults(typed).total === 0
+                applyPlace(
+                  {
+                    regionId: region.id,
+                    label: city?.label || (unknownCity ? typed : region.label),
+                    extraFoodIds: city?.extraFoodIds ?? [],
+                  },
+                  activeSetting ?? 'home'
+                )
+              }}
             >
               {region.chip}
             </button>
@@ -189,13 +228,13 @@ export function FoodPlatePicker({
 
       <div style={{ marginTop: 16 }}>
         <label style={s.label} htmlFor="food-item-search">
-          Search a food
+          Add a food that is not on this list
         </label>
         <input
           id="food-item-search"
           value={foodQuery}
           onChange={(event) => setFoodQuery(event.target.value)}
-          placeholder="Oats, paneer, idli, beef…"
+          placeholder="Type any food, such as makki roti, momos, or beef"
           style={s.input}
           autoComplete="off"
         />
@@ -215,6 +254,25 @@ export function FoodPlatePicker({
               </button>
             ))}
           </div>
+        )}
+        {showCustomAdd && typedCustomId && (
+          <div style={{ ...s.chipGrid, marginTop: 8 }}>
+            <button
+              type="button"
+              style={{ ...s.chip, ...s.chipSelected }}
+              onClick={() => {
+                toggleFood(typedCustomId)
+                setFoodQuery('')
+              }}
+            >
+              Add “{typedFood}”
+            </button>
+          </div>
+        )}
+        {customBlocked && (
+          <p style={{ ...s.stepHint, marginTop: 8 }}>
+            {typedFood} does not fit a {dietPreference.replace(/_/g, ' ')} diet. Change the diet type if you eat it.
+          </p>
         )}
       </div>
 

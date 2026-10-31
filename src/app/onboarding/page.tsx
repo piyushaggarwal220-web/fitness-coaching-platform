@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { FoodPlatePicker } from '@/components/onboarding/FoodPlatePicker'
+import { IntakeHelpChat } from '@/components/onboarding/IntakeHelpChat'
 import { OnboardingReview } from '@/components/onboarding/OnboardingReview'
 import { ChipGroup, Field, MultiChipGroup, RadioCards } from '@/components/onboarding/inputs'
 import { PlanGoalSelector } from '@/components/onboarding/PlanGoalSelector'
@@ -734,6 +735,7 @@ export default function OnboardingPage() {
             Sign in
           </a>
         </div>
+        <IntakeHelpChat section="Sign-in" step={step} userId={userId} />
       </div>
     )
   }
@@ -822,6 +824,8 @@ export default function OnboardingPage() {
           <div style={{ height: 72 }} />
         </form>
       </div>
+
+      <IntakeHelpChat section={currentSection} step={step} blockedReason={error} userId={userId} />
 
       <div style={s.fixedActions}>
         <div style={s.actionsInner}>

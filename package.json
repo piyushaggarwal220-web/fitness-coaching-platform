@@ -51,6 +51,7 @@
     "verify:onboarding-photo-upload": "tsx scripts/verify-onboarding-photo-upload.ts",
     "verify:offer-intake": "tsx scripts/verify-offer-intake.ts",
     "verify:diet-food-plate": "tsx scripts/verify-diet-food-plate.ts",
+    "verify:intake-help": "tsx scripts/verify-intake-help.ts",
     "verify:chunk-recovery": "tsx scripts/verify-chunk-load-recovery.ts",
     "verify:promo-codes": "tsx scripts/verify-promo-codes.ts",
     "verify:notifications": "tsx scripts/verify-notification-delivery.ts",
