@@ -51,6 +51,7 @@ for (const location of ['gym', 'home', 'both'] as const) {
   const steps = getOnboardingWizardSteps({ training_location: location })
   assert.ok(steps.includes(9), `${location} skips gym equipment`)
   assert.ok(steps.includes(16), `${location} skips monthly food budget`)
+  assert.ok(steps.includes(17), `${location} skips the food plate`)
 }
 
 const photos = { front: null, side: null, back: null }
@@ -68,6 +69,7 @@ const shown = askedReviewSections(
 
 assert.ok(shown.includes('Gym stations'), 'Review hides gym stations')
 assert.ok(shown.includes('Monthly food budget'), 'Review hides food budget')
+assert.ok(shown.includes('Foods you eat'), 'Review hides confirmed foods')
 assert.ok(!shown.includes('Occupation'), 'Review shows a question the wizard does not ask')
 assert.ok(!shown.includes('Food allergies'), 'Review shows a question the wizard does not ask')
 

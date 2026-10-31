@@ -16,6 +16,7 @@ import { inferFitnessGoal } from '@/lib/ai/goal-inference'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { evaluateComplexityInputs } from '@/lib/complexity/input-guards'
 import { parseHeightCm, validateHeightCm } from '@/lib/height'
+import { filterFoodIds, formatConfirmedFoods, hasEnoughConfirmedFoods } from '@/lib/diet/indian-food-plate'
 import {
   ALL_PLAN_GOAL_OPTIONS,
   deriveCoachingCategory,
@@ -136,8 +137,9 @@ export const ONBOARDING_SCREEN_COUNT = 23
 
 /**
  * Day-1 wizard content steps (must-haves for coaching).
- * Lifestyle / recovery / free-text eating / supplements are deferred —
+ * Lifestyle / recovery / evening free-text / supplements are deferred —
  * coaches can collect later; plan gen accepts nulls for those fields.
+ * Step 17 asks the foods they actually eat, then breakfast and lunch amounts.
  * Gym stations and home equipment (9) and monthly food budget (16) are always asked.
  */
 export const ONBOARDING_DAY1_CORE_STEPS = [
@@ -152,6 +154,7 @@ export const ONBOARDING_DAY1_CORE_STEPS = [
   13, // Diet type
   14, // Protein sources
   16, // Budget & cooking
+  17, // Foods they eat, then breakfast and lunch
   19, // Meal timings
   21, // Progress photos
   22, // Review / terms
@@ -657,6 +660,10 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   eat_out_days: '',
   morning_drink: '',
   family_dinner: '',
+  food_place_id: '',
+  food_place_label: '',
+  food_setting: '',
+  confirmed_foods: [],
   thali_photo: '',
   timing_breakfast: '',
   timing_lunch: '',
@@ -847,6 +854,12 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     eat_out_days: data.eatingPattern?.eatOutDays ?? '',
     morning_drink: data.eatingPattern?.morningDrink ?? '',
     family_dinner: data.eatingPattern?.familyDinner ?? '',
+    food_place_id: data.eatingPattern?.foodPlaceId ?? '',
+    food_place_label: data.eatingPattern?.foodPlaceLabel ?? '',
+    food_setting: data.eatingPattern?.foodSetting ?? '',
+    confirmed_foods: Array.isArray(data.eatingPattern?.confirmedFoods)
+      ? data.eatingPattern.confirmedFoods.filter((id): id is string => typeof id === 'string')
+      : [],
     thali_photo: data.eatingPattern?.thaliPhoto ?? '',
     timing_breakfast: data.eatingPattern?.timings?.breakfast ?? '',
     timing_lunch: data.eatingPattern?.timings?.lunch ?? '',
@@ -1040,6 +1053,10 @@ export function buildOnboardingData(
       eatOutDays: form.eat_out_days || null,
       morningDrink: form.morning_drink.trim() || null,
       familyDinner: form.family_dinner || null,
+      foodPlaceId: form.food_place_id || null,
+      foodPlaceLabel: form.food_place_label.trim() || null,
+      foodSetting: form.food_setting === 'home' || form.food_setting === 'city' ? form.food_setting : null,
+      confirmedFoods: filterFoodIds(form.confirmed_foods, form.diet_preference),
       thaliPhoto: form.thali_photo.trim() || null,
       mealsForTiming:
         options?.mealsForTiming && options.mealsForTiming.length > 0
@@ -1421,6 +1438,9 @@ export function validateOnboardingStep(
       return null
     }
     case 17: {
+      if (options?.requirePlateDetail !== false && !hasEnoughConfirmedFoods(data.confirmed_foods, data.diet_preference)) {
+        return 'Pick at least 3 foods you actually eat. Search if your city is not listed.'
+      }
       if (!data.breakfast.trim()) return 'Please describe your typical breakfast, including the usual amount.'
       if (!data.lunch.trim()) return 'Please describe your typical lunch, including the usual amount.'
       if (options?.requirePlateDetail !== false) {
@@ -1643,6 +1663,15 @@ export function buildReviewSections(
     {
       title: 'Eating pattern',
       items: [
+        {
+          label: 'Food place',
+          value: form.food_place_label.trim()
+            ? `${form.food_place_label.trim()}${form.food_setting === 'city' ? ' · city food' : form.food_setting === 'home' ? ' · home food' : ''}`
+            : form.confirmed_foods.length > 0
+              ? 'Searched foods directly'
+              : 'Not set',
+        },
+        { label: 'Foods you eat', value: formatConfirmedFoods(form.confirmed_foods) || 'Not set' },
         { label: 'Breakfast', value: form.breakfast.trim() || 'Not set' },
         { label: 'Lunch', value: form.lunch.trim() || 'Not set' },
         { label: 'Dinner', value: form.dinner.trim() || 'Not set' },
@@ -1751,13 +1780,15 @@ export const REVIEW_LABEL_STEP: Record<string, number> = {
   'Monthly food budget': 16,
   'Cooking ability': 16,
   'Diet notes / exceptions': 14,
+  'Food place': 17,
+  'Foods you eat': 17,
   Breakfast: 17,
   Lunch: 17,
-  Dinner: 17,
-  Snacks: 17,
-  Staple: 18,
-  'Who cooks': 18,
-  'Eat out / tiffin days': 18,
+  Dinner: 18,
+  Snacks: 18,
+  Staple: 17,
+  'Who cooks': 17,
+  'Eat out / tiffin days': 17,
   'Morning drink': 18,
   'Shared family dinner': 18,
   'Meal photo': 18,

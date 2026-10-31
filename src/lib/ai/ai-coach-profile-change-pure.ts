@@ -83,6 +83,9 @@ const STRING_GROUPS: Record<string, Set<string>> = {
     'morningDrink',
     'familyDinner',
     'eatOutDays',
+    'foodPlaceId',
+    'foodPlaceLabel',
+    'foodSetting',
   ]),
   messMenu: new Set(['text']),
 }
@@ -91,6 +94,7 @@ const ARRAY_GROUPS: Record<string, Set<string>> = {
   goals: new Set(['selectedGoals', 'coachPersonalities']),
   training: new Set(['availableDays', 'equipmentAvailable', 'gymStations']),
   diet: new Set(['eggAllowedDays', 'chickenAllowedDays', 'fishAllowedDays']),
+  eatingPattern: new Set(['confirmedFoods']),
 }
 
 const PHOTO_SLOTS = new Set<PhotoSlot>(['avatar', 'front', 'side', 'back', 'gallery'])
@@ -197,7 +201,7 @@ function sanitizeProfileChange(
             .filter((item): item is string => typeof item === 'string')
             .map((item) => clip(item, 40))
             .filter(Boolean)
-            .slice(0, 8)
+            .slice(0, field === 'confirmedFoods' ? 24 : 8)
           if (items.length) next[field] = items
         }
       }

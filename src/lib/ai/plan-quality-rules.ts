@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v28'
+export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v29'
 
 /** Platform soft floor before weight-based floor. Prefer formula target when higher. */
 export const DIET_FLOOR_BASE_KCAL = 1800
@@ -84,6 +84,7 @@ export const DIET_LIFESTYLE_RESPECT_RULES = [
   '- Build the diet FROM the client\'s onboarding answers — not a stock template, not "ideal" foods they never eat, not a random variety plan.',
   '- Use their actual meal slots and times from Eating pattern / meal timings. Do not invent new meal times or extra meals they did not report.',
   '- Use their favorite foods, usual breakfast/lunch/dinner/snack choices, staple (roti, rice, or both), who cooks, eat-out or tiffin days, morning drink, and whether dinner is a shared family plate. The first plan adjusts portions and at most one swap per meal. Do not replace their current plate with a new menu.',
+  '- When confirmed foods are listed, every meal uses those foods. Do not add a dish from another region or a food they did not confirm.',
   '- Match work/school schedule and occupation: desk job → practical office-friendly meals; early shift → earlier breakfast; late dinner only if they already eat late.',
   '- Respect monthly food budget with affordable staples they can actually buy. Respect cooking ability — simple meals if they cannot cook elaborate dishes.',
   '- Obey diet variety preference (same daily / 50-50 / different daily). Do not force exotic variety when they want repeat meals.',

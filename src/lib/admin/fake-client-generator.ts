@@ -18,6 +18,7 @@ import {
   buildProfilePayload,
   ONBOARDING_SCREEN_COUNT,
 } from '@/lib/onboarding'
+import { presetFoodIds } from '@/lib/diet/indian-food-plate'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingFormData } from '@/types/database'
 
@@ -348,6 +349,10 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
     eat_out_days: '2',
     morning_drink: '2 cups chai with milk',
     family_dinner: 'yes',
+    food_place_id: '',
+    food_place_label: '',
+    food_setting: '',
+    confirmed_foods: [],
     thali_photo: '',
     timing_breakfast: pick(['07:30', '08:00', '08:30']),
     timing_lunch: pick(['13:00', '13:30', '14:00']),
@@ -360,6 +365,10 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
   // Keep diet preference, usual meals, and favorites consistent (no random chicken for veg clients).
   const dietPreference = pick(DIET_OPTIONS).value
   form.diet_preference = dietPreference
+  form.food_place_id = 'north_wheat'
+  form.food_place_label = 'Delhi'
+  form.food_setting = 'home'
+  form.confirmed_foods = presetFoodIds('north_wheat', 'home', dietPreference)
   if (dietPreference === 'vegan') {
     const meals = MEALS_VEGAN
     form.breakfast = pick(meals.breakfast)

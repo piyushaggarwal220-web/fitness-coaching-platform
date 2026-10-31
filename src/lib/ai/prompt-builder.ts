@@ -10,6 +10,7 @@ import {
 import { buildMetabolicFluxSection, shouldApplyHighFluxRules } from '@/lib/ai/metabolic-flux'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { resolveWorkoutEnvironment } from '@/lib/ai/workout-prompt-selection'
+import { foodLabel } from '@/lib/diet/indian-food-plate'
 import { formatGymStations, getOnboardingLabel } from '@/lib/onboarding'
 import { clientCoachNotes } from '@/lib/plan-metadata'
 import {
@@ -443,6 +444,17 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
     if (ep.mealsForTiming?.length) {
       lines.push(`Meal slots they set times for: ${ep.mealsForTiming.join(', ')}`)
     }
+    const confirmed = (ep.confirmedFoods ?? []).map((id) => foodLabel(id)).filter(Boolean)
+    if (confirmed.length > 0) {
+      const place = ep.foodPlaceLabel?.trim()
+      const setting =
+        ep.foodSetting === 'city' ? 'city food' : ep.foodSetting === 'home' ? 'mostly home food' : ''
+      lines.push(
+        `Confirmed foods (build every meal from this list): ${confirmed.join(', ')}${
+          place ? `. Started from ${place}${setting ? ` (${setting})` : ''}` : '. They searched foods directly'
+        }.`
+      )
+    }
     const plate = [
       ep.staple?.trim() ? `staple ${ep.staple}` : null,
       ep.whoCooks?.trim() ? `who cooks ${ep.whoCooks}` : null,
@@ -545,6 +557,20 @@ export function buildDietHardConstraintsSection(profile: OnboardingProfile): str
     lines.push(
       `- Lifestyle (MUST respect): occupation ${lifestyle.occupation ?? '—'}, work/school schedule ${lifestyle.workSchoolSchedule ?? '—'}, daily steps habit ${lifestyle.dailySteps ?? '—'}, stress ${lifestyle.stressLevel ?? '—'}, water intake ${lifestyle.waterIntake ?? '—'}, diet variety ${lifestyle.dietVariety ?? '—'}`
     )
+  }
+  const confirmedFoods = (data?.eatingPattern?.confirmedFoods ?? []).map((id) => foodLabel(id)).filter(Boolean)
+  if (confirmedFoods.length > 0) {
+    const place = data?.eatingPattern?.foodPlaceLabel?.trim()
+    lines.push(
+      `- Confirmed foods (MUST build meals from these; do not add a dish from a different cuisine): ${confirmedFoods.join(', ')}.`
+    )
+    if (place) {
+      const setting =
+        data?.eatingPattern?.foodSetting === 'city'
+          ? 'city food — mess, office, restaurants, packaged food'
+          : 'mostly home food'
+      lines.push(`- Food place: ${place} (${setting}). The place only started the list. The confirmed foods are the plate.`)
+    }
   }
   if (diet?.favoriteFoods?.trim()) {
     lines.push(`- Favorite foods (prioritize): ${diet.favoriteFoods.trim()}`)

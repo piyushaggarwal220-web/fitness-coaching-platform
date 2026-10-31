@@ -1,9 +1,11 @@
 'use client'
 
 import { brandTitle } from '@/lib/brand'
+import { filterFoodIds } from '@/lib/diet/indian-food-plate'
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { FoodPlatePicker } from '@/components/onboarding/FoodPlatePicker'
 import { OnboardingReview } from '@/components/onboarding/OnboardingReview'
 import { ChipGroup, Field, MultiChipGroup, RadioCards } from '@/components/onboarding/inputs'
 import { PlanGoalSelector } from '@/components/onboarding/PlanGoalSelector'
@@ -1428,6 +1430,7 @@ function renderStep(
               onChange={(v) =>
                 update({
                   diet_preference: v,
+                  confirmed_foods: filterFoodIds(form.confirmed_foods, v),
                   ...(v !== 'non_vegetarian'
                     ? {
                         chicken_days: '',
@@ -1623,7 +1626,14 @@ function renderStep(
       return (
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>What you eat now</h2>
-          <p style={s.stepHint}>Your coach will adapt to your current routine — not replace it overnight.</p>
+          <FoodPlatePicker
+            dietPreference={form.diet_preference}
+            placeId={form.food_place_id}
+            placeLabel={form.food_place_label}
+            setting={form.food_setting}
+            foods={form.confirmed_foods}
+            onChange={(patch) => update(patch)}
+          />
           <Field label="Typical breakfast" required hint="Include the usual amount, such as 2 rotis or 1 bowl.">
             <textarea
               value={form.breakfast}

@@ -64,6 +64,9 @@ export function hardConstraintsVersion(profile: OnboardingProfile): string {
     medical_notes: profile.medical_notes,
     onboarding_data: {
       diet: profile.onboarding_data?.diet,
+      confirmedFoods: profile.onboarding_data?.eatingPattern?.confirmedFoods ?? null,
+      foodPlaceLabel: profile.onboarding_data?.eatingPattern?.foodPlaceLabel ?? null,
+      foodSetting: profile.onboarding_data?.eatingPattern?.foodSetting ?? null,
       medical: profile.onboarding_data?.medical,
       training: profile.onboarding_data?.training,
     },

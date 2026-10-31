@@ -183,6 +183,14 @@ export type OnboardingData = {
     morningDrink?: string | null
     /** yes | sometimes | no — dinner is the shared family plate. */
     familyDinner?: string | null
+    /** Region id used to pre-fill foods. Empty when they searched foods directly. */
+    foodPlaceId?: string | null
+    /** City or region label they picked. */
+    foodPlaceLabel?: string | null
+    /** home | city */
+    foodSetting?: string | null
+    /** Food ids they confirmed. This is the plate the plan must use. */
+    confirmedFoods?: string[] | null
     /** Optional photo of one normal meal. */
     thaliPhoto?: string | null
     /** Meals the client chose to set times for (wizard step). */
@@ -376,6 +384,14 @@ export type OnboardingFormData = {
   eat_out_days: string
   morning_drink: string
   family_dinner: string
+  /** Region id, or empty when they skipped the place. */
+  food_place_id: string
+  /** City or region they started from. */
+  food_place_label: string
+  /** home | city | empty */
+  food_setting: string
+  /** Confirmed food ids from the Indian plate picker. */
+  confirmed_foods: string[]
   thali_photo: string
   timing_breakfast: string
   timing_lunch: string
