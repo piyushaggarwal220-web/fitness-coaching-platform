@@ -18,6 +18,14 @@ const city = replyToIntakeHelp({
 assert.match(city.text, /Add a food that is not on this list/)
 assert.equal(city.offerSend, false)
 
+const gymPhoto = replyToIntakeHelp({
+  message: 'I used internet photos of the machines and cannot continue',
+  section: 'Training',
+  step: 9,
+})
+assert.match(gymPhoto.text, /Leave the heaviest dumbbell weight blank/)
+assert.match(gymPhoto.text, /Machine photos are optional/)
+
 const photo = replyToIntakeHelp({ message: 'Photo won’t upload', section: 'Photos', step: 21 })
 assert.match(photo.text, /Front, side, and back/)
 assert.equal(photo.offerSend, true)

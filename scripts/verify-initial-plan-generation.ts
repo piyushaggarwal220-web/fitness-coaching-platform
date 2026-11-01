@@ -7,6 +7,7 @@ import {
 } from '../src/lib/initial-plan-generation-policy'
 import {
   buildProfilePayload,
+  gymEquipmentConstraintLines,
   INITIAL_ONBOARDING_FORM,
   ONBOARDING_SCREEN_COUNT,
   validateOnboardingStep,
@@ -83,6 +84,63 @@ assert.match(
   /exactly 4 days/i
 )
 assert.equal(validateOnboardingStep(8, form), null)
+
+assert.equal(
+  validateOnboardingStep(9, {
+    ...form,
+    training_location: 'gym',
+    gym_stations: ['dumbbells', 'squat_rack'],
+    dumbbell_max_kg: '',
+  }),
+  null,
+  'A gym client who does not know the heaviest dumbbell can leave it blank'
+)
+assert.match(
+  String(
+    validateOnboardingStep(9, {
+      ...form,
+      training_location: 'gym',
+      gym_stations: [],
+    })
+  ),
+  /not sure yet/i
+)
+assert.equal(
+  validateOnboardingStep(9, {
+    ...form,
+    training_location: 'gym',
+    gym_stations: ['not_sure'],
+    dumbbell_max_kg: '',
+  }),
+  null,
+  'A client who does not know the gym machines can continue'
+)
+assert.match(
+  gymEquipmentConstraintLines({ stations: ['not_sure'] }).join('\n'),
+  /GYM EQUIPMENT UNCONFIRMED/
+)
+assert.doesNotMatch(
+  gymEquipmentConstraintLines({ stations: ['not_sure'] }).join('\n'),
+  /Full commercial gym/
+)
+assert.match(
+  gymEquipmentConstraintLines({
+    stations: ['dumbbells', 'squat_rack'],
+    dumbbellMaxKg: '20',
+  }).join('\n'),
+  /heaviest pair they use is 20 kg/
+)
+assert.match(
+  String(
+    validateOnboardingStep(9, {
+      ...form,
+      training_location: 'gym',
+      gym_stations: ['dumbbells'],
+      dumbbell_max_kg: 'not sure',
+    })
+  ),
+  /leave it blank/i
+)
 
 const complete = buildProfilePayload(form, '00000000-0000-4000-8000-000000000001', {
   resumeStep: ONBOARDING_SCREEN_COUNT - 1,

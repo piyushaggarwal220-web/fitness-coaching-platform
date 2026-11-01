@@ -147,6 +147,7 @@ export const onboardingStyles: Record<string, CSSProperties> = {
     maxWidth: 520,
     margin: '0 auto',
     display: 'flex',
+    flexWrap: 'wrap',
     gap: 10,
   },
   backBtn: {

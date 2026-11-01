@@ -11,7 +11,7 @@ import { buildMetabolicFluxSection, shouldApplyHighFluxRules } from '@/lib/ai/me
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { resolveWorkoutEnvironment } from '@/lib/ai/workout-prompt-selection'
 import { foodLabel } from '@/lib/diet/indian-food-plate'
-import { formatGymStations, getOnboardingLabel } from '@/lib/onboarding'
+import { getOnboardingLabel, gymEquipmentConstraintLines } from '@/lib/onboarding'
 import { clientCoachNotes } from '@/lib/plan-metadata'
 import {
   DAY_HEADER_PROMPT_RULES,
@@ -606,27 +606,14 @@ function buildHardConstraintsSection(profile: OnboardingProfile): string {
       `- HOME WORKOUT ONLY: Use only equipment listed — ${equipment.length > 0 ? equipment.join(', ') : 'bodyweight only'}. NEVER prescribe barbell, smith machine, leg press, cable machines, or commercial gym equipment unless listed.`
     )
   } else if (location === 'gym' || location === 'both') {
-    const stations = (training?.gymStations ?? []).filter(Boolean)
-    if (stations.length > 0) {
-      lines.push(
-        `- GYM STATIONS (HARD): program ONLY these stations plus bodyweight: ${formatGymStations(stations)}. Do not prescribe a squat rack, Smith machine, leg press, hack squat, cable, lat pulldown, dumbbell, bench, pull-up bar, treadmill, bike, or elliptical unless it is in that list.`
-      )
-      if (training?.dumbbellMaxKg?.trim()) {
-        lines.push(
-          `- Dumbbells: heaviest pair they use is ${training.dumbbellMaxKg.trim()} kg. Do not write a heavier dumbbell.`
-        )
-      }
-      if (training?.gymLimits?.trim()) {
-        lines.push(`- Do NOT program these machines: ${training.gymLimits.trim()}`)
-      }
-      if (training?.gymUnnamedNote?.trim()) {
-        lines.push(
-          `- Unnamed station they described: ${training.gymUnnamedNote.trim()}. Use it only if the description is a clear movement. Do not invent a commercial machine they did not name.`
-        )
-      }
-    } else {
-      lines.push('- GYM: Full commercial gym equipment is available unless client listed limitations.')
-    }
+    lines.push(
+      ...gymEquipmentConstraintLines({
+        stations: training?.gymStations,
+        dumbbellMaxKg: training?.dumbbellMaxKg,
+        gymLimits: training?.gymLimits,
+        gymUnnamedNote: training?.gymUnnamedNote,
+      })
+    )
   }
 
   if (training?.daysPerWeek) {

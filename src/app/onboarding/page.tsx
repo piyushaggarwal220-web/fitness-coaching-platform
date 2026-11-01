@@ -30,6 +30,7 @@ import {
   EQUIPMENT_OPTIONS,
   FAMILY_DINNER_OPTIONS,
   GYM_STATION_OPTIONS,
+  GYM_STATIONS_UNSURE,
   findFirstIncompleteOnboardingStep,
   FLUX_CAPACITY_OPTIONS,
   formFromProfile,
@@ -116,6 +117,32 @@ function defaultMealsForTiming(form: OnboardingFormData): MealTimingKey[] {
     meals.push('snacks')
   }
   return meals
+}
+
+const PHOTO_STEP_WAIT_MS = 25_000
+
+function waitForPhotoUpload<T>(work: Promise<T>, optional: boolean): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(
+        new Error(
+          optional
+            ? 'That photo is taking too long. Skip it and press Continue.'
+            : 'That photo is taking too long. Try a smaller photo, or take one with the camera.'
+        )
+      )
+    }, PHOTO_STEP_WAIT_MS)
+    work.then(
+      (value) => {
+        window.clearTimeout(timer)
+        resolve(value)
+      },
+      (error: unknown) => {
+        window.clearTimeout(timer)
+        reject(error)
+      }
+    )
+  })
 }
 
 export default function OnboardingPage() {
@@ -342,9 +369,24 @@ export default function OnboardingPage() {
         // leftover local files (e.g. if an earlier upload was interrupted).
         const latest = stateRef.current
         const urls = mergeSavedPhotoUrls(latest.photoUrls)
-        if (photos.front) urls.front = await uploadOnboardingPhoto(supabase, userId, photos.front, 'front')
-        if (photos.side) urls.side = await uploadOnboardingPhoto(supabase, userId, photos.side, 'side')
-        if (photos.back) urls.back = await uploadOnboardingPhoto(supabase, userId, photos.back, 'back')
+        if (photos.front) {
+          urls.front = await waitForPhotoUpload(
+            uploadOnboardingPhoto(supabase, userId, photos.front, 'front'),
+            false
+          )
+        }
+        if (photos.side) {
+          urls.side = await waitForPhotoUpload(
+            uploadOnboardingPhoto(supabase, userId, photos.side, 'side'),
+            false
+          )
+        }
+        if (photos.back) {
+          urls.back = await waitForPhotoUpload(
+            uploadOnboardingPhoto(supabase, userId, photos.back, 'back'),
+            false
+          )
+        }
 
         await saveOnboardingProgress(supabase, userId, form, {
           email: userEmail,
@@ -412,7 +454,10 @@ export default function OnboardingPage() {
         try {
           // Camera return often happens after the WebView was suspended — refresh auth first.
           await refreshAuthSessionIfExpiring(supabase).catch(() => undefined)
-          const path = await uploadOnboardingPhoto(supabase, current.userId!, file, key)
+          const path = await waitForPhotoUpload(
+            uploadOnboardingPhoto(supabase, current.userId!, file, key),
+            false
+          )
           // Merge against the live ref so concurrent side/back uploads cannot wipe front.
           const nextUrls = mergeSavedPhotoUrls(stateRef.current.photoUrls, { [key]: path })
           stateRef.current = { ...stateRef.current, photoUrls: nextUrls }
@@ -478,7 +523,10 @@ export default function OnboardingPage() {
       void (async () => {
         try {
           await refreshAuthSessionIfExpiring(supabase).catch(() => undefined)
-          const path = await uploadOnboardingPhoto(supabase, current.userId!, file, label)
+          const path = await waitForPhotoUpload(
+            uploadOnboardingPhoto(supabase, current.userId!, file, label),
+            true
+          )
           const nextForm = { ...stateRef.current.form, [slot]: path }
           stateRef.current = { ...stateRef.current, form: nextForm }
           setForm(nextForm)
@@ -791,8 +839,6 @@ export default function OnboardingPage() {
           You can always come back later — your progress is saved automatically.
         </p>
 
-        {error && <div style={{ ...s.error, marginTop: 20 }}>{error}</div>}
-
         <form
           id="onboarding-form"
           style={{ marginTop: 24 }}
@@ -821,7 +867,7 @@ export default function OnboardingPage() {
             checkpointBeforeCamera
           )}
 
-          <div style={{ height: 72 }} />
+          <div style={{ height: error ? 168 : 88 }} />
         </form>
       </div>
 
@@ -829,6 +875,11 @@ export default function OnboardingPage() {
 
       <div style={s.fixedActions}>
         <div style={s.actionsInner}>
+          {error && (
+            <div id="onboarding-step-error" style={{ ...s.error, width: '100%', marginBottom: 0 }}>
+              {error}
+            </div>
+          )}
           {wizardIndex > 0 && (
             <button type="button" onClick={handleBack} style={s.backBtn} disabled={busy}>
               Back
@@ -1225,8 +1276,8 @@ function renderStep(
           <h2 style={s.stepTitle}>{atGym && !atHome ? 'Your gym' : 'Equipment'}</h2>
           <p style={s.stepHint}>
             {atGym
-              ? 'Tick only the stations that are actually in your gym. The plan will not use a machine you leave unticked.'
-              : 'Select everything you have access to at home.'}
+              ? 'Tick only stations you are sure about. If you do not know the machines, choose I’m not sure yet. The dumbbell weight and machine photos are optional.'
+              : 'Select everything you have access to at home. If you are not sure, choose Bodyweight only.'}
           </p>
           {atHome && (
             <Field label="Home equipment" required>
@@ -1243,22 +1294,30 @@ function renderStep(
                 <MultiChipGroup
                   options={GYM_STATION_OPTIONS}
                   values={form.gym_stations}
-                  onChange={(gym_stations) =>
+                  onChange={(next) => {
+                    const turnedUnsureOn =
+                      next.includes(GYM_STATIONS_UNSURE) && !form.gym_stations.includes(GYM_STATIONS_UNSURE)
+                    const gym_stations = turnedUnsureOn
+                      ? [GYM_STATIONS_UNSURE]
+                      : next.filter((value) => value !== GYM_STATIONS_UNSURE)
                     update({
                       gym_stations,
                       ...(gym_stations.includes('dumbbells') ? null : { dumbbell_max_kg: '' }),
                     })
-                  }
+                  }}
                 />
               </Field>
               {form.gym_stations.includes('dumbbells') && (
-                <Field label="Heaviest dumbbell pair you use (kg)" required hint="Example: 20">
+                <Field
+                  label="Heaviest dumbbell pair you use (kg)"
+                  hint="Optional. Example: 20. Leave this blank if you do not know the weight."
+                >
                   <input
                     type="text"
                     inputMode="decimal"
                     value={form.dumbbell_max_kg}
                     onChange={(e) => update({ dumbbell_max_kg: e.target.value })}
-                    placeholder="20"
+                    placeholder="Leave blank if you are not sure"
                     style={s.input}
                   />
                 </Field>
@@ -1283,7 +1342,7 @@ function renderStep(
                 />
               </Field>
               <PhotoSourceControl
-                label="Photo of an unnamed machine"
+                label="Photo of an unnamed machine (optional)"
                 onFiles={onReferencePhoto('gym_machine_photo_1')}
                 selectedText={
                   referenceUploading === 'gym_machine_photo_1'
@@ -1296,7 +1355,7 @@ function renderStep(
                 onBeforeCameraOpen={onBeforeCameraOpen}
               />
               <PhotoSourceControl
-                label="Second unnamed machine, if needed"
+                label="Second unnamed machine, if needed (optional)"
                 onFiles={onReferencePhoto('gym_machine_photo_2')}
                 selectedText={
                   referenceUploading === 'gym_machine_photo_2'

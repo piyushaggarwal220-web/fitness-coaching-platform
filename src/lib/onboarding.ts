@@ -377,8 +377,12 @@ export const EQUIPMENT_OPTIONS = [
   { value: 'bodyweight_only', label: 'Bodyweight only' },
 ] as const
 
+/** Chosen when the client cannot confirm which machines are in the gym. */
+export const GYM_STATIONS_UNSURE = 'not_sure'
+
 /** Stations that change a gym program. Bodyweight is always allowed. */
 export const GYM_STATION_OPTIONS = [
+  { value: GYM_STATIONS_UNSURE, label: "I'm not sure yet" },
   { value: 'squat_rack', label: 'Squat rack' },
   { value: 'smith_machine', label: 'Smith machine' },
   { value: 'leg_press', label: 'Leg press' },
@@ -429,11 +433,79 @@ export function trainsAtGym(location: string | null | undefined): boolean {
   return location === 'gym' || location === 'both'
 }
 
+/** Blank is allowed. A filled value must be a real pair weight so the plan can cap it. */
+export function optionalDumbbellMaxError(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? ''
+  if (!trimmed) return null
+  if (!/^\d{1,3}(\.\d{1,2})?$/.test(trimmed)) {
+    return 'Enter the heaviest dumbbell pair in kg, or leave it blank if you are not sure.'
+  }
+  const kg = Number(trimmed)
+  if (!Number.isFinite(kg) || kg <= 0 || kg > 100) {
+    return 'Enter the heaviest dumbbell pair in kg, or leave it blank if you are not sure.'
+  }
+  return null
+}
+
 export function formatGymStations(stations: string[] | null | undefined): string {
   if (!stations || stations.length === 0) return 'Not set'
   return stations
     .map((value) => GYM_STATION_OPTIONS.find((option) => option.value === value)?.label ?? value)
     .join(', ')
+}
+
+export function splitGymStationSelection(stations: string[] | null | undefined): {
+  confirmed: string[]
+  unsure: boolean
+} {
+  const values = (stations ?? []).filter((value): value is string => typeof value === 'string' && value.length > 0)
+  return {
+    confirmed: values.filter((value) => value !== GYM_STATIONS_UNSURE),
+    unsure: values.includes(GYM_STATIONS_UNSURE),
+  }
+}
+
+/** Plan lines for a gym. An unconfirmed gym must not be treated as every machine. */
+export function gymEquipmentConstraintLines(input: {
+  stations?: string[] | null
+  dumbbellMaxKg?: string | null
+  gymLimits?: string | null
+  gymUnnamedNote?: string | null
+}): string[] {
+  const { confirmed, unsure } = splitGymStationSelection(input.stations)
+  const lines: string[] = []
+  if (confirmed.length > 0) {
+    lines.push(
+      `- GYM STATIONS (HARD): program ONLY these stations plus bodyweight: ${formatGymStations(confirmed)}. Do not prescribe a squat rack, Smith machine, leg press, hack squat, cable, lat pulldown, dumbbell, bench, pull-up bar, treadmill, bike, or elliptical unless it is in that list.`
+    )
+    if (unsure) {
+      lines.push(
+        '- The client was not sure this list is complete. Do not add machines that are not in that list.'
+      )
+    }
+    if (confirmed.includes('dumbbells') && input.dumbbellMaxKg?.trim()) {
+      lines.push(
+        `- Dumbbells: heaviest pair they use is ${input.dumbbellMaxKg.trim()} kg. Do not write a heavier dumbbell.`
+      )
+    }
+    if (input.gymLimits?.trim()) {
+      lines.push(`- Do NOT program these machines: ${input.gymLimits.trim()}`)
+    }
+    if (input.gymUnnamedNote?.trim()) {
+      lines.push(
+        `- Unnamed station they described: ${input.gymUnnamedNote.trim()}. Use it only if the description is a clear movement. Do not invent a commercial machine they did not name.`
+      )
+    }
+    return lines
+  }
+  if (unsure) {
+    lines.push(
+      '- GYM EQUIPMENT UNCONFIRMED: the client does not know which machines are in the gym. Program bodyweight, dumbbells, a flat bench, and a cable station only. Do not prescribe a squat rack, Smith machine, leg press, hack squat, lat pulldown, pull-up bar, treadmill, bike, or elliptical.'
+    )
+    return lines
+  }
+  lines.push('- GYM: Full commercial gym equipment is available unless client listed limitations.')
+  return lines
 }
 
 export const PROTEIN_DAYS_OPTIONS = [
@@ -1370,12 +1442,12 @@ export function validateOnboardingStep(
         return 'Please select available equipment.'
       }
       if (atGym && options?.requireGymDetail !== false) {
-        if (data.gym_stations.length === 0) {
-          return 'Select the machines and stations your gym actually has.'
+        const gymSelection = splitGymStationSelection(data.gym_stations)
+        if (!gymSelection.unsure && gymSelection.confirmed.length === 0) {
+          return 'Select the stations you are sure about, or choose I’m not sure yet.'
         }
-        if (data.gym_stations.includes('dumbbells') && !data.dumbbell_max_kg.trim()) {
-          return 'Enter the heaviest dumbbell pair you use, in kg.'
-        }
+        const dumbbellError = optionalDumbbellMaxError(data.dumbbell_max_kg)
+        if (gymSelection.confirmed.includes('dumbbells') && dumbbellError) return dumbbellError
       } else if (atGym && data.equipment_available.length === 0 && data.gym_stations.length === 0) {
         return 'Please select available equipment.'
       }

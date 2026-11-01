@@ -43,6 +43,16 @@ export function replyToIntakeHelp(input: IntakeHelpInput): IntakeHelpReply {
     }
   }
 
+  if (
+    input.step === 9 &&
+    /\b(continue|stuck|photo|camera|upload|picture|image|machine|gym|dumbbell|internet)\b/.test(text)
+  ) {
+    return {
+      text: 'On Your gym, tick only stations you are sure are there, or choose I’m not sure yet. Leave the heaviest dumbbell weight blank if you do not know it. Machine photos are optional — you do not need a picture of every machine, and a photo from the internet is not required. If Continue does not move, the reason is in red above the button. The next screen is still Training: squats, push-ups, pull-ups, and any recent program.',
+      offerSend: true,
+    }
+  }
+
   if (/\b(photo|camera|upload|picture|image)\b/.test(text)) {
     return {
       text: 'Front, side, and back photos are required, except female clients can skip them. Wait until the slot says Uploaded before Continue. If the camera closes the page, sign in again — saved answers stay. A photo that fails shows an error under that slot.',
