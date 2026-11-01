@@ -483,7 +483,11 @@ export function gymEquipmentConstraintLines(input: {
         '- The client was not sure this list is complete. Do not add machines that are not in that list.'
       )
     }
-    if (confirmed.includes('dumbbells') && input.dumbbellMaxKg?.trim()) {
+    if (
+      confirmed.includes('dumbbells') &&
+      input.dumbbellMaxKg?.trim() &&
+      optionalDumbbellMaxError(input.dumbbellMaxKg) === null
+    ) {
       lines.push(
         `- Dumbbells: heaviest pair they use is ${input.dumbbellMaxKg.trim()} kg. Do not write a heavier dumbbell.`
       )
@@ -1435,24 +1439,9 @@ export function validateOnboardingStep(
       }
       return null
     }
-    case 9: {
-      const atGym = trainsAtGym(data.training_location)
-      const atHome = data.training_location === 'home' || data.training_location === 'both'
-      if (atHome && data.equipment_available.length === 0) {
-        return 'Please select available equipment.'
-      }
-      if (atGym && options?.requireGymDetail !== false) {
-        const gymSelection = splitGymStationSelection(data.gym_stations)
-        if (!gymSelection.unsure && gymSelection.confirmed.length === 0) {
-          return 'Select the stations you are sure about, or choose I’m not sure yet.'
-        }
-        const dumbbellError = optionalDumbbellMaxError(data.dumbbell_max_kg)
-        if (gymSelection.confirmed.includes('dumbbells') && dumbbellError) return dumbbellError
-      } else if (atGym && data.equipment_available.length === 0 && data.gym_stations.length === 0) {
-        return 'Please select available equipment.'
-      }
+    case 9:
+      // Gym stations, home equipment, dumbbell weight, and machine photos are all optional.
       return null
-    }
     case 10: {
       if (options?.requireMovementAssessment !== false) {
         if (!data.can_squat) return 'Please answer whether you can comfortably perform squats.'

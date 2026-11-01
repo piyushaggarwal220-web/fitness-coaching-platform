@@ -1276,11 +1276,11 @@ function renderStep(
           <h2 style={s.stepTitle}>{atGym && !atHome ? 'Your gym' : 'Equipment'}</h2>
           <p style={s.stepHint}>
             {atGym
-              ? 'Tick only stations you are sure about. If you do not know the machines, choose I’m not sure yet. The dumbbell weight and machine photos are optional.'
-              : 'Select everything you have access to at home. If you are not sure, choose Bodyweight only.'}
+              ? 'Optional. Tick stations you are sure about, or leave this blank and press Continue. Dumbbell weight and machine photos are optional too.'
+              : 'Optional. Select what you have at home, or leave this blank and press Continue.'}
           </p>
           {atHome && (
-            <Field label="Home equipment" required>
+            <Field label="Home equipment">
               <MultiChipGroup
                 options={EQUIPMENT_OPTIONS.filter((option) => option.value !== 'full_gym')}
                 values={form.equipment_available}
@@ -1290,7 +1290,7 @@ function renderStep(
           )}
           {atGym && (
             <>
-              <Field label="Stations in your gym" required>
+              <Field label="Stations in your gym">
                 <MultiChipGroup
                   options={GYM_STATION_OPTIONS}
                   values={form.gym_stations}

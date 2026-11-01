@@ -95,15 +95,16 @@ assert.equal(
   null,
   'A gym client who does not know the heaviest dumbbell can leave it blank'
 )
-assert.match(
-  String(
-    validateOnboardingStep(9, {
-      ...form,
-      training_location: 'gym',
-      gym_stations: [],
-    })
-  ),
-  /not sure yet/i
+assert.equal(
+  validateOnboardingStep(9, {
+    ...form,
+    training_location: 'gym',
+    gym_stations: [],
+    equipment_available: [],
+    dumbbell_max_kg: '',
+  }),
+  null,
+  'A blank gym list does not block Continue'
 )
 assert.equal(
   validateOnboardingStep(9, {
@@ -130,16 +131,22 @@ assert.match(
   }).join('\n'),
   /heaviest pair they use is 20 kg/
 )
-assert.match(
-  String(
-    validateOnboardingStep(9, {
-      ...form,
-      training_location: 'gym',
-      gym_stations: ['dumbbells'],
-      dumbbell_max_kg: 'not sure',
-    })
-  ),
-  /leave it blank/i
+assert.equal(
+  validateOnboardingStep(9, {
+    ...form,
+    training_location: 'gym',
+    gym_stations: ['dumbbells'],
+    dumbbell_max_kg: 'not sure',
+  }),
+  null,
+  'An unknown dumbbell weight does not block Continue'
+)
+assert.doesNotMatch(
+  gymEquipmentConstraintLines({
+    stations: ['dumbbells'],
+    dumbbellMaxKg: 'not sure',
+  }).join('\n'),
+  /not sure/
 )
 
 const complete = buildProfilePayload(form, '00000000-0000-4000-8000-000000000001', {

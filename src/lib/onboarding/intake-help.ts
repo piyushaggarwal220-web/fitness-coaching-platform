@@ -48,7 +48,7 @@ export function replyToIntakeHelp(input: IntakeHelpInput): IntakeHelpReply {
     /\b(continue|stuck|photo|camera|upload|picture|image|machine|gym|dumbbell|internet)\b/.test(text)
   ) {
     return {
-      text: 'On Your gym, tick only stations you are sure are there, or choose I’m not sure yet. Leave the heaviest dumbbell weight blank if you do not know it. Machine photos are optional — you do not need a picture of every machine, and a photo from the internet is not required. If Continue does not move, the reason is in red above the button. The next screen is still Training: squats, push-ups, pull-ups, and any recent program.',
+      text: 'The gym and home equipment questions are optional. Tick what you know, or leave them blank and press Continue. Leave the heaviest dumbbell weight blank if you do not know it. Machine photos are optional — you do not need a picture of every machine, and a photo from the internet is not required. The next screen is still Training: squats, push-ups, pull-ups, and any recent program.',
       offerSend: true,
     }
   }
