@@ -60,6 +60,7 @@ export function BeigeSite({ children, capture = false }: { children: ReactNode; 
         <BeigeNav />
         <main>{children}</main>
         <BeigeFooter />
+        <FloatingDock />
         <OfferChat />
         <DirectCheckout
           planSlug={payPlan}
@@ -78,6 +79,19 @@ function usePay() {
   return useContext(PayContext)
 }
 
+function FloatingDock() {
+  const path = usePathname()
+  if (path !== '/preview4') return null
+  return (
+    <div className="lx-dock" role="region" aria-label="Start or call">
+      <Link href={NEXT_HREF} className="lx-dock-start">Start now</Link>
+      <Link href={TALK_HREF} className="lx-dock-call" onClick={() => trackFunnelStep('talk_to_coach', { source: 'preview4', path: '/preview4' })}>
+        Call a coach
+      </Link>
+    </div>
+  )
+}
+
 function OfferActions() {
   return (
     <div className="lx-actions" data-lx-buy>
@@ -91,7 +105,109 @@ function OfferActions() {
   )
 }
 
+const CLIENT_RESULTS = [
+  {
+    id: '01',
+    src: '/images/client-results/01.jpg',
+    title: 'Sunil Ajmeri, 54',
+    change: 'Businessman with a busy schedule. Lost 11 kg in 4 months.',
+    alt: 'Sunil Ajmeri, 54, before with a larger midsection and after looking leaner in a black tank.',
+  },
+  {
+    id: '02',
+    src: '/images/client-results/02.jpg',
+    title: 'Sumit Tagore, 27',
+    change: 'Gained 7 kg in 120 days.',
+    alt: 'Sumit Tagore, 27, before very lean and after with more muscle in a white tank.',
+  },
+  {
+    id: '03',
+    src: '/images/client-results/03.jpg',
+    title: 'Jetu Naik, 45',
+    change: 'Businessman with a tight schedule. Lost 7 kg in 90 days.',
+    alt: 'Jetu Naik, 45, before with a larger midsection and after in a black t-shirt.',
+  },
+  {
+    id: '04',
+    src: '/images/client-results/04.jpg',
+    title: 'Neha Sinha, 23',
+    change: 'UPSC aspirant. Lost over 9 kg in 4 months.',
+    alt: 'Neha Sinha, 23, before in a grey t-shirt and after in a black sports bra and leggings.',
+  },
+  {
+    id: '05',
+    src: '/images/client-results/05.jpg',
+    title: '79 kg to 65 kg.',
+    change: 'Mom of 3 kids, at 43, with a home diet and no supplements.',
+    alt: 'Woman, labeled before 79 kg and after 65 kg.',
+  },
+  {
+    id: '06',
+    src: '/images/client-results/06.jpg',
+    title: 'Delip Singh, 27',
+    change: 'A corporate job didn\u2019t stop him from losing 23 kg.',
+    alt: 'Delip Singh, 27, before in a striped polo and after in an olive tank.',
+  },
+  {
+    id: '07',
+    src: '/images/client-results/07.jpg',
+    title: 'Usha Matre, 46',
+    change: 'Housewife. Lost 12 kg in only 4 months, on a natural home diet.',
+    alt: 'Usha Matre, 46, before in a pink kurta and after in a blue t-shirt.',
+  },
+  {
+    id: '08',
+    src: '/images/client-results/08.jpg',
+    title: 'Belly down. Abs visible.',
+    change: 'The belly is much smaller. The abs are visible, and the chest, shoulders, and arms are fuller.',
+    alt: 'Young man, before with a larger midsection and after shirtless with visible abs.',
+  },
+  {
+    id: '09',
+    src: '/images/client-results/09.jpg',
+    title: 'Laxman Gupta, 24',
+    change: 'Lost 23 kg in 6 months with us.',
+    alt: 'Laxman Gupta, 24, before in a brown t-shirt with a larger midsection and after leaner in a navy t-shirt.',
+  },
+  {
+    id: '10',
+    src: '/images/client-results/10.jpg',
+    title: 'Akansha Solase, 19',
+    change: 'Lost 13 kg in 140 days with us.',
+    alt: 'Akansha Solase, 19, before in a black t-shirt and maroon pants and after in a blue sports bra with visible abs.',
+  },
+  {
+    id: '11',
+    src: '/images/client-results/11.jpg',
+    title: 'Anmol Kapoor, 62',
+    change: 'Reversed diabetes and lost 16 kg in 200 days.',
+    alt: 'Anmol Kapoor, 62, before in a light blue polo with a larger belly and after in a black t-shirt.',
+  },
+  {
+    id: '12',
+    src: '/images/client-results/12.jpg',
+    title: 'Deeksha Sinha, 26',
+    change: 'A sitting job didn\u2019t stop her from losing 11 kg.',
+    alt: 'Deeksha Sinha, 26, before in a lilac t-shirt and grey pants and after in a black t-shirt and leggings.',
+  },
+  {
+    id: '13',
+    src: '/images/client-results/13.jpg',
+    title: 'Subhash More, 49',
+    change: 'Business owner from Odisha. Lost 9 kg in 100 days.',
+    alt: 'Subhash More, 49, before in a white vest and after in a navy tank.',
+  },
+  {
+    id: '14',
+    src: '/images/client-results/14.jpg',
+    title: 'Harsh Kamra',
+    change: 'Gained 5 kg in 120 days with us, despite a busy college life.',
+    alt: 'Harsh Kamra, labeled day 1 in a grey tank and day 120 with more muscle in a black tank.',
+  },
+] as const
+
 const NAV = [
+  ['/preview4#results', 'Results'],
   ['/preview4#system', 'Included'],
   ['/preview4#coaching', 'Coaches'],
   [NEXT_HREF, 'How it runs'],
@@ -119,7 +235,7 @@ function BeigeNav() {
             </Link>
           )}
           <nav className="lx-nav-links" aria-label="Page">
-            {NAV.slice(0, 4).map(([href, label]) => (
+            {NAV.slice(0, 5).map(([href, label]) => (
               <Link key={href} href={href}>{label}</Link>
             ))}
           </nav>
@@ -168,6 +284,19 @@ function BeigeFooter() {
   )
 }
 
+function ClientResult({ item, id }: { item: (typeof CLIENT_RESULTS)[number]; id?: string }) {
+  return (
+    <figure className="lx-result" id={id}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={item.src} alt={item.alt} />
+      <figcaption>
+        <strong>{item.title}</strong>
+        <p>{item.change}</p>
+      </figcaption>
+    </figure>
+  )
+}
+
 export function BeigeHome() {
   return (
     <>
@@ -195,16 +324,10 @@ export function BeigeHome() {
               Talk to a coach
             </Link>
           </div>
-          <div className="lx-hero-photo">
-            <CampaignImage
-              src="/images/lurvox/campaign/hero-muscle.webp"
-              alt="Man in a heavy squat in a private studio"
-              priority
-              className="lx-cover"
-            />
-          </div>
         </div>
       </section>
+
+      <ClientResult item={CLIENT_RESULTS[0]} id="results" />
 
       <section className="lx-fail" id="why">
         <p className="lx-eyebrow">Why one block</p>
@@ -217,6 +340,9 @@ export function BeigeHome() {
           <li>A coach calls you first if you would rather talk than pay today.</li>
         </ul>
       </section>
+
+      <ClientResult item={CLIENT_RESULTS[8]} />
+      <ClientResult item={CLIENT_RESULTS[1]} />
 
       <section className="lx-system" id="system">
         <p className="lx-eyebrow">Included</p>
@@ -233,6 +359,9 @@ export function BeigeHome() {
         </ul>
         <p className="lx-shared">Men get a testosterone protocol. Women get hourglass guidance.</p>
       </section>
+
+      <ClientResult item={CLIENT_RESULTS[9]} />
+      <ClientResult item={CLIENT_RESULTS[2]} />
 
       <section className="lx-coaches" id="coaching">
         <div className="lx-coaches-copy">
@@ -253,11 +382,17 @@ export function BeigeHome() {
         </div>
       </section>
 
+      <ClientResult item={CLIENT_RESULTS[10]} />
+      <ClientResult item={CLIENT_RESULTS[3]} />
+
       <section className="lx-method" id="method">
         <p className="lx-eyebrow">The 84 days</p>
         <h2>One week, twelve times.</h2>
         <p className="lx-lead">The steps after you pay are on the next page.</p>
       </section>
+
+      <ClientResult item={CLIENT_RESULTS[4]} />
+      <ClientResult item={CLIENT_RESULTS[11]} />
 
       <section className="lx-pricing" id="pricing">
         <p className="lx-eyebrow">The offer</p>
@@ -278,7 +413,13 @@ export function BeigeHome() {
         </div>
       </section>
 
+      <ClientResult item={CLIENT_RESULTS[5]} />
+      <ClientResult item={CLIENT_RESULTS[12]} />
+
       <FaqList id="faq" />
+
+      <ClientResult item={CLIENT_RESULTS[6]} />
+      <ClientResult item={CLIENT_RESULTS[13]} />
 
       <section className="lx-final" id="close">
         <div className="lx-final-copy">
@@ -290,6 +431,8 @@ export function BeigeHome() {
           <OfferActions />
         </div>
       </section>
+
+      <ClientResult item={CLIENT_RESULTS[7]} />
     </>
   )
 }
@@ -386,19 +529,33 @@ export function FaqPage() {
   return <FaqList />
 }
 
-function FaqList({ id = 'faq' }: { id?: string }) {
+function FaqList({
+  id,
+  start = 0,
+  end = FAQ.length,
+  heading = true,
+  note = true,
+}: {
+  id?: string
+  start?: number
+  end?: number
+  heading?: boolean
+  note?: boolean
+}) {
   return (
     <section className="lx-faq" id={id}>
-      <h2>Questions</h2>
-      {FAQ.map(([q, a]) => (
+      {heading ? <h2>Questions</h2> : null}
+      {FAQ.slice(start, end).map(([q, a]) => (
         <details key={q}>
           <summary>{q}</summary>
           <p>{a}</p>
         </details>
       ))}
-      <p className="lx-note">
-        <Link href="/terms#payments-refunds-guarantees">Read the Terms</Link>
-      </p>
+      {note ? (
+        <p className="lx-note">
+          <Link href="/terms#payments-refunds-guarantees">Read the Terms</Link>
+        </p>
+      ) : null}
     </section>
   )
 }
