@@ -208,7 +208,7 @@ export function buildActionCoachInstructions(
       return appendNote(
         [
           'Generate a personalized workout plan for this client.',
-          'Opening mesocycle week 1: use the sticky-split default for this client (full body, upper/lower, or push/pull/legs from goal/days/experience). Personalise the exercises. Do not invent a novelty split, and do not default to a chest, back, and arms bro-split.',
+          'Opening mesocycle week 1: use upper/lower, or push/pull/legs when they train 3 or 6 to 7 days. One body region per session. Never a full-body day and never legs on a chest, back, shoulder, or arm day.',
           'Volume follows Workout fit: match their experience and the chosen difficulty. Do not give an intermediate or advanced client a beginner 2-set week. Never write a mixed gym-and-home plan.',
           'Follow Metabolic Flux Bias for session density and daily step targets within hard day/duration caps.',
           'Prioritize workout_plan only (strength / resistance training).',

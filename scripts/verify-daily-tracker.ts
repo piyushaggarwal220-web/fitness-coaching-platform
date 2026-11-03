@@ -618,9 +618,10 @@ Post-Workout:
     leakedWarm.some((ex) => /bodyweight squat/i.test(ex.name))
   )
   assert(
-    'pushdown in Post-Workout is rehomed to Main Workout',
-    leakedMain.some((ex) => /pushdown/i.test(ex.name)) &&
-      !leakedCool.some((ex) => /pushdown/i.test(ex.name))
+    'arm work does not stay on a lower day',
+    !leakedMain.some((ex) => /pushdown/i.test(ex.name)) &&
+      !leakedCool.some((ex) => /pushdown/i.test(ex.name)) &&
+      !(leakedWorkout?.type === 'workout' && leakedWorkout.exercises.some((ex) => /pushdown/i.test(ex.name)))
   )
   assert(
     'stretches stay in Post-Workout',
@@ -826,9 +827,11 @@ Quad stretch: 30 seconds each leg
     enduranceMain.some((n) => /goblet squat/i.test(n))
   )
   assert(
-    'light warmup press stays out of Main',
-    !enduranceMain.some((n) => /light dumbbell/i.test(n)) &&
-      enduranceWarm.some((n) => /light dumbbell/i.test(n))
+    'a chest press does not stay on a lower day',
+    !enduranceMain.some((n) => /bench|light dumbbell/i.test(n)) &&
+      !enduranceWarm.some((n) => /bench|light dumbbell/i.test(n)) &&
+      !(enduranceWorkout?.type === 'workout' &&
+        enduranceWorkout.exercises.some((ex) => /bench|light dumbbell/i.test(ex.name)))
   )
 }
 

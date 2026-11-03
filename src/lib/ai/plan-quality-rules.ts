@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v29'
+export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v30'
 
 /** Platform soft floor before weight-based floor. Prefer formula target when higher. */
 export const DIET_FLOOR_BASE_KCAL = 1800
@@ -181,8 +181,8 @@ export const WORKOUT_VOLUME_PROMPT_RULES = [
   '- Reps by experience: beginners 8 to 15 on compounds. Intermediate 6 to 12. Advanced or strength-focused: 3 to 6 on main compounds only, 8 to 15 on accessories.',
   '- Fit the stated session duration. Prefer the mesocycle set count over junk volume.',
   '- Training days per week is a hard cap. Label all 7 calendar days. Remaining days after training days are rest or active recovery. Do not add extra training days. Do not require both a recovery day AND a rest day if that would steal a training day or overflow 7 days. If they train 6 days, one rest. If 7, no extra rest day.',
-  '- Sticky split: keep the client\'s established day structure (full body, upper/lower, or PPL). New clients without a prior plan use the goal/days default. Mesocycle week 1 refreshes exercises within that split — it does NOT invent a different template. Low sleep/fatigue = lower load/RIR, never a silent full-body swap.',
-  '- Proven splits are fine (full body, upper/lower, PPL) when they fit days, duration, equipment, and injuries. Personalise exercise selection. Do not invent an unsafe novelty split. Do not default to a chest, back, and arms bro-split.',
+  '- Sticky split: keep an upper/lower or push/pull/legs week. Never keep a full-body week. New clients use upper/lower, or push/pull/legs on 3 or 6 to 7 days. Mesocycle week 1 refreshes exercises within that split. Low sleep or fatigue means lower load or more reps in reserve, not a mixed session.',
+  '- One body region per session. Upper/lower and push/pull/legs are both fine. A chest, back, shoulder, or arm day must not include a squat, leg press, lunge, hinge, or calf raise. A leg day must not include a press, row, pulldown, curl, or triceps movement. A core finisher is allowed on any day. Do not write a full-body day or a day titled for one muscle that also trains another region.',
   '- If Hard Constraints list gym stations, use only those stations plus bodyweight. Do not assume a full commercial gym.',
 ].join('\n')
 
@@ -196,7 +196,8 @@ export const EXERCISE_NAME_PROMPT_RULES = [
 export const WORKOUT_SECTION_PROMPT_RULES = [
   'TRACKER SECTIONS (non-negotiable, every training day):',
   '- Under each Day N (Weekday) header, put these exact labels on their own lines, in this order: Warm-up: then Main Workout: then Post-Workout:.',
-  '- Warm-up: only easy cardio, joint circles, bodyweight activations, and 1 or 2 very light groove sets. Never working sets of the day\'s main lifts.',
+  '- Warm-up: only easy cardio, joint circles, and bodyweight activations. Do not name a lift that also appears in Main Workout. Each exercise name once per day.',
+  '- A day trains one region. A lower or leg day has no chest, back, shoulder, or arm work. An upper, chest, push, pull, back, shoulder, or arm day has no squat, leg press, lunge, hinge, or calf work. Chest on a leg day is only an example of this rule. A core finisher may stay on any day.',
   '- Main Workout: every working lift (compounds, accessories, core finisher). Goblet Squat, RDL, presses, rows, pushdowns, and curls belong here only.',
   '- Post-Workout: only stretches, an easy walk, or breathing. Never strength lifts.',
   '- Do not write a shared warmup essay before Day 1 or a shared stretching block after the week that lists lifts. Repeat the three headers under every training day.',

@@ -920,7 +920,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     if (
       !supportSection &&
       providerMode !== 'mock' &&
-      input.actionId === 'review_update_workout' &&
+      (input.actionId === 'initial_workout' || input.actionId === 'review_update_workout') &&
       (validationMode === 'workout_focus' || validationMode === 'full')
     ) {
       const checkinNote = combineCheckinFreeText(

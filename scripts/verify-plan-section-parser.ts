@@ -1,3 +1,4 @@
+import { tidyWorkoutPlanText } from '../src/lib/ai/workout-tidy'
 import { resolvePlanSections } from '../src/lib/plan-section-parser'
 import { normalizeAiPlanProse } from '../src/lib/ai/plan-format'
 
@@ -182,6 +183,32 @@ assert('removes markdown heading markers', !humanized.includes('#'))
 assert('removes asterisks from generated prose', !humanized.includes('*'))
 assert('removes hyphen and star bullet prefixes', humanized.includes('Squats: 4 sets x 8 reps\nWalk for 20 minutes'))
 assert('strips in-sentence hyphens', humanized.includes('well balanced') && !humanized.includes('well-balanced'))
+
+const repeated = tidyWorkoutPlanText(`Intro.
+
+Day 1 (Monday): Lower Body
+Warm-up:
+Dumbbell Bench Press: 2 sets x 10 reps
+Main Workout:
+Leg Press: 3 sets x 10 reps
+Dumbbell Bench Press: 3 sets x 8 reps
+Hamstring Curl: 3 sets x 12 reps
+
+Day 2 (Tuesday): Upper Body
+Main Workout:
+Dumbbell Bench Press: 2 sets x 10 reps
+Dumbbell Bench Press: 3 sets x 8 reps
+Lat Pulldown: 3 sets x 10 reps
+
+Day 1 (Monday): Lower Body
+Main Workout:
+Leg Press: 3 sets x 10 reps
+`)
+assert('drops the pasted second week', (repeated.match(/Day 1/g) ?? []).length === 1)
+assert('leg day does not keep a chest press', !/bench/i.test(repeated.split('Day 2')[0] ?? ''))
+assert('leg day keeps the leg work', /leg press/i.test(repeated) && /hamstring curl/i.test(repeated))
+assert('upper day lists bench once', (repeated.split('Day 2')[1] ?? '').match(/bench press/gi)?.length === 1)
+assert('upper day does not keep a leg press', !/leg press/i.test(repeated.split('Day 2')[1] ?? ''))
 
 if (failed > 0) {
   console.error(`\n${failed} plan parser checks failed`)

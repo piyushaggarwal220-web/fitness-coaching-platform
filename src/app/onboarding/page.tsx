@@ -1257,7 +1257,7 @@ function renderStep(
           <Field
             label="Workout split preference"
             required
-            hint="Not sure? Pick Decide for me — we choose from full body, upper/lower, or push/pull/legs based on your days and experience."
+            hint="Not sure? Pick Decide for me — we use upper/lower, or push/pull/legs when you train 3 or 6 days."
           >
             <ChipGroup
               options={ONBOARDING_SPLIT_PREFERENCE_OPTIONS}

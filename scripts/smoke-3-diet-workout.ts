@@ -30,7 +30,7 @@ type Person = {
   difficulty: string
   expect: {
     place: 'home' | 'gym'
-    split: 'full_body' | 'ppl' | 'upper_lower'
+    split: 'ppl' | 'upper_lower'
     minMainSets: number
     maxLightShare: number
   }
@@ -53,7 +53,7 @@ const PEOPLE: Person[] = [
       training_days_per_week: '3',
       training_available_days: ['monday', 'wednesday', 'friday'],
       workout_duration: '45',
-      workout_split_preference: 'full_body',
+      workout_split_preference: 'ppl',
       equipment_available: ['dumbbells', 'resistance bands', 'yoga mat'],
       gym_stations: [],
       diet_preference: 'vegetarian',
@@ -63,9 +63,9 @@ const PEOPLE: Person[] = [
       lunch: 'dal rice and salad',
       dinner: 'roti, paneer, curd',
     },
-    split: 'full_body',
+    split: 'ppl',
     difficulty: 'moderate',
-    expect: { place: 'home', split: 'full_body', minMainSets: 3, maxLightShare: 0.35 },
+    expect: { place: 'home', split: 'ppl', minMainSets: 3, maxLightShare: 0.35 },
   },
   {
     id: 'intermediate-gym-hard',
@@ -222,7 +222,7 @@ function scoreWorkout(workout: string, person: Person): Check[] {
       ? /\bpush\b/i.test(workout) && /\bpull\b/i.test(workout) && /\bleg/i.test(workout)
       : person.expect.split === 'upper_lower'
         ? /\bupper\b/i.test(workout) && /\blower\b/i.test(workout)
-        : /full[\s-]?body/i.test(workout)
+        : false
   const placeOk = person.expect.place === 'home' ? !homeKit : !homeDay
   const mixOk = !(homeDay && (gymDay || homeKit || person.expect.place === 'gym'))
   return [

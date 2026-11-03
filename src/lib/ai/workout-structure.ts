@@ -20,10 +20,13 @@ const DAY_SPLIT =
 const SET_LINE = /(\d+)\s*sets?\s*x\b/i
 const ARM_MOVE =
   /\b(curl|tricep|triceps|bicep|biceps|pushdown|push down|skull|kickback|preacher|overhead extension)\b/i
+const LEG_CURL = /\b(leg|hamstring|lying|nordic)\s+curl\b/i
 const LEG_MOVE =
-  /\b(squat|leg press|lunge|rdl|romanian|deadlift|leg curl|leg extension|hip thrust|split squat|bulgarian|step up|hack squat|goblet|good morning|calf)\b/i
+  /\b(squat|leg press|lunge|rdl|romanian|deadlift|leg curl|hamstring curl|leg extension|hip thrust|glute bridge|pull through|split squat|bulgarian|step up|hack squat|goblet|good morning|calf)\b/i
 const UPPER_MOVE =
-  /\b(bench|overhead press|shoulder press|row|pulldown|pull down|pullup|pull up|push up|pushup|fly|lateral raise|face pull)\b/i
+  /\b(bench|chest press|floor press|incline press|decline press|overhead press|shoulder press|row|pulldown|pull down|pullup|pull up|push up|pushup|fly|lateral raise|face pull|pushdown|push down|dip|pullover)\b/i
+const CORE_MOVE =
+  /\b(plank|dead bug|wood chop|pallof|crunch|sit up|sit-up|bird dog|ab wheel|hollow|russian twist)\b/i
 
 export type WorkingExercise = {
   name: string
@@ -64,8 +67,8 @@ function exerciseFromLine(line: string): WorkingExercise | null {
   return {
     name,
     sets,
-    arm: ARM_MOVE.test(line) && !/\bleg curl\b/i.test(line),
-    leg: LEG_MOVE.test(line),
+    arm: ARM_MOVE.test(line) && !LEG_CURL.test(line),
+    leg: LEG_MOVE.test(line) || LEG_CURL.test(line),
   }
 }
 
@@ -92,12 +95,20 @@ export function parseTrainingDays(text: string): TrainingDay[] {
       .filter((row): row is WorkingExercise => Boolean(row))
     if (exercises.length === 0) continue
     const existing = days.find((day) => day.weekday === marks[i].weekday)
-    if (existing) existing.exercises.push(...exercises)
-    else days.push({ weekday: marks[i].weekday, exercises })
+    // A second copy of the same weekday is the week pasted again. Keep the first session.
+    if (existing) continue
+    days.push({ weekday: marks[i].weekday, exercises })
   }
   return days.sort(
     (a, b) => WEEKDAYS.indexOf(a.weekday as (typeof WEEKDAYS)[number]) - WEEKDAYS.indexOf(b.weekday as (typeof WEEKDAYS)[number])
   )
+}
+
+function movementRegion(exercise: WorkingExercise): 'leg' | 'upper' | 'other' {
+  if (CORE_MOVE.test(exercise.name) && !exercise.leg) return 'other'
+  if (exercise.leg) return 'leg'
+  if (exercise.arm || UPPER_MOVE.test(exercise.name)) return 'upper'
+  return 'other'
 }
 
 function setCount(days: TrainingDay[], kind: 'arm' | 'leg'): number {
@@ -120,6 +131,24 @@ export function assessWorkoutStructure(
   if (next.length === 0) return []
   const previous = parseTrainingDays(previousText ?? '')
   const errors: string[] = []
+
+  for (const day of next) {
+    const legs = day.exercises.filter((exercise) => movementRegion(exercise) === 'leg')
+    const upper = day.exercises.filter((exercise) => movementRegion(exercise) === 'upper')
+    if (legs.length > 0 && upper.length > 0) {
+      errors.push(
+        `${day.weekday} mixes body parts (${upper[0]?.name} with ${legs[0]?.name}). One region per day: upper, lower, push, pull, or legs. Chest on a leg day is only an example. A core finisher may stay. Do not write a full-body day.`
+      )
+    }
+    const seen = new Set<string>()
+    for (const exercise of day.exercises) {
+      if (seen.has(exercise.name)) {
+        errors.push(`${day.weekday} lists ${exercise.name} twice. Each exercise once per day. Do not repeat it in the warm-up and the main work.`)
+        break
+      }
+      seen.add(exercise.name)
+    }
+  }
 
   for (let i = 0; i < next.length; i += 1) {
     const day = next[i]

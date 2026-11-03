@@ -55,7 +55,7 @@ export function resolveMesocycle(coachingWeek: number | null | undefined): Mesoc
 export function summarizePriorSplit(workoutPlan: string | null | undefined, maxLen = 900): string {
   const text = workoutPlan?.trim()
   if (!text) {
-    return 'No prior workout on file — use the sticky-split default for this client (full body, upper/lower, or PPL).'
+    return 'No prior workout on file — use upper/lower, or push/pull/legs when they train 3 or 6 to 7 days. Never a full-body day.'
   }
   if (text.length <= maxLen) return text
   return `${text.slice(0, maxLen)}…`

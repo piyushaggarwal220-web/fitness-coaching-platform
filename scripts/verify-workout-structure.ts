@@ -16,6 +16,22 @@ Back Squat: 3 sets x 8 reps
 `
 const brokenNotes = assessWorkoutStructure(broken)
 assert.ok(brokenNotes.some((line) => /back-to-back/i.test(line)), brokenNotes.join(' | '))
+assert.ok(brokenNotes.some((line) => /mixes body parts/i.test(line)), brokenNotes.join(' | '))
+
+const chestWithLegs = `
+Day 1 (Monday): Full Body Chest Focus
+Main Workout:
+Leg Press: 3 sets x 10 reps
+Dumbbell Bench Press: 3 sets x 8 reps
+Lat Pulldown: 3 sets x 10 reps
+Dumbbell Romanian Deadlift: 3 sets x 10 reps
+Cable Lateral Raise: 3 sets x 12 reps
+Forearm Plank: 3 sets x 30 sec
+`
+assert.ok(
+  assessWorkoutStructure(chestWithLegs).some((line) => /mixes body parts/i.test(line)),
+  assessWorkoutStructure(chestWithLegs).join(' | ')
+)
 
 const good = `
 Day 1 (Monday)
@@ -42,6 +58,22 @@ Hammer Curl: 3 sets x 10 reps
 Overhead Extension: 3 sets x 12 reps
 Face Pull: 3 sets x 15 reps
 `
+const legDay = `
+Day 1 (Wednesday)
+Main Workout:
+Leg Press: 3 sets x 10 reps
+Romanian Deadlift: 3 sets x 8 reps
+Hamstring Curl: 3 sets x 12 reps
+`
+assert.deepEqual(assessWorkoutStructure(legDay), [])
+
+const twice = `
+Day 1 (Monday): Upper Body
+Main Workout:
+Dumbbell Bench Press: 2 sets x 10 reps
+Dumbbell Bench Press: 3 sets x 8 reps
+`
+assert.ok(assessWorkoutStructure(twice).some((line) => /twice/i.test(line)))
 assert.deepEqual(assessWorkoutStructure(good), [])
 
 const noArms = `

@@ -31,7 +31,7 @@ const beginner = {
   training_experience: 'beginner',
   onboarding_data: { training: { daysPerWeek: '4' } },
 } as const
-assert.equal(defaultWorkoutSplit(beginner), 'full_body')
+assert.equal(defaultWorkoutSplit(beginner), 'upper_lower')
 
 const sixDay = {
   fitness_goal: 'muscle_gain',
@@ -53,8 +53,21 @@ assert.equal(keep.source, 'prior')
 assert.equal(keep.mode, 'keep')
 
 const named = resolveStickySplit(pplProse, fourDay, 'full_body')
-assert.equal(named.kind, 'full_body')
+assert.equal(named.kind, 'upper_lower')
+assert.equal(named.source, 'unmixed')
 assert.equal(named.mode, 'change')
+
+const mixedPrior = `Day 1 (Monday): Full Body Chest Focus
+Leg Press: 3 sets x 10 reps
+Dumbbell Bench Press: 3 sets x 8 reps`
+assert.equal(detectWorkoutSplit(mixedPrior), 'full_body')
+const replaced = resolveStickySplit(mixedPrior, beginner, 'keep')
+assert.equal(replaced.kind, 'upper_lower')
+assert.equal(replaced.source, 'unmixed')
+assert.match(
+  formatStickySplitGuidance({ priorWorkout: mixedPrior, profile: beginner, checkinSplitPreference: 'keep' }),
+  /Never mix body parts/i
+)
 
 const changeSystem = resolveStickySplit(pplProse, fourDay, 'change_system')
 assert.equal(changeSystem.mode, 'change')

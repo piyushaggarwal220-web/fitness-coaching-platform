@@ -1425,6 +1425,39 @@ function looksLikeWorkingLiftInWarmup(ex: TrackerExerciseItem): boolean {
   )
 }
 
+function exerciseIdentity(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\b(barbell|dumbbell|machine|cable|smith|resistance|band|kettlebell|ez|flat|seated|standing)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** A warm-up groove set of a lift that is already in the main work is not a second exercise. */
+function dropRepeatedExerciseNames(phaseBuckets: Map<WorkoutExercisePhase, TrackerExerciseItem[]>) {
+  const mainNames = new Set(
+    (phaseBuckets.get('main') ?? []).map((exercise) => exerciseIdentity(exercise.name)).filter(Boolean)
+  )
+  for (const phase of ['warmup', 'mobility', 'finisher', 'cooldown'] as const) {
+    const list = phaseBuckets.get(phase)
+    if (!list) continue
+    const kept = list.filter((exercise) => !mainNames.has(exerciseIdentity(exercise.name)))
+    if (kept.length > 0) phaseBuckets.set(phase, kept)
+    else phaseBuckets.delete(phase)
+  }
+  const main = phaseBuckets.get('main') ?? []
+  const seen = new Set<string>()
+  const uniqueMain = main.filter((exercise) => {
+    const key = exerciseIdentity(exercise.name)
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  if (uniqueMain.length > 0) phaseBuckets.set('main', uniqueMain)
+  else phaseBuckets.delete('main')
+}
+
 function rehomeLeakedPhaseBuckets(phaseBuckets: Map<WorkoutExercisePhase, TrackerExerciseItem[]>) {
   const warmup = phaseBuckets.get('warmup') ?? []
   const cooldown = phaseBuckets.get('cooldown') ?? []
@@ -1567,6 +1600,7 @@ function mergePhaseExercises(
 
   // Drop / rehome strength compounds that still landed in the wrong folder.
   rehomeLeakedPhaseBuckets(byPhase)
+  dropRepeatedExerciseNames(byPhase)
 
   // Always include a warm-up block — use plan warmup when present, otherwise defaults
   if ((byPhase.get('warmup')?.length ?? 0) === 0) {

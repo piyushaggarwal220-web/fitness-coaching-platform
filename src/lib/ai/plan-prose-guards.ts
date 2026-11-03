@@ -53,7 +53,7 @@ export const DIET_MODIFY_PLAN_RULES = [
 export const WORKOUT_MODIFY_PLAN_RULES = [
   'WORKOUT MODIFY (non-negotiable — default for coach workout edits):',
   'The CURRENT PLAN below is the client\'s active workout. MODIFY it — do not invent a completely different week unless the coach asked for a remake.',
-  'Keep the same sticky split (full body / upper-lower / PPL), days, lifts, sets x reps, and structure for every exercise the coach did NOT ask to change.',
+  'Keep the same upper/lower or push/pull/legs split, days, lifts, sets x reps, and structure for every exercise the coach did NOT ask to change. Never put upper and lower lifts in the same session.',
   'When the coach names specific exercises, days, volume, or constraints, change ONLY those items.',
   'Unchanged days should read almost the same as the current plan (same exercise lines). Still output all 7 days in full for the tracker — copy unchanged days verbatim where possible.',
   'NEVER mention edits, updates, or what changed in client-facing text. Output reads like the normal plan the client already follows.',

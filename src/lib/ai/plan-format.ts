@@ -236,10 +236,10 @@ export function generatedPlanToFormData(
   clientId: string,
   options?: { title?: string; phase?: string; fallbackCardio?: string | null }
 ): PlanFormData {
-  const workoutDays = formatWorkoutDays(generated.workout_plan.days)
-  const workoutText = [generated.workout_plan.overview, workoutDays ? `\n${workoutDays}` : '']
-    .join('')
-    .trim()
+  const overview = generated.workout_plan.overview
+  const overviewAlreadyHasDays = /(?:day\s*\d+\s*\(|\bmain workout\s*:)/i.test(overview)
+  const workoutDays = overviewAlreadyHasDays ? '' : formatWorkoutDays(generated.workout_plan.days)
+  const workoutText = [overview, workoutDays ? `\n${workoutDays}` : ''].join('').trim()
 
   const mealsText = formatMeals(generated.nutrition_plan.meals)
   const nutritionText = normalizeAiPlanProse(

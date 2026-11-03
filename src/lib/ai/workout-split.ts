@@ -21,7 +21,6 @@ export type CheckinSplitPreference =
 
 export const ONBOARDING_SPLIT_PREFERENCE_OPTIONS = [
   { value: 'system_decide', label: 'Decide for me (recommended)' },
-  { value: 'full_body', label: 'Full body' },
   { value: 'upper_lower', label: 'Upper / Lower' },
   { value: 'ppl', label: 'Push / Pull / Legs' },
 ] as const
@@ -29,7 +28,6 @@ export const ONBOARDING_SPLIT_PREFERENCE_OPTIONS = [
 export const CHECKIN_SPLIT_PREFERENCE_OPTIONS = [
   { value: 'keep', label: 'Keep my current split' },
   { value: 'change_system', label: 'Change it — decide for me' },
-  { value: 'full_body', label: 'Switch to full body' },
   { value: 'upper_lower', label: 'Switch to upper / lower' },
   { value: 'ppl', label: 'Switch to push / pull / legs' },
 ] as const
@@ -158,17 +156,13 @@ export function parseTrainingDaysPerWeek(profile: ProfileForSplit | null | undef
 }
 
 /**
- * Goal + days defaults when the client chose "decide for me" or left preference blank.
- * Beginners / ≤3 days → full body. 4–5 days → upper/lower. 6–7 days → PPL.
+ * Defaults when the client chose "decide for me" or left preference blank.
+ * Never a full-body day. 3 days or 6–7 days → PPL. Every other schedule → upper/lower.
  */
 export function defaultWorkoutSplit(profile: ProfileForSplit | null | undefined): WorkoutSplitKind {
   const days = parseTrainingDaysPerWeek(profile) ?? 4
-  const experience = (profile?.training_experience ?? '').toLowerCase()
-
-  if (experience === 'beginner' || days <= 3) return 'full_body'
-  if (days >= 6) return 'ppl'
-  if (days >= 4) return 'upper_lower'
-  return 'full_body'
+  if (days === 3 || days >= 6) return 'ppl'
+  return 'upper_lower'
 }
 
 function onboardingPreferredKind(
@@ -186,12 +180,8 @@ function alternateSplit(
   profile: ProfileForSplit | null | undefined
 ): Exclude<WorkoutSplitKind, 'unknown'> {
   const days = parseTrainingDaysPerWeek(profile) ?? 4
-  const options: Array<Exclude<WorkoutSplitKind, 'unknown'>> =
-    days <= 3
-      ? ['full_body', 'upper_lower']
-      : days <= 5
-        ? ['upper_lower', 'ppl', 'full_body']
-        : ['ppl', 'upper_lower', 'full_body']
+  const options: Array<'ppl' | 'upper_lower'> =
+    days === 3 || days >= 6 ? ['ppl', 'upper_lower'] : ['upper_lower', 'ppl']
   return options.find((option) => option !== current) ?? (current === 'ppl' ? 'upper_lower' : 'ppl')
 }
 
@@ -201,37 +191,49 @@ export function resolveStickySplit(
   checkinSplitPreference?: string | null
 ): {
   kind: Exclude<WorkoutSplitKind, 'unknown'>
-  source: 'prior' | 'default' | 'onboarding' | 'checkin'
+  source: 'prior' | 'default' | 'onboarding' | 'checkin' | 'unmixed'
   mode: 'keep' | 'change'
 } {
   const checkinPref = normalizeCheckinSplitPreference(checkinSplitPreference)
+  const unmixedDefault = (): 'ppl' | 'upper_lower' => {
+    const kind = defaultWorkoutSplit(profile)
+    return kind === 'ppl' ? 'ppl' : 'upper_lower'
+  }
 
   if (checkinPref && checkinPref !== 'keep') {
-    if (checkinPref === 'change_system') {
+    if (checkinPref === 'change_system' || checkinPref === 'full_body') {
       const prior = detectWorkoutSplit(priorWorkout)
-      let kind = defaultWorkoutSplit(profile)
-      if (kind === 'unknown') kind = 'full_body'
-      if (prior !== 'unknown' && prior === kind) {
+      let kind = unmixedDefault()
+      if (prior !== 'unknown' && prior !== 'full_body' && prior === kind) {
         kind = alternateSplit(prior, profile)
       }
-      return { kind, source: 'checkin', mode: 'change' }
+      return {
+        kind,
+        source: checkinPref === 'full_body' ? 'unmixed' : 'checkin',
+        mode: 'change',
+      }
     }
     return { kind: checkinPref, source: 'checkin', mode: 'change' }
   }
 
   const prior = detectWorkoutSplit(priorWorkout)
+  if (prior === 'full_body') {
+    return { kind: unmixedDefault(), source: 'unmixed', mode: 'change' }
+  }
   if (prior !== 'unknown') {
     return { kind: prior, source: 'prior', mode: 'keep' }
   }
 
   const onboardingKind = onboardingPreferredKind(profile)
+  if (onboardingKind === 'full_body') {
+    return { kind: unmixedDefault(), source: 'unmixed', mode: 'change' }
+  }
   if (onboardingKind) {
     return { kind: onboardingKind, source: 'onboarding', mode: 'keep' }
   }
 
-  const fallback = defaultWorkoutSplit(profile)
   return {
-    kind: fallback === 'unknown' ? 'full_body' : fallback,
+    kind: unmixedDefault(),
     source: 'default',
     mode: 'keep',
   }
@@ -262,18 +264,23 @@ export function formatStickySplitGuidance(opts: {
     onboardingPref
       ? `- Onboarding split preference: ${ONBOARDING_PREF_LABEL[onboardingPref]}.`
       : null,
-    sticky.mode === 'change'
-      ? `- Client asked to CHANGE structure. Use: ${label}${days != null ? ` (${days} training days/week)` : ''}. Rebuild day titles for this split. Do not keep the previous day structure.`
-      : sticky.source === 'prior'
-        ? `- Established split on file: ${label}. KEEP this day structure.`
-        : sticky.source === 'onboarding'
-          ? `- Client onboarding preference: ${label}. Use this split.`
-          : `- No established split on file — system default for this client: ${label}${days != null ? ` (${days} training days/week)` : ''}.`,
-    sticky.mode === 'keep'
-      ? '- Mesocycle week 1 (new month): KEEP the same split. Refresh exercise selection. Volume follows Workout fit, not a beginner 2-set week. Do NOT open a different template unless the weekly check-in asked to change.'
-      : '- Because the client asked to change split, a new proven template is required this week. Volume still follows Workout fit.',
-    '- Low sleep, fatigue, stress, or low adherence: cut load, sets, or leave more reps in reserve. That alone is NOT a reason to change the split.',
-    '- Ignore silent full-body swaps. Only change structure when this check-in/onboarding preference (or an explicit coach remake) says so.',
+    sticky.source === 'unmixed'
+      ? `- A full-body or mixed session is not allowed. Use: ${label}${days != null ? ` (${days} training days/week)` : ''}. Rebuild the days. Do not keep legs on an upper day or presses and rows on a leg day.`
+      : sticky.mode === 'change'
+        ? `- Client asked to CHANGE structure. Use: ${label}${days != null ? ` (${days} training days/week)` : ''}. Rebuild day titles for this split. Do not keep the previous day structure.`
+        : sticky.source === 'prior'
+          ? `- Established split on file: ${label}. KEEP this day structure.`
+          : sticky.source === 'onboarding'
+            ? `- Client onboarding preference: ${label}. Use this split.`
+            : `- No established split on file — system default for this client: ${label}${days != null ? ` (${days} training days/week)` : ''}.`,
+    '- Never mix body parts in one session. No full-body day. An upper day may combine chest, back, shoulders, and arms. A lower day may combine a squat or leg press, a hinge, and calves. Push, pull, and legs stay on their own days when that is the split. A core finisher is allowed on any day.',
+    sticky.source === 'unmixed'
+      ? '- Replace the mixed week with the split named above. Volume still follows Workout fit.'
+      : sticky.mode === 'keep'
+        ? '- Mesocycle week 1 (new month): KEEP the same split. Refresh exercise selection. Volume follows Workout fit, not a beginner 2-set week. Do NOT open a different template unless the weekly check-in asked to change.'
+        : '- Because the client asked to change split, a new proven template is required this week. Volume still follows Workout fit.',
+    '- Low sleep, fatigue, stress, or low adherence: cut load, sets, or leave more reps in reserve. That alone is NOT a reason to change an upper/lower or push/pull/legs week.',
+    '- Do not invent a full-body week. Only change an already separated split when this check-in or onboarding preference says so.',
   ]
 
   return lines.filter((line): line is string => Boolean(line)).join('\n')
@@ -340,7 +347,7 @@ export function formatWorkoutFitGuidance(opts: {
     '### Workout fit (hard)',
     `- Place: ${place} Never a mixed gym-and-home plan.`,
     `- Difficulty: ${volume}`,
-    '- Split: use the sticky split above. Do not invent a mixed split or a chest-back-arms bro split.',
-    '- If the coach note names a difficulty or a split, that choice wins.',
+    '- Split: use the sticky split above. One body region per day. Never a full-body session.',
+    '- If the coach note names a difficulty, or upper/lower, or push/pull/legs, that choice wins. A request for a full-body or mixed session does not.',
   ].join('\n')
 }

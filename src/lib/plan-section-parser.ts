@@ -1,3 +1,4 @@
+import { tidyWorkoutPlanText } from '@/lib/ai/workout-tidy'
 import { clientCoachNotes } from '@/lib/plan-metadata'
 import type { Plan, PlanFormData } from '@/types/database'
 
@@ -255,7 +256,9 @@ export function resolvePlanSections(input: {
   if (!isMeaningful(workoutText) && isMeaningful(fromNutrition.workout ?? '')) {
     workoutText = (fromNutrition.workout ?? '').trim()
   }
-  workoutText = stripInlineSectionBlocks(workoutText, ['diet', 'cardio', 'coachNotes', 'supplements'])
+  workoutText = tidyWorkoutPlanText(
+    stripInlineSectionBlocks(workoutText, ['diet', 'cardio', 'coachNotes', 'supplements'])
+  )
 
   // If nutrition was empty but workout carried a diet block, surface it as diet.
   if (!isMeaningful(diet) && isMeaningful(fromWorkout.diet ?? '')) {
