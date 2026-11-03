@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v30'
+export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v31'
 
 /** Platform soft floor before weight-based floor. Prefer formula target when higher. */
 export const DIET_FLOOR_BASE_KCAL = 1800
@@ -172,7 +172,8 @@ export const EDIT_EXPENDITURE_FIRST_RULES = [
 export const WORKOUT_VOLUME_PROMPT_RULES = [
   'TRAINING VOLUME (non-negotiable — follow Workout fit and the Training Mesocycle week):',
   '- A new month is not a new split and not a beginner week. Keep the current split, the current training days, and the muscle groups those days already train.',
-  '- Week 1 (BASE): beginners use 3 working sets. Intermediate and advanced use 4 on main lifts and 3 on accessories. Drop to 2 sets only when this week\'s difficulty is Easier. About 5 to 7 working exercises. Leave 2 to 3 reps in reserve on compounds.',
+  '- Week 1 (BASE): beginners use 3 working sets. Intermediate and advanced use 4 on main lifts and 3 on accessories. Drop to 2 sets only when this week\'s difficulty is Easier or they chose Shorter. About 5 to 7 working exercises. Leave 2 to 3 reps in reserve on compounds.',
+  '- If Workout fit names an intensity or a volume, that choice wins. Comfortable leaves about 3 reps in reserve. Tough leaves about 1. Shorter is 2 working sets. Fuller is 4 on main lifts and 3 on accessories, never 5 or more.',
   '- Week 2 (BUILD): beginners stay at 3 working sets and add load or reps. Intermediate and advanced use 3 to 4 working sets on main compounds and 3 on accessories.',
   '- Weeks 3 and 4: beginners stay at 3 working sets and add load or tighter reps in reserve. Intermediate and advanced use 4 working sets on main compounds only and 3 on accessories.',
   '- Never prescribe 5 or more working sets on an exercise. Warm-up sets are extra and do not count as working sets.',

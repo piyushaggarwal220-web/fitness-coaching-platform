@@ -6,6 +6,7 @@ import {
   normalizeOnboardingSplitPreference,
   normalizeCheckinSplitPreference,
   formatStickySplitGuidance,
+  deriveWorkoutDifficulty,
   formatWorkoutFitGuidance,
   normalizeWorkoutDifficulty,
 } from '../src/lib/ai/workout-split'
@@ -105,5 +106,20 @@ assert.match(hard, /GYM only/)
 assert.match(hard, /Never a mixed gym-and-home/)
 assert.match(hard, /HARD/)
 assert.doesNotMatch(hard, /HOME only/)
+
+const shorter = formatWorkoutFitGuidance({
+  intensity: 'tough',
+  volume: 'shorter',
+  difficulty: 'hard',
+  experience: 'intermediate',
+})
+assert.match(shorter, /Shorter/)
+assert.match(shorter, /2 working sets/)
+assert.match(shorter, /1 rep in reserve/)
+assert.doesNotMatch(shorter, /HARD, as they asked/)
+
+assert.equal(deriveWorkoutDifficulty('decide', 'decide'), 'keep')
+assert.equal(deriveWorkoutDifficulty('comfortable', 'usual'), 'easier')
+assert.equal(deriveWorkoutDifficulty('tough', 'shorter'), 'moderate')
 
 console.log('All workout-split checks passed')

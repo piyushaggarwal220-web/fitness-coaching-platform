@@ -32,10 +32,21 @@ import type {
 import { importWithChunkRetry } from '@/lib/chunk-load-recovery'
 import {
   ONBOARDING_SPLIT_PREFERENCE_OPTIONS,
+  WORKOUT_INTENSITY_OPTIONS,
+  WORKOUT_VOLUME_OPTIONS,
   onboardingSplitPreferenceLabel,
+  workoutIntensityLabel,
+  workoutVolumeLabel,
 } from '@/lib/ai/workout-split'
 
-export { ONBOARDING_SPLIT_PREFERENCE_OPTIONS, onboardingSplitPreferenceLabel }
+export {
+  ONBOARDING_SPLIT_PREFERENCE_OPTIONS,
+  WORKOUT_INTENSITY_OPTIONS,
+  WORKOUT_VOLUME_OPTIONS,
+  onboardingSplitPreferenceLabel,
+  workoutIntensityLabel,
+  workoutVolumeLabel,
+}
 
 export const ONBOARDING_PHOTO_BUCKET = 'onboarding-photos'
 
@@ -705,6 +716,8 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   can_pullup: '',
   recent_program: '',
   workout_split_preference: 'system_decide',
+  workout_intensity: 'decide',
+  workout_volume: 'decide',
   injuries: '',
   medical_notes: '',
   pain_during_exercise: '',
@@ -902,6 +915,8 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     can_pullup: data.training?.canPullup ?? '',
     recent_program: data.training?.recentProgram ?? '',
     workout_split_preference: data.training?.workoutSplitPreference ?? 'system_decide',
+    workout_intensity: data.training?.workoutIntensity ?? 'decide',
+    workout_volume: data.training?.workoutVolume ?? 'decide',
     pain_during_exercise: data.medical?.painDuringExercise ?? '',
     medications: data.medical?.medications ?? '',
     acne_status: data.medical?.acne ?? '',
@@ -1091,6 +1106,8 @@ export function buildOnboardingData(
       canPullup: form.can_pullup || null,
       recentProgram: form.recent_program.trim() || null,
       workoutSplitPreference: form.workout_split_preference || 'system_decide',
+      workoutIntensity: form.workout_intensity || 'decide',
+      workoutVolume: form.workout_volume || 'decide',
     },
     medical: {
       conditions: form.medical_notes.trim() || null,
@@ -1669,6 +1686,8 @@ export function buildReviewSections(
         { label: 'Duration', value: getOnboardingLabel('workout_duration', form.workout_duration) },
         { label: 'Preferred time', value: getOnboardingLabel('preferred_workout_time', form.preferred_workout_time) },
         { label: 'Workout split', value: onboardingSplitPreferenceLabel(form.workout_split_preference) },
+        { label: 'How hard each set feels', value: workoutIntensityLabel(form.workout_intensity) },
+        { label: 'How much work', value: workoutVolumeLabel(form.workout_volume) },
         { label: 'Equipment', value: equipment },
         { label: 'Gym stations', value: formatGymStations(form.gym_stations) },
         {

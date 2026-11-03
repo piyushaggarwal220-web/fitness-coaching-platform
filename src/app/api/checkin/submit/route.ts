@@ -27,7 +27,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { usesHumanCoach } from '@/lib/coach-service'
 import { parseAdherenceDays } from '@/lib/checkin-adherence-days'
-import { normalizeCheckinSplitPreference, normalizeWorkoutDifficulty } from '@/lib/ai/workout-split'
+import {
+  deriveWorkoutDifficulty,
+  normalizeCheckinSplitPreference,
+  normalizeWorkoutDifficulty,
+  normalizeWorkoutIntensity,
+  normalizeWorkoutVolume,
+} from '@/lib/ai/workout-split'
 import { areProgressPhotosOptional } from '@/lib/checkin'
 import { coachIdHasClientChat } from '@/lib/coach-service'
 import type { CheckinType } from '@/types/database'
@@ -76,6 +82,8 @@ type WeeklyBody = {
   additional_notes?: string | null
   workout_split_preference?: string | null
   workout_difficulty?: string | null
+  workout_intensity?: string | null
+  workout_volume?: string | null
   progress_photo_front?: string | null
   progress_photo_side?: string | null
   progress_photo_back?: string | null
@@ -127,8 +135,11 @@ function validateBody(body: SubmitBody, options?: { gender?: string | null }): s
   if (!normalizeCheckinSplitPreference(body.workout_split_preference)) {
     return 'Choose whether to keep or change your workout split.'
   }
-  if (!normalizeWorkoutDifficulty(body.workout_difficulty)) {
-    return 'Choose how hard next week\'s workouts should be.'
+  if (body.workout_intensity != null && body.workout_intensity !== '' && !normalizeWorkoutIntensity(body.workout_intensity)) {
+    return 'Choose how hard each set should feel, or leave it for us.'
+  }
+  if (body.workout_volume != null && body.workout_volume !== '' && !normalizeWorkoutVolume(body.workout_volume)) {
+    return 'Choose how much work you want, or leave it for us.'
   }
   if (!areProgressPhotosOptional(options?.gender)) {
     if (!body.progress_photo_front || !body.progress_photo_side || !body.progress_photo_back) {
@@ -318,7 +329,13 @@ export async function POST(request: Request) {
         cardio_completed: body.cardio_completed ?? null,
         notes: body.additional_notes ?? null,
         workout_split_preference: normalizeCheckinSplitPreference(body.workout_split_preference),
-        workout_difficulty: normalizeWorkoutDifficulty(body.workout_difficulty),
+        workout_intensity: normalizeWorkoutIntensity(body.workout_intensity) ?? 'decide',
+        workout_volume: normalizeWorkoutVolume(body.workout_volume) ?? 'decide',
+        workout_difficulty:
+          (normalizeWorkoutIntensity(body.workout_intensity) ?? 'decide') !== 'decide' ||
+          (normalizeWorkoutVolume(body.workout_volume) ?? 'decide') !== 'decide'
+            ? deriveWorkoutDifficulty(body.workout_intensity, body.workout_volume)
+            : normalizeWorkoutDifficulty(body.workout_difficulty) ?? 'keep',
         progress_photo_front: body.progress_photo_front ?? null,
         progress_photo_side: body.progress_photo_side ?? null,
         progress_photo_back: body.progress_photo_back ?? null,

@@ -14,7 +14,8 @@ import { PhotoCompareStrip } from '@/components/journey/PhotoCompareStrip';
 import {
   INITIAL_WEEKLY_FORM,
   CHECKIN_SPLIT_PREFERENCE_OPTIONS,
-  WORKOUT_DIFFICULTY_OPTIONS,
+  WORKOUT_INTENSITY_OPTIONS,
+  WORKOUT_VOLUME_OPTIONS,
   areProgressPhotosOptional,
   uploadCheckinPhoto,
   validateWeeklyCheckinForm,
@@ -261,6 +262,8 @@ export default function CheckinPage() {
           additional_notes: form.additional_notes || null,
           workout_split_preference: form.workout_split_preference || 'keep',
           workout_difficulty: form.workout_difficulty || 'keep',
+          workout_intensity: form.workout_intensity || 'decide',
+          workout_volume: form.workout_volume || 'decide',
           progress_photo_front: frontUrl,
           progress_photo_side: sideUrl,
           progress_photo_back: backUrl,
@@ -432,39 +435,20 @@ export default function CheckinPage() {
             <TextArea label="Pain / injuries" name="pain_injuries" value={form.pain_injuries} onChange={handleChange} rows={2} placeholder="Any pain or injuries this week?" />
             <Input label="Cardio completed" name="cardio_completed" value={form.cardio_completed} onChange={handleChange} placeholder="e.g. 3 sessions, 45 min total" />
             <TextArea label="Additional notes" name="additional_notes" value={form.additional_notes} onChange={handleChange} rows={3} placeholder="Wins, struggles, questions..." />
-            <div style={{ marginTop: spacing[4] }}>
-              <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: colors.textPrimary }}>
-                How hard should next week be? *
-              </p>
-              <p style={{ margin: '0 0 10px', fontSize: 13, color: colors.textMuted }}>
-                This sets the weight and the number of sets. It stays one gym plan or one home plan, never a mix of both.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {WORKOUT_DIFFICULTY_OPTIONS.map((option) => {
-                  const selected = form.workout_difficulty === option.value
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, workout_difficulty: option.value }))}
-                      style={{
-                        textAlign: 'left',
-                        padding: '12px 14px',
-                        borderRadius: 12,
-                        border: selected ? `2px solid ${colors.accent}` : `1px solid ${colors.borderSubtle}`,
-                        background: selected ? colors.accentMuted : colors.bgElevated,
-                        color: colors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: selected ? 700 : 500,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {option.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+            <ChoiceGroup
+              title="How hard should each set feel?"
+              hint="Optional. This is the weight and how close you go to your limit. Decide for me matches your experience."
+              options={WORKOUT_INTENSITY_OPTIONS}
+              value={form.workout_intensity}
+              onChange={(workout_intensity) => setForm((prev) => ({ ...prev, workout_intensity }))}
+            />
+            <ChoiceGroup
+              title="How much work do you want?"
+              hint="Optional. This is the number of sets, not how heavy they feel."
+              options={WORKOUT_VOLUME_OPTIONS}
+              value={form.workout_volume}
+              onChange={(workout_volume) => setForm((prev) => ({ ...prev, workout_volume }))}
+            />
             <div style={{ marginTop: spacing[4] }}>
               <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: colors.textPrimary }}>
                 Next week&apos;s workout split *
@@ -595,6 +579,52 @@ export default function CheckinPage() {
       </form>
     </ClientShell>
   );
+}
+
+function ChoiceGroup({
+  title,
+  hint,
+  options,
+  value,
+  onChange,
+}: {
+  title: string
+  hint: string
+  options: readonly { value: string; label: string }[]
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div style={{ marginTop: spacing[4] }}>
+      <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: colors.textPrimary }}>{title}</p>
+      <p style={{ margin: '0 0 10px', fontSize: 13, color: colors.textMuted }}>{hint}</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {options.map((option) => {
+          const selected = value === option.value
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onChange(option.value)}
+              style={{
+                textAlign: 'left',
+                padding: '12px 14px',
+                borderRadius: 12,
+                border: selected ? `2px solid ${colors.accent}` : `1px solid ${colors.borderSubtle}`,
+                background: selected ? colors.accentMuted : colors.bgElevated,
+                color: colors.textPrimary,
+                fontSize: 14,
+                fontWeight: selected ? 700 : 500,
+                cursor: 'pointer',
+              }}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 const sectionTitle: React.CSSProperties = {

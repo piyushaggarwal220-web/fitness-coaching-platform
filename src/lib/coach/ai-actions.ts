@@ -1,6 +1,11 @@
 import type { Checkin, Plan, PlanFormData } from '@/types/database'
 import { formatAdherenceDaysForPrompt } from '@/lib/checkin-adherence-days'
-import { checkinSplitPreferenceLabel, workoutDifficultyLabel } from '@/lib/ai/workout-split'
+import {
+  checkinSplitPreferenceLabel,
+  workoutDifficultyLabel,
+  workoutIntensityLabel,
+  workoutVolumeLabel,
+} from '@/lib/ai/workout-split'
 
 export type CoachAiActionId =
   | 'initial_diet'
@@ -160,6 +165,8 @@ function checkinContext(checkin: Checkin): string {
     checkin.notes?.trim() ? `Additional notes: ${checkin.notes.trim()}` : null,
     `Workout split preference: ${checkinSplitPreferenceLabel(checkin.workout_split_preference)}`,
     `Workout difficulty: ${workoutDifficultyLabel(checkin.workout_difficulty)}`,
+    `Workout intensity: ${workoutIntensityLabel(checkin.workout_intensity)}`,
+    `Workout volume: ${workoutVolumeLabel(checkin.workout_volume)}`,
   ]
     .filter(Boolean)
     .join('\n')

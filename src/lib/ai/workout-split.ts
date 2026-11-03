@@ -42,6 +42,25 @@ export const WORKOUT_DIFFICULTY_OPTIONS = [
 
 export type WorkoutDifficulty = (typeof WORKOUT_DIFFICULTY_OPTIONS)[number]['value']
 
+/** How hard each set should feel. decide = we match their experience. */
+export const WORKOUT_INTENSITY_OPTIONS = [
+  { value: 'decide', label: 'Decide for me' },
+  { value: 'comfortable', label: 'Comfortable — stop with reps left' },
+  { value: 'solid', label: 'Solid — a couple of reps left' },
+  { value: 'tough', label: 'Tough — close to your limit' },
+] as const
+
+/** How much work is in the session. decide = we match their experience. */
+export const WORKOUT_VOLUME_OPTIONS = [
+  { value: 'decide', label: 'Decide for me' },
+  { value: 'shorter', label: 'Shorter — fewer sets' },
+  { value: 'usual', label: 'Usual — a normal session' },
+  { value: 'fuller', label: 'Fuller — more sets' },
+] as const
+
+export type WorkoutIntensity = (typeof WORKOUT_INTENSITY_OPTIONS)[number]['value']
+export type WorkoutVolume = (typeof WORKOUT_VOLUME_OPTIONS)[number]['value']
+
 const SPLIT_LABEL: Record<Exclude<WorkoutSplitKind, 'unknown'>, string> = {
   ppl: 'Push / Pull / Legs (PPL)',
   upper_lower: 'Upper / Lower',
@@ -295,6 +314,54 @@ export function normalizeWorkoutDifficulty(value: unknown): WorkoutDifficulty | 
   return null
 }
 
+export function normalizeWorkoutIntensity(value: unknown): WorkoutIntensity | null {
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : ''
+  if (raw === 'easy' || raw === 'light') return 'comfortable'
+  if (raw === 'moderate' || raw === 'medium') return 'solid'
+  if (raw === 'hard') return 'tough'
+  if (WORKOUT_INTENSITY_OPTIONS.some((option) => option.value === raw)) {
+    return raw as WorkoutIntensity
+  }
+  return null
+}
+
+export function normalizeWorkoutVolume(value: unknown): WorkoutVolume | null {
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : ''
+  if (raw === 'light' || raw === 'low' || raw === 'short') return 'shorter'
+  if (raw === 'normal' || raw === 'moderate' || raw === 'medium') return 'usual'
+  if (raw === 'high' || raw === 'more') return 'fuller'
+  if (WORKOUT_VOLUME_OPTIONS.some((option) => option.value === raw)) {
+    return raw as WorkoutVolume
+  }
+  return null
+}
+
+export function workoutIntensityLabel(value: string | null | undefined): string {
+  const normalized = normalizeWorkoutIntensity(value)
+  return WORKOUT_INTENSITY_OPTIONS.find((option) => option.value === normalized)?.label ?? 'Decide for me'
+}
+
+export function workoutVolumeLabel(value: string | null | undefined): string {
+  const normalized = normalizeWorkoutVolume(value)
+  return WORKOUT_VOLUME_OPTIONS.find((option) => option.value === normalized)?.label ?? 'Decide for me'
+}
+
+/** Coarse difficulty kept for older check-ins. A real intensity or volume choice wins in Workout fit. */
+export function deriveWorkoutDifficulty(
+  intensity: string | null | undefined,
+  volume: string | null | undefined
+): WorkoutDifficulty {
+  const effort = normalizeWorkoutIntensity(intensity) ?? 'decide'
+  const amount = normalizeWorkoutVolume(volume) ?? 'decide'
+  if (effort === 'decide' && amount === 'decide') return 'keep'
+  const easier = effort === 'comfortable' || amount === 'shorter'
+  const harder = effort === 'tough' || amount === 'fuller'
+  if (easier && harder) return 'moderate'
+  if (easier) return 'easier'
+  if (harder) return 'hard'
+  return 'moderate'
+}
+
 export function workoutDifficultyLabel(value: string | null | undefined): string {
   const normalized = normalizeWorkoutDifficulty(value)
   const match = WORKOUT_DIFFICULTY_OPTIONS.find((option) => option.value === normalized)
@@ -316,12 +383,22 @@ export function formatTrainingChoiceNote(
  * Hard workout rules for generation. Difficulty and place come from the coach
  * input or the Sunday check-in. A "both" location is gym only — never a mix.
  */
+function experienceSetLine(experienced: boolean): string {
+  return experienced
+    ? 'Match their experience: 4 working sets on main lifts and 3 on accessories. About 5 to 7 exercises. Leave about 2 reps in reserve.'
+    : 'Match their experience: a beginner uses 3 working sets and about 5 to 7 exercises. Leave 2 to 3 reps in reserve.'
+}
+
 export function formatWorkoutFitGuidance(opts: {
   difficulty?: string | null
+  intensity?: string | null
+  volume?: string | null
   location?: string | null
   experience?: string | null
 }): string {
   const difficulty = normalizeWorkoutDifficulty(opts.difficulty) ?? 'keep'
+  const intensity = normalizeWorkoutIntensity(opts.intensity)
+  const amount = normalizeWorkoutVolume(opts.volume)
   const experience = (opts.experience ?? '').trim().toLowerCase()
   const experienced = experience === 'intermediate' || experience === 'advanced'
   const location = (opts.location ?? '').trim().toLowerCase()
@@ -329,9 +406,35 @@ export function formatWorkoutFitGuidance(opts: {
     location === 'home'
       ? 'HOME only. Every working day uses their home equipment. Do not add gym machines.'
       : 'GYM only. Every working day is a gym session. Do not add a separate home program.'
+  const clientChose =
+    (intensity != null && intensity !== 'decide') || (amount != null && amount !== 'decide')
 
-  const volume =
-    difficulty === 'easier'
+  const intensityLine =
+    intensity === 'comfortable'
+      ? 'INTENSITY, as they asked: Comfortable. Leave about 3 reps in reserve and do not add load this week.'
+      : intensity === 'solid'
+        ? 'INTENSITY, as they asked: Solid. Leave about 2 reps in reserve. Loads match their level.'
+        : intensity === 'tough'
+          ? 'INTENSITY, as they asked: Tough. Leave about 1 rep in reserve. Use the heaviest load they can finish with good form.'
+          : null
+
+  const volumeLine =
+    amount === 'shorter'
+      ? 'VOLUME, as they asked: Shorter. 2 working sets and about 4 to 5 exercises.'
+      : amount === 'usual'
+        ? experienced
+          ? 'VOLUME, as they asked: Usual. 4 working sets on main lifts and 3 on accessories. About 5 to 7 exercises.'
+          : 'VOLUME, as they asked: Usual. 3 working sets and about 5 to 7 exercises.'
+        : amount === 'fuller'
+          ? 'VOLUME, as they asked: Fuller. 4 working sets on main lifts and 3 on accessories. About 6 to 7 exercises. Never 5 or more working sets.'
+          : null
+
+  const difficultyLine = clientChose
+    ? [intensityLine, volumeLine].filter(Boolean).join(' ') +
+      (intensityLine && volumeLine
+        ? ''
+        : ` ${intensityLine ? 'Volume: ' : 'Intensity: '}${experienceSetLine(experienced)}`)
+    : difficulty === 'easier'
       ? 'EASIER, as they asked: 2 working sets, leave about 3 reps in reserve, and do not add load this week.'
       : difficulty === 'hard'
         ? 'HARD, as they asked: 4 working sets on main lifts and 3 on accessories. Leave 1 to 2 reps in reserve. Loads must suit someone who already trains. Do not write a light intro week.'
@@ -346,7 +449,8 @@ export function formatWorkoutFitGuidance(opts: {
   return [
     '### Workout fit (hard)',
     `- Place: ${place} Never a mixed gym-and-home plan.`,
-    `- Difficulty: ${volume}`,
+    `- Difficulty: ${difficultyLine}`,
+    '- A chosen intensity or volume wins over the mesocycle set count and over an older easier/hard label.',
     '- Split: use the sticky split above. One body region per day. Never a full-body session.',
     '- If the coach note names a difficulty, or upper/lower, or push/pull/legs, that choice wins. A request for a full-body or mixed session does not.',
   ].join('\n')

@@ -6,6 +6,8 @@ import {
   checkinSplitPreferenceLabel,
   onboardingSplitPreferenceLabel,
   workoutDifficultyLabel,
+  workoutIntensityLabel,
+  workoutVolumeLabel,
 } from '@/lib/ai/workout-split'
 import { buildMetabolicFluxSection, shouldApplyHighFluxRules } from '@/lib/ai/metabolic-flux'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
@@ -255,6 +257,8 @@ function buildCheckinSection(
     `- Questions for coach: ${hasMeaningfulText(checkin.questions_for_coach) ? checkin.questions_for_coach!.trim() : 'None'}`,
     `- Workout split preference: ${checkinSplitPreferenceLabel(checkin.workout_split_preference)}`,
     `- Workout difficulty: ${workoutDifficultyLabel(checkin.workout_difficulty)}`,
+    `- Workout intensity: ${workoutIntensityLabel(checkin.workout_intensity)}`,
+    `- Workout volume: ${workoutVolumeLabel(checkin.workout_volume)}`,
     `- Notes: ${hasMeaningfulText(checkin.notes) ? checkin.notes!.trim() : 'None'}`,
   ]
   return lines.join('\n')
@@ -294,6 +298,8 @@ function buildMesocycleSection(
     profile,
     checkinSplitPreference: checkin?.workout_split_preference,
     workoutDifficulty: checkin?.workout_difficulty,
+    workoutIntensity: checkin?.workout_intensity,
+    workoutVolume: checkin?.workout_volume,
   })
 }
 
@@ -690,6 +696,8 @@ function buildTrainingPreferencesSection(profile: OnboardingProfile): string {
     `- Favorite exercises / exercises to include: ${training?.favoriteExercises?.trim() || 'None specified'}`,
     `- Exercises to avoid: ${training?.exercisesDisliked?.trim() || 'None specified'}`,
     `- Workout split preference: ${onboardingSplitPreferenceLabel(training?.workoutSplitPreference)}`,
+    `- How hard each set should feel: ${workoutIntensityLabel(training?.workoutIntensity)}`,
+    `- How much work in each session: ${workoutVolumeLabel(training?.workoutVolume)}`,
     `- Training experience: ${getOnboardingLabel('training_experience', profile.training_experience)}`,
   ]
 

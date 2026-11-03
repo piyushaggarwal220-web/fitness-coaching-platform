@@ -80,6 +80,8 @@ import {
   WORKOUT_DURATION_OPTIONS,
   WORKOUT_TIME_OPTIONS,
   ONBOARDING_SPLIT_PREFERENCE_OPTIONS,
+  WORKOUT_INTENSITY_OPTIONS,
+  WORKOUT_VOLUME_OPTIONS,
 } from '@/lib/onboarding'
 import { isSessionLostMessage, refreshAuthSessionIfExpiring } from '@/lib/session-restore'
 import { intakePlanStartError } from '@/lib/client-plan-presence'
@@ -1253,6 +1255,26 @@ function renderStep(
           </Field>
           <Field label="Preferred workout time" required>
             <ChipGroup options={WORKOUT_TIME_OPTIONS} value={form.preferred_workout_time} onChange={(v) => update({ preferred_workout_time: v })} />
+          </Field>
+          <Field
+            label="How hard should each set feel?"
+            hint="Optional. Decide for me matches your experience."
+          >
+            <ChipGroup
+              options={WORKOUT_INTENSITY_OPTIONS}
+              value={form.workout_intensity}
+              onChange={(v) => update({ workout_intensity: v })}
+            />
+          </Field>
+          <Field
+            label="How much work in each session?"
+            hint="Optional. This is the number of sets, not how heavy they feel."
+          >
+            <ChipGroup
+              options={WORKOUT_VOLUME_OPTIONS}
+              value={form.workout_volume}
+              onChange={(v) => update({ workout_volume: v })}
+            />
           </Field>
           <Field
             label="Workout split preference"

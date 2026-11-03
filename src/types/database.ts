@@ -137,6 +137,10 @@ export type OnboardingData = {
      * system_decide | full_body | upper_lower | ppl
      */
     workoutSplitPreference?: string | null
+    /** decide | comfortable | solid | tough. Optional. */
+    workoutIntensity?: string | null
+    /** decide | shorter | usual | fuller. Optional. */
+    workoutVolume?: string | null
   }
   medical?: {
     conditions?: string | null
@@ -353,6 +357,10 @@ export type OnboardingFormData = {
    * system_decide | full_body | upper_lower | ppl
    */
   workout_split_preference: string
+  /** decide | comfortable | solid | tough. Optional. */
+  workout_intensity: string
+  /** decide | shorter | usual | fuller. Optional. */
+  workout_volume: string
   injuries: string
   medical_notes: string
   pain_during_exercise: string
@@ -558,6 +566,10 @@ export type Checkin = {
   workout_split_preference: string | null
   /** Weekly: keep | easier | moderate | hard */
   workout_difficulty: string | null
+  /** Weekly: decide | comfortable | solid | tough. Optional. */
+  workout_intensity?: string | null
+  /** Weekly: decide | shorter | usual | fuller. Optional. */
+  workout_volume?: string | null
 }
 
 export type JourneyEntry = {
@@ -657,6 +669,10 @@ export type WeeklyCheckinFormData = {
   workout_split_preference: string
   /** keep | easier | moderate | hard */
   workout_difficulty: string
+  /** decide | comfortable | solid | tough */
+  workout_intensity: string
+  /** decide | shorter | usual | fuller */
+  workout_volume: string
 }
 
 export type CoachCheckinResponse = {

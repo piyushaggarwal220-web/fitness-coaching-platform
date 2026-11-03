@@ -1,3 +1,5 @@
+import { normalizeWorkoutIntensity, normalizeWorkoutVolume } from '@/lib/ai/workout-split'
+
 /**
  * Smart Coach can update this client's own profile after they reply YES.
  * Payments, role, coach, email, and other people stay out of the patch.
@@ -58,6 +60,8 @@ const STRING_GROUPS: Record<string, Set<string>> = {
     'dumbbellMaxKg',
     'recentProgram',
     'workoutSplitPreference',
+    'workoutIntensity',
+    'workoutVolume',
     'canSquat',
     'canPushup',
     'canPullup',
@@ -273,6 +277,8 @@ function checkColumn(key: string, value: string | null): string | null | undefin
 
 function checkOnboardingString(group: string, field: string, value: string | null): string | null | undefined {
   if (value == null) return null
+  if (field === 'workoutIntensity') return normalizeWorkoutIntensity(value) ?? undefined
+  if (field === 'workoutVolume') return normalizeWorkoutVolume(value) ?? undefined
   if (group === 'measurements') {
     const cm = Number(value)
     if (!Number.isFinite(cm) || cm < 10 || cm > 200) return undefined

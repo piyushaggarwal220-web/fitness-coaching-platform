@@ -1,4 +1,9 @@
-import { formatStickySplitGuidance, formatWorkoutFitGuidance } from '@/lib/ai/workout-split'
+import {
+  formatStickySplitGuidance,
+  formatWorkoutFitGuidance,
+  normalizeWorkoutIntensity,
+  normalizeWorkoutVolume,
+} from '@/lib/ai/workout-split'
 import type { OnboardingProfile } from '@/types/database'
 
 /** Mesocycle helpers for monthly volume ramps within a sticky workout split. */
@@ -97,6 +102,8 @@ export function buildMesocyclePromptBlock(opts: {
   > | null
   checkinSplitPreference?: string | null
   workoutDifficulty?: string | null
+  workoutIntensity?: string | null
+  workoutVolume?: string | null
 }): string {
   const meso = resolveMesocycle(opts.coachingWeek)
   const prior = summarizePriorSplit(opts.priorWorkout)
@@ -105,8 +112,17 @@ export function buildMesocyclePromptBlock(opts: {
     profile: opts.profile,
     checkinSplitPreference: opts.checkinSplitPreference,
   })
+  const standing = opts.profile?.onboarding_data?.training
+  const weeklyIntensity = normalizeWorkoutIntensity(opts.workoutIntensity)
+  const weeklyVolume = normalizeWorkoutVolume(opts.workoutVolume)
   const fit = formatWorkoutFitGuidance({
     difficulty: opts.workoutDifficulty,
+    intensity:
+      weeklyIntensity && weeklyIntensity !== 'decide'
+        ? weeklyIntensity
+        : standing?.workoutIntensity,
+    volume:
+      weeklyVolume && weeklyVolume !== 'decide' ? weeklyVolume : standing?.workoutVolume,
     location: opts.profile?.onboarding_data?.training?.location,
     experience: opts.profile?.training_experience,
   })
