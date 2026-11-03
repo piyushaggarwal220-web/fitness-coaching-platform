@@ -178,7 +178,7 @@ function onboardingPreferredKind(
 function alternateSplit(
   current: Exclude<WorkoutSplitKind, 'unknown'>,
   profile: ProfileForSplit | null | undefined
-): Exclude<WorkoutSplitKind, 'unknown'> {
+): 'upper_lower' | 'ppl' {
   const days = parseTrainingDaysPerWeek(profile) ?? 4
   const options: Array<'ppl' | 'upper_lower'> =
     days === 3 || days >= 6 ? ['ppl', 'upper_lower'] : ['upper_lower', 'ppl']
