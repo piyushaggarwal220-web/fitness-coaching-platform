@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#12100f">
+  <title>LURVOX: Online Fitness Coaching from ₹599</title>
+  {{ content_for_header }}
+  <style>
+    html, body { margin: 0; height: 100%; background: #12100f; overflow: hidden; }
+    .lx-beige-exact {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #12100f;
+      z-index: 2147483646;
+    }
+  </style>
+</head>
+<body>
+  <iframe class="lx-beige-exact" src="https://app.lurvox.in/preview4" title="LURVOX"></iframe>
+  <div hidden>{{ content_for_layout }}</div>
+</body>
+</html>
