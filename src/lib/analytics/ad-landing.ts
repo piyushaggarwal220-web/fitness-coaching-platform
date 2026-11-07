@@ -52,7 +52,7 @@ export const PREVIEW2_DROPOFF_SECTIONS = [
   { id: 'close', key: 'p2_close', index: 6, label: 'Closing offer' },
 ] as const
 
-/** Sections on the colourful preview. Keys stay off the homepage and the other previews. */
+/** Sections on the colourful page. /preview3 and the live storefront at /preview4 both use these keys. */
 export const PREVIEW3_DROPOFF_SECTIONS = [
   { id: 'top', key: 'p3_hero', index: 0, label: 'Hero' },
   { id: 'plans', key: 'p3_plans', index: 1, label: 'Plans' },
@@ -64,7 +64,7 @@ export const PREVIEW3_DROPOFF_SECTIONS = [
   { id: 'quiz', key: 'p3_quiz', index: 7, label: 'Fitness quiz' },
 ] as const
 
-/** Sections on the beige duration preview. */
+/** Sections on the retired beige preview 4 page. Older /preview4 rows still use these keys. */
 export const PREVIEW4_DROPOFF_SECTIONS = [
   { id: 'top', key: 'p4_hero', index: 0, label: 'Hero' },
   { id: 'why', key: 'p4_why', index: 1, label: 'Why you won\'t fail' },
