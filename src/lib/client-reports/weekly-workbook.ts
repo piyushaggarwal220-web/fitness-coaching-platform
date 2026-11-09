@@ -68,6 +68,15 @@ function sessionMinutes(completion: TrackerCompletion): number | string {
   return Math.round(seconds / 60)
 }
 
+function ateSomethingElse(day: DailyTrackerDay): string {
+  const parts: string[] = []
+  for (const meal of snapshotMeals(day.snapshot)) {
+    const note = day.completion.meals?.[meal.id]?.notes?.trim()
+    if (note) parts.push(`${meal.title}: ${note}`)
+  }
+  return parts.join(' | ')
+}
+
 export function weeklyWorkbookFilename(clientName: string, coachingWeek: number): string {
   const safe = clientName.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') || 'client'
   return `Lurvox-Week-${coachingWeek}-${safe}.xlsx`
@@ -121,16 +130,17 @@ export function buildWeeklyWorkbook(input: WeeklyWorkbookInput): Buffer {
       'Sleep hours',
       'Workout minutes',
       'Logged?',
+      'Ate something else',
     ],
   ]
   const setRows: (string | number)[][] = [
-    ['Date', 'Exercise', 'Set', 'Reps', 'Weight (kg)', 'Completed'],
+    ['Date', 'Exercise', 'Set', 'Reps', 'Weight (kg)', 'Completed', 'Did something else'],
   ]
 
   for (const date of input.weekDates) {
     const day = byDate.get(date)
     if (!day) {
-      dailyRows.push([date, weekdayLabel(date), '', '', '', '', '', '', '', '', 'No'])
+      dailyRows.push([date, weekdayLabel(date), '', '', '', '', '', '', '', '', 'No', ''])
       continue
     }
     const meals = mealCounts(day)
@@ -146,11 +156,20 @@ export function buildWeeklyWorkbook(input: WeeklyWorkbookInput): Buffer {
       sleepHours(day.completion),
       sessionMinutes(day.completion),
       'Yes',
+      ateSomethingElse(day),
     ])
 
     for (const workout of snapshotWorkouts(day.snapshot)) {
       for (const exercise of listWorkoutExercises(workout)) {
-        const sets = day.completion.exercises?.[exercise.id]?.sets ?? []
+        const logged = day.completion.exercises?.[exercise.id]
+        const note = logged?.notes?.trim() ?? ''
+        const sets = logged?.sets ?? []
+        if (sets.length === 0) {
+          if (note) {
+            setRows.push([date, exercise.name, '', '', '', '', note])
+          }
+          continue
+        }
         sets.forEach((set, index) => {
           setRows.push([
             date,
@@ -159,6 +178,7 @@ export function buildWeeklyWorkbook(input: WeeklyWorkbookInput): Buffer {
             num(set.reps),
             num(set.weight),
             set.completed ? 'Yes' : 'No',
+            note,
           ])
         })
       }

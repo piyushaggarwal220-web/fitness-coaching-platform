@@ -5,6 +5,7 @@ import { Check, Dumbbell, Flame, Pause, Play, Save, Square, Wind } from 'lucide-
 import { Button } from '@/components/ui/Button'
 import { RestTimer } from '@/components/tracker/RestTimer'
 import { ExerciseFormSheet } from '@/components/tracker/ExerciseFormSheet'
+import { SubstitutionField } from '@/components/tracker/SubstitutionField'
 import { DurationLogFields, SetLogField } from '@/components/tracker/SetLogField'
 import {
   ProgressBar,
@@ -36,7 +37,9 @@ import {
   displayedSavedDurationSeconds,
   resolveWorkoutSaveDurationSeconds,
 } from '@/lib/daily-tracker/session-clock'
+import { EXERCISE_FORM_VIDEOS_ENABLED } from '@/lib/exercise-form/availability'
 import { shouldSkipExerciseForm } from '@/lib/exercise-form/normalize'
+import { exerciseHelpText, plainWorkoutFocus } from '@/lib/exercise-form/plain-cues'
 import { getCoachingDayInWeek } from '@/lib/checkin-schedule'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
 import type { ExerciseSetLog, TrackerCompletion, TrackerExerciseItem, TrackerWorkoutItem, WorkoutExercisePhase, WorkoutPhaseBlock } from '@/lib/daily-tracker/types'
@@ -254,9 +257,8 @@ export function WorkoutModule({
       return { ...prev, [currentBlock.id]: true }
     })
   }, [workout, currentExId])
-  const sessionTitle = workout
-    ? [workout.dayLabel, workout.focus].filter(Boolean).join(' · ')
-    : ''
+  const focusLabel = plainWorkoutFocus(workout?.focus)
+  const sessionTitle = workout ? [workout.dayLabel, focusLabel].filter(Boolean).join(' · ') : ''
   const workoutSaved = completion.workoutSession?.status === 'saved'
 
   const persistSession = useCallback(
@@ -464,7 +466,7 @@ export function WorkoutModule({
           {days.map((day) => {
             const option = workouts.find((w) => w.workoutDay === day.key)
             const isSuggested = day.key === suggestion
-            const focus = option?.focus
+            const focus = plainWorkoutFocus(option?.focus)
             return (
               <button
                 key={day.key}
@@ -674,7 +676,7 @@ export function WorkoutModule({
             <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 2 }}>Following</div>
             <div style={{ fontSize: 16, fontWeight: 800 }}>
               {selectedDay.label}
-              {workout.focus ? ` · ${workout.focus}` : ' workout'}
+              {focusLabel ? ` · ${focusLabel}` : ' workout'}
             </div>
           </div>
           <Button variant="secondary" onClick={() => selectWorkoutDay(null)}>
@@ -849,6 +851,8 @@ export function WorkoutModule({
             const isCurrent = currentEx?.id === ex.id
             const defaultWeight = ex.targetWeight?.replace(/[^\d.]/g, '')
             const restSeconds = resolveRestSeconds(ex)
+            const help = exerciseHelpText(ex.name, ex.notes)
+            const didInstead = exData?.notes?.trim() ?? ''
 
             return (
               <div
@@ -892,7 +896,8 @@ export function WorkoutModule({
                       </div>
                       {ex.name?.trim() &&
                       block.phase !== 'cooldown' &&
-                      !shouldSkipExerciseForm(ex.name) ? (
+                      !shouldSkipExerciseForm(ex.name) &&
+                      EXERCISE_FORM_VIDEOS_ENABLED ? (
                         <button
                           type="button"
                           onClick={() => setFormExercise(ex.name.trim())}
@@ -917,11 +922,33 @@ export function WorkoutModule({
                       {formatExerciseTarget(ex)}
                       {restSeconds > 0 ? ` · Rest ${formatRestClock(restSeconds)}` : ''}
                     </div>
-                    {ex.notes && (
-                      <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6, lineHeight: 1.4 }}>
-                        {ex.notes}
-                      </div>
-                    )}
+                    {help ? (
+                      <p
+                        style={{
+                          margin: '8px 0 0',
+                          fontSize: 15,
+                          lineHeight: 1.45,
+                          color: colors.textSecondary,
+                        }}
+                      >
+                        {help}
+                      </p>
+                    ) : null}
+                    <SubstitutionField
+                      label="Did a different exercise?"
+                      placeholder="Write what you did instead. It stays on today's record."
+                      value={didInstead}
+                      onSave={(next) =>
+                        void onPatch({
+                          exercises: {
+                            [ex.id]: {
+                              ...buildExercisePatch(ex, exData, getExerciseSets(ex, exData)),
+                              notes: next,
+                            },
+                          },
+                        })
+                      }
+                    />
                   </div>
                   {isDone && <Check size={24} color={colors.success} strokeWidth={3} />}
                 </div>

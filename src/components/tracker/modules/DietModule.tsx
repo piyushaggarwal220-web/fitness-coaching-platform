@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { SubstitutionField } from '@/components/tracker/SubstitutionField'
 import { Button } from '@/components/ui/Button'
 import {
   CompletionToggle,
@@ -194,6 +195,7 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
 
       {visibleMeals.map((meal) => {
         const mealDone = Boolean(completion.meals?.[meal.id]?.completed)
+        const ateInstead = completion.meals?.[meal.id]?.notes?.trim() ?? ''
         const isOpen = expanded === meal.id
         const macros = meal.macros
 
@@ -206,6 +208,11 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
                 {meal.mealTime && <span>{meal.mealTime}</span>}
                 {macros?.calories != null && <span>{macros.calories} kcal</span>}
                 {macros?.protein != null && <span>P {macros.protein}g</span>}
+                {ateInstead ? (
+                  <span>
+                    Ate something else: {ateInstead.length > 42 ? `${ateInstead.slice(0, 42).trimEnd()}…` : ateInstead}
+                  </span>
+                ) : null}
               </span>
             }
             expanded={isOpen}
@@ -218,7 +225,7 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
                 onToggle={() =>
                   void onPatch({
                     meals: {
-                      [meal.id]: { completed: !mealDone, notes: completion.meals?.[meal.id]?.notes },
+                      [meal.id]: { completed: !mealDone },
                     },
                   })
                 }
@@ -266,6 +273,19 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
                 </p>
               )}
 
+              <SubstitutionField
+                label="Ate something else?"
+                placeholder="Write what you ate. It stays on today's record."
+                value={ateInstead}
+                onSave={(next) =>
+                  void onPatch({
+                    meals: {
+                      [meal.id]: { completed: mealDone, notes: next },
+                    },
+                  })
+                }
+              />
+
               <Button
                 fullWidth
                 variant={mealDone ? 'secondary' : 'primary'}
@@ -273,7 +293,7 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
                 onClick={() =>
                   void onPatch({
                     meals: {
-                      [meal.id]: { completed: !mealDone, notes: completion.meals?.[meal.id]?.notes },
+                      [meal.id]: { completed: !mealDone },
                     },
                   })
                 }

@@ -100,13 +100,20 @@ const trackerDays: DailyTrackerDay[] = [
               targetReps: '8',
               phase: 'main',
             },
+            {
+              id: 'ex-row',
+              name: 'Seated Row',
+              targetSets: 3,
+              targetReps: '10',
+              phase: 'main',
+            },
           ],
           sortOrder: 2,
         },
       ],
     },
     completion: {
-      meals: { 'meal-breakfast': { completed: true } },
+      meals: { 'meal-breakfast': { completed: true, notes: 'Two eggs and toast' } },
       water: { ml: 2800 },
       sleep: { hours: 7.5 },
       exercises: {
@@ -116,6 +123,12 @@ const trackerDays: DailyTrackerDay[] = [
             { reps: 8, weight: 60, completed: true },
             { reps: 8, weight: 62.5, completed: true },
           ],
+          notes: 'Did dumbbell press',
+        },
+        'ex-row': {
+          completed: false,
+          sets: [],
+          notes: 'Did a band row',
         },
       },
       workoutSession: { status: 'saved', durationSeconds: 2400 },
@@ -156,11 +169,24 @@ assert('daily sheet has header + 7 days', daily.length === 8, String(daily.lengt
 const logged = daily.find((row) => row[0] === '2026-09-01')
 assert('logged day shows Yes', logged?.[10] === 'Yes')
 assert('logged day meals done is 1', logged?.[5] === 1)
+assert(
+  'logged day keeps what was eaten instead',
+  logged?.[11] === 'Breakfast: Two eggs and toast',
+  String(logged?.[11])
+)
 const blank = daily.find((row) => row[0] === '2026-08-31')
 assert('unopened day stays blank / No', blank?.[10] === 'No')
 
 const sets = XLSX.utils.sheet_to_json<(string | number)[]>(book.Sheets['Workout sets']!, { header: 1 })
 assert('set log includes 62.5 kg', sets.some((row) => row[4] === 62.5))
+assert(
+  'set log keeps the different exercise on the logged sets',
+  sets.some((row) => row[1] === 'Bench press' && row[6] === 'Did dumbbell press')
+)
+assert(
+  'a different exercise with no sets still stays on the record',
+  sets.some((row) => row[1] === 'Seated Row' && row[6] === 'Did a band row')
+)
 assert(
   'filename is client-safe',
   weeklyWorkbookFilename('Sriram Rathod', 2) === 'Lurvox-Week-2-Sriram-Rathod.xlsx'

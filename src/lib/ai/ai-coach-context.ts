@@ -158,6 +158,7 @@ export function formatTodayPlan(input: {
 
   let workoutLine = 'Workout: not on the plan yet'
   let trained = 'Trained today: no'
+  let didInstead: string[] = []
   if (workout && isRestWorkout(workout)) {
     workoutLine = 'Workout: rest day'
     trained = 'Trained today: rest day'
@@ -170,7 +171,20 @@ export function formatTodayPlan(input: {
     workoutLine = moves.length ? `Workout: ${moves.join('; ')}` : `Workout: ${workout.title}`
     const anyLogged = exercises.some((exercise) => completion.exercises?.[exercise.id]?.completed)
     trained = anyLogged ? 'Trained today: yes' : 'Trained today: no'
+    didInstead = exercises
+      .map((exercise) => {
+        const note = clip(completion.exercises?.[exercise.id]?.notes, 80)
+        return note ? `${exercise.name}: ${note}` : null
+      })
+      .filter((line): line is string => Boolean(line))
   }
+
+  const ateInstead = meals
+    .map((meal) => {
+      const note = clip(completion.meals?.[meal.id]?.notes, 80)
+      return note ? `${meal.title}: ${note}` : null
+    })
+    .filter((line): line is string => Boolean(line))
 
   const mealTotal = meals.length
   const mealsLogged = meals.filter((meal) => completion.meals?.[meal.id]?.completed).length
@@ -183,8 +197,12 @@ export function formatTodayPlan(input: {
 
   const todayPlan = [
     mealLines.length ? `Meals: ${mealLines.join(' | ')}` : 'Meals: not on the plan yet',
+    ateInstead.length ? `Ate something else: ${ateInstead.join(' | ')}` : null,
     workoutLine,
-  ].join('\n')
+    didInstead.length ? `Did something else: ${didInstead.join(' | ')}` : null,
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join('\n')
 
   return {
     todayPlan: clip(todayPlan, 900) ?? todayPlan,
@@ -247,12 +265,16 @@ function summarizeTrackerDay(day: RecentTrackerDay): string {
   const completion = day.completion
   const meals = completion?.meals ? Object.values(completion.meals) : []
   const mealsDone = meals.filter((meal) => meal.completed).length
+  const ateInstead = meals.filter((meal) => meal.notes?.trim()).length
   const exercises = completion?.exercises ? Object.values(completion.exercises) : []
+  const didInstead = exercises.filter((exercise) => exercise.notes?.trim()).length
   const trained =
     exercises.some((exercise) => exercise.completed) || completion?.workoutSession?.status === 'saved'
   const parts = [
     meals.length ? `meals ${mealsDone}/${meals.length}` : null,
+    ateInstead ? `ate something else (${ateInstead})` : null,
     trained ? 'trained' : 'no workout logged',
+    didInstead ? `different exercise (${didInstead})` : null,
     typeof completion?.water?.ml === 'number' && completion.water.ml > 0
       ? `water ${completion.water.ml} ml`
       : null,

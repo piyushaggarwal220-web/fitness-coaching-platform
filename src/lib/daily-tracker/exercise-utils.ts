@@ -262,7 +262,7 @@ export function buildExercisePatch(
   const target = sets.slice(0, ex.targetSets)
   const completed =
     target.length >= ex.targetSets && target.every((s) => Boolean(s.completed))
-  return { completed, sets, notes: data?.notes }
+  return { completed, sets }
 }
 
 export function getCurrentExercise(

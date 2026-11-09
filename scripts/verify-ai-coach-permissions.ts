@@ -6,6 +6,7 @@ import {
 } from '../src/lib/ai/coach-chat-persona'
 import {
   formatCheckinLine,
+  formatClientSituation,
   formatTodayPlan,
   purchasedPlanLine,
 } from '../src/lib/ai/ai-coach-context'
@@ -163,6 +164,42 @@ assert.doesNotMatch(day.todayPlan, /poha/)
 assert.match(day.todayPlan, /Bench press/)
 assert.match(day.trackerLine, /Meals logged today: 0 of 1/)
 assert.match(day.trackerLine, /Trained today: yes/)
+assert.doesNotMatch(day.todayPlan, /Ate something else/)
+assert.doesNotMatch(day.todayPlan, /Did something else/)
+
+const swapped = formatTodayPlan({
+  snapshot,
+  completion: {
+    selectedDietDay: 'monday',
+    selectedWorkoutDay: 'monday',
+    meals: { 'mon-breakfast': { completed: false, notes: 'Two eggs and toast' } },
+    exercises: { bench: { completed: false, sets: [], notes: 'Dumbbell press' } },
+  },
+  coachingDayInWeek: 1,
+  logged: true,
+  referenceDate: new Date('2026-09-28T08:00:00+05:30'),
+})
+assert.match(swapped.todayPlan, /oats and milk/)
+assert.match(swapped.todayPlan, /Ate something else: Breakfast: Two eggs and toast/)
+assert.match(swapped.todayPlan, /Did something else: Bench press: Dumbbell press/)
+
+const situation = formatClientSituation({
+  planDeliveredAt: null,
+  planSlug: null,
+  checkins: [],
+  recentDays: [
+    {
+      log_date: '2026-09-28',
+      overall_percent: 40,
+      completion: {
+        meals: { a: { completed: true, notes: 'eggs' } },
+        exercises: { b: { completed: false, sets: [], notes: 'press' } },
+      },
+    },
+  ],
+})
+assert.match(situation, /ate something else \(1\)/)
+assert.match(situation, /different exercise \(1\)/)
 
 const photoUrl = 'https://cdn.example.com/private-photo.jpg'
 const checkin = formatCheckinLine({

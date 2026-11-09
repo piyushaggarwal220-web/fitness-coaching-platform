@@ -23,7 +23,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 21
+export const TRACKER_PARSER_VERSION = 22
 
 const CARDIO_MOVEMENT =
   /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
@@ -609,6 +609,64 @@ function dayHeaderIsExplicitRest(label: string, body: string): boolean {
   )
 }
 
+/** The plain sentence a coach puts after sets x reps. The tracker shows it under the exercise. */
+function cleanCoachingAside(raw: string | undefined): string | undefined {
+  if (!raw) return undefined
+  let text = raw.replace(/\s+/g, ' ').trim().replace(/^[\s.:;,\-–—]+/, '')
+  if (text.startsWith('(') && text.endsWith(')')) text = text.slice(1, -1).trim()
+  text = text
+    .replace(
+      /\b(?:rest|recover(?:y)?)\s*(?:for\s*)?\d+\s*(?:[-–]\s*\d+\s*)?(?:s|sec|secs|seconds|m|min|mins|minutes)\b/gi,
+      ''
+    )
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^[\s.:;,\-–—]+/, '')
+    .trim()
+  if (text.length < 8) return undefined
+  if (
+    /^(?:reps?|each(?:\s+(?:side|leg|arm))?|per\s+(?:side|leg|arm)|total|kg|lbs?|light|heavy|slow|controlled)$/i.test(
+      text
+    )
+  ) {
+    return undefined
+  }
+  const sentence = text.split(/(?<=[.!])\s+(?=[A-Z])/)[0]?.trim() ?? text
+  if (sentence.length < 8) return undefined
+  return sentence.length > 180 ? `${sentence.slice(0, 177).trim()}…` : sentence
+}
+
+function coachingAside(line: string): string | undefined {
+  const trimmed = line.replace(/\s+/g, ' ').trim()
+  const patterns = [
+    /\d+\s*sets?\s*(?:[x×]|of|,)\s*(?:\d+(?:\s*(?:-|–|to)\s*\d+)?|AMRAP|\d+\s*s)(?:\s*(?:reps?|seconds?|secs?|s|taps?))?(?:\s*(?:each(?:\s+(?:side|leg|arm))?|\/side|per\s+(?:side|leg|arm)))?(?:\s*total)?(?:\s*(?:@|at)\s*[\d.]+\s*(?:kg|lbs?))?\s*(.*)$/i,
+    /:\s*\d+\s*reps?\b(?:\s*(?:each(?:\s+(?:side|leg|arm))?|\/side|per\s+(?:side|leg|arm)))?\s*(.*)$/i,
+    /\d+(?:\s*(?:to|-|–)\s*\d+)?\s*(?:seconds?|secs?|minutes?|mins?)\b(?:\s*(?:each(?:\s+(?:side|leg|arm))?|hold|\/side|per\s+(?:side|leg|arm)))?\s*(.*)$/i,
+  ]
+  for (const pattern of patterns) {
+    const cleaned = cleanCoachingAside(pattern.exec(trimmed)?.[1])
+    if (cleaned) return cleaned
+  }
+  return undefined
+}
+
+function mergeExerciseNotes(primary?: string, extra?: string): string | undefined {
+  const parts = [primary, extra]
+    .map((part) => part?.replace(/\s+/g, ' ').trim())
+    .filter((part): part is string => Boolean(part))
+  const unique: string[] = []
+  for (const part of parts) {
+    const key = part.toLowerCase()
+    if (unique.some((existing) => existing.toLowerCase() === key)) continue
+    if (unique.some((existing) => existing.toLowerCase().includes(key))) continue
+    const covering = unique.findIndex((existing) => key.includes(existing.toLowerCase()))
+    if (covering >= 0) unique.splice(covering, 1)
+    unique.push(part)
+  }
+  if (unique.length === 0) return undefined
+  return unique.join('. ').replace(/\.\s*\./g, '. ')
+}
+
 function stripExerciseListPrefix(value: string): string {
   return value
     .replace(/^(?:[A-Za-z]\d+[.)]\s*|\d+[.)]\s*)/, '')
@@ -751,9 +809,10 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
   const restMatch = trimmed.match(
     /(?:rest|recover(?:y)?)\s*(?:for\s*)?(\d+)\s*(?:[-–]\s*\d+)?\s*(s|sec|secs|seconds|m|min|mins|minutes)?/i
   )
+  const aside = coachingAside(trimmed)
   const parenNotes = name.match(/^(.+?)\s*\((.+)\)$/)
   const cleanName = parenNotes?.[1]?.trim() ?? name
-  const inlineNotes = parenNotes?.[2]?.trim() ?? match[5]?.trim()
+  const inlineNotes = mergeExerciseNotes(parenNotes?.[2]?.trim(), aside)
   // Normalize "6 to 8" / "6–8" → "6-8" for compact tracker display.
   const reps = match[3]!.replace(/\s*(?:to|–)\s*/gi, '-').replace(/\s+/g, '')
   let restSeconds: number | undefined
@@ -1884,6 +1943,28 @@ export function dropSelectedDaysForPlanChange(completion: TrackerCompletion): Tr
   return next
 }
 
+function mergeMealCompletions(
+  prevMap: TrackerCompletion['meals'],
+  nextMap: TrackerCompletion['meals']
+): TrackerCompletion['meals'] {
+  if (!nextMap) return prevMap
+  if (!prevMap) return nextMap
+  const out = { ...prevMap }
+  for (const [id, nextMeal] of Object.entries(nextMap)) {
+    const prevMeal = prevMap[id]
+    if (!prevMeal) {
+      out[id] = nextMeal
+      continue
+    }
+    out[id] = {
+      ...prevMeal,
+      ...nextMeal,
+      notes: nextMeal.notes !== undefined ? nextMeal.notes : prevMeal.notes,
+    }
+  }
+  return out
+}
+
 export function mergeCompletion(previous: TrackerCompletion, next: TrackerCompletion): TrackerCompletion {
   const mergeExercises = (
     prevMap: TrackerCompletion['exercises'],
@@ -1932,7 +2013,7 @@ export function mergeCompletion(previous: TrackerCompletion, next: TrackerComple
   }
 
   return {
-    meals: { ...previous.meals, ...next.meals },
+    meals: mergeMealCompletions(previous.meals, next.meals),
     exercises: mergeExercises(previous.exercises, next.exercises),
     cardio: { ...previous.cardio, ...next.cardio },
     supplements: { ...previous.supplements, ...next.supplements },

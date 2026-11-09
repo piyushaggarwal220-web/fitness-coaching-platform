@@ -284,6 +284,41 @@ assert(
     mergedSession.workoutSession?.startedAt === '2026-07-30T10:00:00.000Z'
 )
 
+const mealNoteKept = mergeCompletion(
+  { meals: { breakfast: { completed: false, notes: 'Two eggs' } } },
+  { meals: { breakfast: { completed: true } } }
+)
+assert(
+  'marking a meal done keeps what they ate instead',
+  mealNoteKept.meals?.breakfast?.completed === true && mealNoteKept.meals?.breakfast?.notes === 'Two eggs'
+)
+const mealNoteCleared = mergeCompletion(
+  { meals: { breakfast: { completed: true, notes: 'Two eggs' } } },
+  { meals: { breakfast: { completed: true, notes: '' } } }
+)
+assert(
+  'clearing a meal note removes it and keeps the meal done',
+  mealNoteCleared.meals?.breakfast?.notes === '' && mealNoteCleared.meals?.breakfast?.completed === true
+)
+const exerciseNoteKept = mergeCompletion(
+  {
+    exercises: {
+      bench: {
+        completed: false,
+        sets: [{ reps: 8, completed: true }],
+        notes: 'Did dumbbell press',
+      },
+    },
+  },
+  { exercises: { bench: { completed: true, sets: [{ reps: 8, weight: 20, completed: true }] } } }
+)
+assert(
+  'logging a set keeps the different exercise note',
+  exerciseNoteKept.exercises?.bench?.notes === 'Did dumbbell press' &&
+    exerciseNoteKept.exercises?.bench?.sets?.[0]?.weight === 20 &&
+    exerciseNoteKept.exercises?.bench?.completed === true
+)
+
 const draftMerged = applyTrackerDraft(
   { exercises: { ex1: { completed: false } } },
   {
@@ -769,9 +804,17 @@ Quad stretch: 30 seconds each leg
     sameWorkout?.type === 'workout'
       ? (sameWorkout.phases.find((p) => p.phase === 'main')?.exercises ?? []).map((e) => e.name)
       : []
+  const squat =
+    sameWorkout?.type === 'workout'
+      ? sameWorkout.exercises.find((e) => /barbell back squat/i.test(e.name))
+      : undefined
   assert(
     'same-line coaching after sets x reps still keeps the squat',
     sameMain.some((n) => /barbell back squat/i.test(n))
+  )
+  assert(
+    'same-line how-to is kept under the exercise',
+    /keep your chest up/i.test(squat?.notes ?? '')
   )
   assert(
     'same-line coaching keeps walking lunges',
@@ -1291,7 +1334,7 @@ Day 7 (Sunday): Active Recovery`,
 }
 
 {
-  assert('parser version rebuilds stored tracker days', TRACKER_PARSER_VERSION === 21)
+  assert('parser version rebuilds stored tracker days', TRACKER_PARSER_VERSION === 22)
   const liveDiet = `Day 3 (Wednesday)
 Breakfast, 10:00
 Have 60g oats.
