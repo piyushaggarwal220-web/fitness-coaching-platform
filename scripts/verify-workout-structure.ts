@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { assessWorkoutStructure } from '../src/lib/ai/workout-structure'
+import { assessWorkoutStructure, isCommonYouTubeExercise } from '../src/lib/ai/workout-structure'
 import { assessDietFollowsRequest, clientRequestedDietChange } from '../src/lib/ai/diet-update-check'
 
 const broken = `
@@ -75,6 +75,31 @@ Dumbbell Bench Press: 3 sets x 8 reps
 `
 assert.ok(assessWorkoutStructure(twice).some((line) => /twice/i.test(line)))
 assert.deepEqual(assessWorkoutStructure(good), [])
+
+const invented = `
+Day 1 (Monday)
+Main Workout:
+Heel Elevated Tempo Squat: 3 sets x 8 reps
+Meadows Row: 3 sets x 10 reps
+Dumbbell Curl: 3 sets x 10 reps
+Tricep Pushdown: 3 sets x 12 reps
+`
+assert.ok(
+  assessWorkoutStructure(invented).some((line) => /search on YouTube/i.test(line)),
+  assessWorkoutStructure(invented).join(' | ')
+)
+assert.deepEqual(
+  assessWorkoutStructure(`
+Day 1 (Monday)
+Main Workout:
+Goblet Squat: 3 sets x 10 reps
+Dumbbell Romanian Deadlift: 3 sets x 8 reps
+Walking Lunge: 3 sets x 10 reps
+Leg Curl: 3 sets x 12 reps
+Plank: 3 sets x 30 sec
+`),
+  []
+)
 
 const noArms = `
 Day 1 (Monday)
@@ -167,5 +192,24 @@ assert.equal(clientRequestedDietChange({ progress_notes: 'Diet was good and work
 assert.equal(clientRequestedDietChange({ progress_notes: 'Please remove paneer and add more rice.' }), true)
 assert.equal(clientRequestedDietChange({ progress_notes: 'I am hungry all evening.' }), true)
 assert.equal(clientRequestedDietChange({ digestion: 'bloated after lunch' }), true)
+
+assert.equal(isCommonYouTubeExercise('lat pull down'), true)
+assert.equal(isCommonYouTubeExercise('pullover'), true)
+assert.equal(isCommonYouTubeExercise('back extension'), true)
+assert.equal(isCommonYouTubeExercise('romanian deadlift'), true)
+assert.equal(isCommonYouTubeExercise('deficit push up'), false)
+assert.equal(isCommonYouTubeExercise('nordic curl'), false)
+assert.equal(isCommonYouTubeExercise('hip hinge'), false)
+
+const standardNames = `
+Day 1 (Monday)
+Main Workout:
+Lat Pull Down: 3 sets x 10 reps
+Dumbbell Pullover: 3 sets x 10 reps
+Back Extension: 3 sets x 12 reps
+Dumbbell Curl: 3 sets x 10 reps
+Tricep Pushdown: 3 sets x 12 reps
+`
+assert.deepEqual(assessWorkoutStructure(standardNames), [])
 
 console.log('workout structure and diet request checks passed')

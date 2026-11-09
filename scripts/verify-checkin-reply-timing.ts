@@ -121,4 +121,33 @@ assert.match(biweeklyCard.currentLine, /Week 10 Updated Plan/)
 assert.match(biweeklyCard.nextLine, /week 12/)
 assert.match(biweeklyCard.nextLine, /keep the plan you have/)
 
+const sundayChoiceCard = getHomePlanCardCopy({
+  phase: 'has_plan',
+  planTitle: 'Week 4 Plan',
+  deliveredAtLabel: 'Sun, 26 Oct, 8:00 pm',
+  biweekly: false,
+  sundayChoice: true,
+  nextUpdateWeek: 5,
+  weeklyDueNow: true,
+  checkedInAt: null,
+  readyBy: null,
+  overdue: false,
+})
+assert.match(sundayChoiceCard.nextLine, /Sunday check-in/)
+assert.match(sundayChoiceCard.nextLine, /keep this one/)
+
+const keptCard = getHomePlanCardCopy({
+  phase: 'checkin_keeps_current',
+  planTitle: 'Week 4 Plan',
+  deliveredAtLabel: 'Sun, 26 Oct, 8:00 pm',
+  biweekly: false,
+  sundayChoice: true,
+  nextUpdateWeek: 5,
+  weeklyDueNow: false,
+  checkedInAt: 'Sun, 2 Nov, 12:00 pm',
+  readyBy: null,
+  overdue: false,
+})
+assert.match(keptCard.nextLine, /kept this plan/)
+
 console.log('✓ check-in reply wait: plan goes out at 26–28 minutes, clients are told 30 minutes')

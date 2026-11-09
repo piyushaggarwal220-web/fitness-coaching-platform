@@ -30,9 +30,24 @@ const CORE_MOVE =
 
 export type WorkingExercise = {
   name: string
+  label: string
   sets: number
   arm: boolean
   leg: boolean
+}
+
+/** Ordinary moves a person can search on YouTube. Equipment words are stripped first. */
+const COMMON_EXERCISE =
+  /\b(bench press|chest press|floor press|push ups?|press ups?|dips?|flye?s?|pec deck|overhead press|shoulder press|military press|lateral raises?|front raises?|face pulls?|shrugs?|upright rows?|rows?|pulldowns?|pull downs?|pull ups?|chin ups?|pullovers?|curls?|pushdowns?|push downs?|tricep extensions?|triceps extensions?|overhead extensions?|back extensions?|hyperextensions?|kickbacks?|squats?|leg press|lunges?|split squats?|step ups?|romanian deadlifts?|deadlifts?|hip thrusts?|glute bridges?|leg curls?|hamstring curls?|leg extensions?|calf raises?|good mornings?|hack squats?|planks?|crunches?|sit ups?|dead bugs?|bird dogs?|leg raises?|mountain climbers?|hip abductions?|hip adductions?|swings?|wall sits?|donkey kicks?|supermans?)\b/i
+
+/** A real move with a made-up setup is still a custom exercise. */
+const CUSTOM_EXERCISE =
+  /\b(tempo|paused?|deficit|pulses?|isometric|mechanical|complex|flow|combo|circuit|custom|special|unique|meadows?|pendlay|zercher|snatch|turkish|jefferson|copenhagen|renegade|landmine|nordic|sots|anderson|spoto|larsen|elevated|eccentric|half kneeling|tall kneeling|anti rotation|with|coach)\b|\bto\b/i
+
+export function isCommonYouTubeExercise(name: string): boolean {
+  const key = name.toLowerCase().replace(/\s+/g, ' ').trim()
+  if (!key || CUSTOM_EXERCISE.test(key)) return false
+  return COMMON_EXERCISE.test(key)
 }
 
 export type TrainingDay = {
@@ -66,6 +81,7 @@ function exerciseFromLine(line: string): WorkingExercise | null {
   if (!Number.isFinite(sets) || sets <= 0) return null
   return {
     name,
+    label: rawName.replace(/^[-*•]\s*/, '').trim(),
     sets,
     arm: ARM_MOVE.test(line) && !LEG_CURL.test(line),
     leg: LEG_MOVE.test(line) || LEG_CURL.test(line),
@@ -138,6 +154,16 @@ export function assessWorkoutStructure(
     if (legs.length > 0 && upper.length > 0) {
       errors.push(
         `${day.weekday} mixes body parts (${upper[0]?.name} with ${legs[0]?.name}). One region per day: upper, lower, push, pull, or legs. Chest on a leg day is only an example. A core finisher may stay. Do not write a full-body day.`
+      )
+    }
+    const unusual = day.exercises.filter((exercise) => !isCommonYouTubeExercise(exercise.name))
+    if (unusual.length > 0) {
+      const shown = unusual
+        .slice(0, 3)
+        .map((exercise) => exercise.label)
+        .join(', ')
+      errors.push(
+        `${day.weekday} lists ${shown}, which is not a normal exercise people can search on YouTube. Use a common exercise such as Bench Press, Squat, Romanian Deadlift, Lat Pulldown, Row, Shoulder Press, or Push Up. Do not invent a move.`
       )
     }
     const seen = new Set<string>()

@@ -5,7 +5,11 @@ import { seedPlannerCheckin } from '@/lib/ai/client-planner'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { openAiBillingHoldUntil } from '@/lib/ai/openai-quota-guard'
-import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
+import {
+  fetchCapturedPlanSlug,
+  offersSundayPlanChoice,
+  shouldGenerateChosenWeeklyPlan,
+} from '@/lib/plan-update-cadence'
 import { shouldBypassCheckinScheduleServer } from '@/lib/config'
 import {
   buildCheckinSummary,
@@ -84,6 +88,7 @@ type WeeklyBody = {
   workout_difficulty?: string | null
   workout_intensity?: string | null
   workout_volume?: string | null
+  wants_plan_update?: boolean | null
   progress_photo_front?: string | null
   progress_photo_side?: string | null
   progress_photo_back?: string | null
@@ -304,6 +309,18 @@ export async function POST(request: Request) {
           : null,
     }
 
+    const planSlug = body.checkinType === 'weekly' ? await fetchCapturedPlanSlug(user.id) : null
+    let weeklyPlanChoice: boolean | null = null
+    if (body.checkinType === 'weekly' && offersSundayPlanChoice(planSlug)) {
+      if (typeof body.wants_plan_update !== 'boolean') {
+        return NextResponse.json(
+          { success: false, error: 'Choose whether you want a new plan this week.' },
+          { status: 400 }
+        )
+      }
+      weeklyPlanChoice = body.wants_plan_update
+    }
+
     let insertRow: Record<string, unknown>
 
     if (body.checkinType === 'mid_week') {
@@ -336,6 +353,7 @@ export async function POST(request: Request) {
           (normalizeWorkoutVolume(body.workout_volume) ?? 'decide') !== 'decide'
             ? deriveWorkoutDifficulty(body.workout_intensity, body.workout_volume)
             : normalizeWorkoutDifficulty(body.workout_difficulty) ?? 'keep',
+        wants_plan_update: weeklyPlanChoice,
         progress_photo_front: body.progress_photo_front ?? null,
         progress_photo_side: body.progress_photo_side ?? null,
         progress_photo_back: body.progress_photo_back ?? null,
@@ -450,9 +468,12 @@ export async function POST(request: Request) {
 
     let planUpdateScheduled = false
     if (body.checkinType === 'weekly') {
-      const planSlug = await fetchCapturedPlanSlug(user.id)
       const autoUpdate =
-        shouldAutoGenerateWeeklyPlanDraft(planSlug, scheduled.coachingWeek) &&
+        shouldGenerateChosenWeeklyPlan({
+          planSlug,
+          coachingWeek: scheduled.coachingWeek,
+          wantsPlanUpdate: weeklyPlanChoice,
+        }) &&
         !coachRequiresManualPlanDelivery(profile.coach_id) &&
         !usesHumanCoach(profile)
       planUpdateScheduled = autoUpdate

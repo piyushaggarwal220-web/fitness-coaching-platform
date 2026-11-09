@@ -76,6 +76,8 @@ pass('postCheckinToCoachChat hard-blocks weekly check-in posts')
 
 const draftSrc = readFileSync(join(process.cwd(), 'src/lib/ai/weekly-plan-draft.ts'), 'utf8')
 assert.equal(draftSrc.includes('shouldSkipCorePlanRefresh'), false)
+assert.equal(draftSrc.includes('skipDietRefresh'), false)
+assert.equal(draftSrc.includes('clientRequestedDietChange'), false)
 assert.match(draftSrc, /actionId: 'review_update_diet'/)
 assert.match(draftSrc, /actionId: 'review_update_workout'/)
 pass('weekly AI draft always regenerates diet + workout')

@@ -7,8 +7,7 @@
 import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
 import { GeneratePlanError, generatePlan } from '@/lib/ai/generate-plan'
 import { loadClientJourneySnapshot } from '@/lib/ai/client-journey'
-import { clientRequestedDietChange } from '@/lib/ai/diet-update-check'
-import { dietTextHasCalorieConflict, prepareNutritionPlanForSave } from '@/lib/ai/nutrition-macro-sync'
+import { prepareNutritionPlanForSave } from '@/lib/ai/nutrition-macro-sync'
 import {
   logDraftWorkflow,
   persistDraftGenerationLog,
@@ -30,85 +29,14 @@ import { getNextPlanVersion } from '@/lib/plans'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
-import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
+import {
+  fetchCapturedPlanSlug,
+  offersSundayPlanChoice,
+  shouldGenerateChosenWeeklyPlan,
+} from '@/lib/plan-update-cadence'
 import { loadSameWeekMidWeekCheckin } from '@/lib/ai/same-week-midweek'
 import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
 import type { SupabaseClient } from '@supabase/supabase-js'
-
-function hasMeaningfulText(value: string | null | undefined): boolean {
-  const text = value?.trim()
-  if (!text) return false
-  return !/^(none|n\/a|na|no|nil|-)$/i.test(text)
-}
-
-/**
- * Detect client-written requests to change food/training — progress_notes is required
- * every week, so we only treat it as a plan signal when change language appears.
- */
-function clientRequestedPlanChange(checkin: Checkin): boolean {
-  const CHANGE_SIGNAL =
-    /\b(change|chang(?:e|ing)|swap|replace|remov(?:e|ing)|add(?:ing)?|increas(?:e|ing)|decreas(?:e|ing)|lower|rais(?:e|ing)|reduc(?:e|ing)|less|more|can'?t|cannot|struggl|hate|don'?t like|dislike|prefer|instead|switch|modif(?:y|ying)|updat(?:e|ing)|adjust|too (?:much|little|hard|easy|heavy|light)|want|need|please|request|stop|start|different|allerg|hurt|injur|pain|sick|digest|bloated|constipat|skip|miss(?:ed|ing)?|swap out|cut (?:out|back)|new (?:meal|exercise|workout|split)|vegetarian|non.?veg|egg|chicken|gym|home workout)\b/i
-
-  const fields = [
-    checkin.progress_notes,
-    checkin.notes,
-    checkin.questions_for_coach,
-    checkin.adherence_struggles,
-    checkin.pain_injuries,
-    checkin.digestion,
-    checkin.cardio_completed,
-  ]
-
-  return fields.some((text) => hasMeaningfulText(text) && CHANGE_SIGNAL.test(text!))
-}
-
-/** Stable weekly check-in: good scores, no pain/questions/struggles/change requests. */
-function isStableWeeklyCheckin(checkin: Checkin): boolean {
-  if (hasMeaningfulText(checkin.pain_injuries)) return false
-  if (hasMeaningfulText(checkin.questions_for_coach)) return false
-  if (hasMeaningfulText(checkin.adherence_struggles)) return false
-  if (clientRequestedPlanChange(checkin)) return false
-
-  const scoreOk = (value: number | null | undefined, min: number) =>
-    typeof value === 'number' && Number.isFinite(value) ? value >= min : true
-  const stressOk =
-    typeof checkin.stress_level === 'number' && Number.isFinite(checkin.stress_level)
-      ? checkin.stress_level <= 6
-      : true
-
-  return (
-    scoreOk(checkin.energy_level, 6) &&
-    scoreOk(checkin.sleep_quality, 6) &&
-    scoreOk(checkin.diet_adherence, 7) &&
-    scoreOk(checkin.workout_adherence, 7) &&
-    stressOk
-  )
-}
-
-/** Skip cardio/supplement AI when active plan has them and check-in is stable. */
-function shouldSkipSupportPlanRefresh(checkin: Checkin, active: Plan | null): boolean {
-  const hasCardio = Boolean(active?.cardio_plan?.trim())
-  const hasSupplements = Boolean(active?.supplement_plan?.trim())
-  if (!hasCardio || !hasSupplements) return false
-  return isStableWeeklyCheckin(checkin)
-}
-
-
-/** Skip diet/workout AI when active plan has both and check-in is stable. */
-function shouldSkipCorePlanRefresh(checkin: Checkin, active: Plan | null): boolean {
-  const hasNutrition = Boolean(active?.nutrition_plan?.trim())
-  const hasWorkout = Boolean(active?.workout_plan?.trim())
-  if (!hasNutrition || !hasWorkout) return false
-  // Never carry a self-contradicting diet forward — regenerate so the numbers get fixed.
-  if (dietTextHasCalorieConflict(active?.nutrition_plan)) return false
-  return isStableWeeklyCheckin(checkin)
-}
-
-function buildStableWeekCoachNotes(profile: OnboardingProfile, checkin: Checkin): string {
-  const name = profile.name?.trim() || 'there'
-  const week = checkin.coaching_week ? `Week ${checkin.coaching_week}` : 'this week'
-  return `Hi ${name} — ${week} looks solid. Energy, sleep, and adherence are in a good place, so we're keeping your current plan steady. Keep the consistency going; your coach is here if you need anything.`
-}
 
 function pickPrimaryModel(sections: DraftSectionUsage[]): string | null {
   if (sections.length === 0) return null
@@ -355,7 +283,18 @@ export async function generateWeeklyPlanDraft(input: {
       return { planId: null, error: null, generationTimeMs: Date.now() - started }
     }
     const planSlug = await fetchCapturedPlanSlug(input.clientId)
-    if (!shouldAutoGenerateWeeklyPlanDraft(planSlug, input.coachingWeek)) {
+    const { data: choiceRow } = await admin
+      .from('checkins')
+      .select('wants_plan_update')
+      .eq('id', input.checkinId)
+      .maybeSingle()
+    if (
+      !shouldGenerateChosenWeeklyPlan({
+        planSlug,
+        coachingWeek: input.coachingWeek,
+        wantsPlanUpdate: choiceRow?.wants_plan_update,
+      })
+    ) {
       logDraftWorkflow({
         event: 'draft_finished',
         clientId: input.clientId,
@@ -366,6 +305,29 @@ export async function generateWeeklyPlanDraft(input: {
         generationTimeMs: Date.now() - started,
       })
       return { planId: null, error: null, generationTimeMs: Date.now() - started }
+    }
+  }
+
+  if (trigger === 'retry') {
+    const planSlug = await fetchCapturedPlanSlug(input.clientId)
+    if (offersSundayPlanChoice(planSlug)) {
+      const { data: choiceRow } = await admin
+        .from('checkins')
+        .select('wants_plan_update')
+        .eq('id', input.checkinId)
+        .maybeSingle()
+      if (choiceRow?.wants_plan_update === false) {
+        logDraftWorkflow({
+          event: 'draft_finished',
+          clientId: input.clientId,
+          coachId: input.coachId,
+          checkinId: input.checkinId,
+          checkinWeek: input.coachingWeek,
+          trigger,
+          generationTimeMs: Date.now() - started,
+        })
+        return { planId: null, error: null, generationTimeMs: Date.now() - started }
+      }
     }
   }
 
@@ -426,18 +388,43 @@ export async function generateWeeklyPlanDraft(input: {
       currentCheckin: checkinTyped,
     })
     const sections: DraftSectionUsage[] = []
-    const skipCoreRefresh = false
-    const skipSupportRefresh = false
-    const skipDietRefresh =
-      Boolean(active?.nutrition_plan?.trim()) &&
-      !clientRequestedDietChange(checkinTyped) &&
-      !(sameWeekMidWeek && clientRequestedDietChange(sameWeekMidWeek)) &&
-      !dietTextHasCalorieConflict(active?.nutrition_plan)
 
     let dietForm: PlanFormData
     let updatedDietContext: Plan | null
 
-    if (skipDietRefresh && active) {
+    try {
+      const dietResult = await generatePlan({
+        profile: profileTyped,
+        latestCheckin: checkinTyped,
+        sameWeekMidWeekCheckin: sameWeekMidWeek,
+        actionId: 'review_update_diet',
+        activePlan: active,
+        validationMode: 'nutrition_focus',
+        clientJourney,
+        coachInstructions: buildActionCoachInstructions('review_update_diet', {
+          activePlan: active,
+          checkin: checkinTyped,
+          midWeekCheckin: sameWeekMidWeek,
+          coachNote,
+        }),
+      })
+      sections.push({
+        action: 'review_update_diet',
+        model: dietResult.model,
+        inputTokens: dietResult.inputTokens,
+        outputTokens: dietResult.outputTokens,
+      })
+      dietForm = generatedDietFormData(dietResult.generatedPlan, input.clientId)
+      updatedDietContext = buildUpdatedDietPlanForPrompt(
+        active,
+        dietForm.nutrition_plan,
+        null,
+        null
+      )
+    } catch (error) {
+      if (!active?.nutrition_plan?.trim()) throw error
+      const message = error instanceof Error ? error.message : 'diet rewrite failed'
+      console.warn('[weekly-plan] kept the current diet after a failed rewrite', message.slice(0, 240))
       dietForm = dietFormFromActive(input.clientId, active)
       updatedDietContext = buildUpdatedDietPlanForPrompt(
         active,
@@ -445,87 +432,41 @@ export async function generateWeeklyPlanDraft(input: {
         null,
         null
       )
-    } else {
-      try {
-        const dietResult = await generatePlan({
-          profile: profileTyped,
-          latestCheckin: checkinTyped,
-          sameWeekMidWeekCheckin: sameWeekMidWeek,
-          actionId: 'review_update_diet',
-          activePlan: active,
-          validationMode: 'nutrition_focus',
-          clientJourney,
-          coachInstructions: buildActionCoachInstructions('review_update_diet', {
-            activePlan: active,
-            checkin: checkinTyped,
-            midWeekCheckin: sameWeekMidWeek,
-            coachNote,
-          }),
-        })
-        sections.push({
-          action: 'review_update_diet',
-          model: dietResult.model,
-          inputTokens: dietResult.inputTokens,
-          outputTokens: dietResult.outputTokens,
-        })
-        dietForm = generatedDietFormData(dietResult.generatedPlan, input.clientId)
-        updatedDietContext = buildUpdatedDietPlanForPrompt(
-          active,
-          dietForm.nutrition_plan,
-          null,
-          null
-        )
-      } catch (error) {
-        if (!active?.nutrition_plan?.trim()) throw error
-        const message = error instanceof Error ? error.message : 'diet rewrite failed'
-        console.warn('[weekly-plan] kept the current diet after a failed rewrite', message.slice(0, 240))
-        dietForm = dietFormFromActive(input.clientId, active)
-        updatedDietContext = buildUpdatedDietPlanForPrompt(
-          active,
-          dietForm.nutrition_plan,
-          null,
-          null
-        )
-      }
     }
 
     let workoutForm: PlanFormData
-    if (skipCoreRefresh && active) {
-      workoutForm = workoutFormFromActive(input.clientId, active)
-    } else {
-      try {
-        const workoutResult = await generatePlan({
-          profile: profileTyped,
-          latestCheckin: checkinTyped,
-          sameWeekMidWeekCheckin: sameWeekMidWeek,
-          actionId: 'review_update_workout',
+    try {
+      const workoutResult = await generatePlan({
+        profile: profileTyped,
+        latestCheckin: checkinTyped,
+        sameWeekMidWeekCheckin: sameWeekMidWeek,
+        actionId: 'review_update_workout',
+        activePlan: active,
+        updatedDietPlan: updatedDietContext,
+        validationMode: 'workout_focus',
+        clientJourney,
+        coachInstructions: buildActionCoachInstructions('review_update_workout', {
           activePlan: active,
-          updatedDietPlan: updatedDietContext,
-          validationMode: 'workout_focus',
-          clientJourney,
-          coachInstructions: buildActionCoachInstructions('review_update_workout', {
-            activePlan: active,
-            checkin: checkinTyped,
-            midWeekCheckin: sameWeekMidWeek,
-            coachNote,
-          }),
-        })
-        sections.push({
-          action: 'review_update_workout',
-          model: workoutResult.model,
-          inputTokens: workoutResult.inputTokens,
-          outputTokens: workoutResult.outputTokens,
-        })
-        workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, input.clientId)
-      } catch (error) {
-        const message = error instanceof Error ? error.message : ''
-        const structureFailed =
-          error instanceof GeneratePlanError &&
-          /back-to-back|Arm work is too low|Leg work is too low|working exercise/i.test(message)
-        if (!structureFailed || !active?.workout_plan?.trim()) throw error
-        console.warn('[weekly-plan] kept the current workout after a broken rewrite', message.slice(0, 240))
-        workoutForm = workoutFormFromActive(input.clientId, active)
-      }
+          checkin: checkinTyped,
+          midWeekCheckin: sameWeekMidWeek,
+          coachNote,
+        }),
+      })
+      sections.push({
+        action: 'review_update_workout',
+        model: workoutResult.model,
+        inputTokens: workoutResult.inputTokens,
+        outputTokens: workoutResult.outputTokens,
+      })
+      workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, input.clientId)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : ''
+      const structureFailed =
+        error instanceof GeneratePlanError &&
+        /back-to-back|Arm work is too low|Leg work is too low|working exercise/i.test(message)
+      if (!structureFailed || !active?.workout_plan?.trim()) throw error
+      console.warn('[weekly-plan] kept the current workout after a broken rewrite', message.slice(0, 240))
+      workoutForm = workoutFormFromActive(input.clientId, active)
     }
 
     // Persist a publishable core draft before optional cardio/supplement calls.
@@ -551,9 +492,7 @@ export async function generateWeeklyPlanDraft(input: {
           workout_plan: workoutForm.workout_plan,
           cardio_plan: cardioPlan,
           supplement_plan: supplementPlan,
-          coach_notes: skipCoreRefresh
-            ? buildStableWeekCoachNotes(profileTyped, checkinTyped)
-            : [dietForm.coach_notes, workoutForm.coach_notes].filter(Boolean).join('\n\n'),
+          coach_notes: [dietForm.coach_notes, workoutForm.coach_notes].filter(Boolean).join('\n\n'),
         }
       )
 
@@ -607,39 +546,37 @@ export async function generateWeeklyPlanDraft(input: {
       profile: profileTyped,
     })
 
-    // Skip support regenerations when the active plan already has them and the check-in looks stable.
-    if (!skipSupportRefresh) {
-      try {
-        const cardioResult = await generatePlan({
-          profile: profileTyped,
-          latestCheckin: checkinTyped,
-          sameWeekMidWeekCheckin: sameWeekMidWeek,
-          actionId: 'review_update_cardio',
+    try {
+      const cardioResult = await generatePlan({
+        profile: profileTyped,
+        latestCheckin: checkinTyped,
+        sameWeekMidWeekCheckin: sameWeekMidWeek,
+        actionId: 'review_update_cardio',
+        activePlan: active,
+        updatedDietPlan: updatedDietContext,
+        validationMode: 'cardio_focus',
+        clientJourney,
+        coachInstructions: buildActionCoachInstructions('review_update_cardio', {
           activePlan: active,
-          updatedDietPlan: updatedDietContext,
-          validationMode: 'cardio_focus',
-          clientJourney,
-          coachInstructions: buildActionCoachInstructions('review_update_cardio', {
-            activePlan: active,
-            checkin: checkinTyped,
-            midWeekCheckin: sameWeekMidWeek,
-            coachNote,
-          }),
-        })
-        sections.push({
-          action: 'review_update_cardio',
-          model: cardioResult.model,
-          inputTokens: cardioResult.inputTokens,
-          outputTokens: cardioResult.outputTokens,
-        })
-        cardioForm = generatedCardioFormData(
-          cardioResult.generatedPlan,
-          input.clientId,
-          active?.cardio_plan
-        )
-      } catch {
-        // Keep existing cardio if the dedicated step fails.
-      }
+          checkin: checkinTyped,
+          midWeekCheckin: sameWeekMidWeek,
+          coachNote,
+        }),
+      })
+      sections.push({
+        action: 'review_update_cardio',
+        model: cardioResult.model,
+        inputTokens: cardioResult.inputTokens,
+        outputTokens: cardioResult.outputTokens,
+      })
+      cardioForm = generatedCardioFormData(
+        cardioResult.generatedPlan,
+        input.clientId,
+        active?.cardio_plan
+      )
+    } catch {
+      // Keep existing cardio if the dedicated step fails.
+    }
 
       try {
         const supplementResult = await generatePlan({
@@ -681,7 +618,6 @@ export async function generateWeeklyPlanDraft(input: {
         activePlan: active,
         profile: profileTyped,
       })
-    }
 
     const generationTimeMs = Date.now() - started
     const finishEvent = trigger === 'retry' ? 'retry_finished' : 'draft_finished'
@@ -711,8 +647,8 @@ export async function generateWeeklyPlanDraft(input: {
       model: pickPrimaryModel(sections),
       promptTokens,
       completionTokens,
-      skippedCore: skipCoreRefresh,
-      skippedSupport: skipSupportRefresh,
+      skippedCore: false,
+      skippedSupport: false,
       sections,
     })
 

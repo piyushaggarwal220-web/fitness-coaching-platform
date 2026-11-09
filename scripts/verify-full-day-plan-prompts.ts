@@ -111,7 +111,7 @@ assert(
   workoutFiles.every((file) => /training days per week is a hard cap/i.test(read(file)) || /exact count/i.test(read(file)))
 )
 
-const workoutSectionPhrases = ['Warm-up:', 'Main Workout:', 'Post-Workout:', 'shared warmup']
+const workoutSectionPhrases = ['Warm-up:', 'Main Workout:', 'Post-Workout:', 'shared warmup', 'everyday words']
 for (const file of workoutFiles) {
   const body = read(file)
   for (const phrase of workoutSectionPhrases) {
@@ -122,6 +122,10 @@ for (const file of workoutFiles) {
 assert(
   'generate-plan workout instructions include tracker section rules',
   generatePlanSrc.includes('WORKOUT_SECTION_PROMPT_RULES')
+)
+assert(
+  'workout quality rules explain each exercise in everyday words',
+  read('src/lib/ai/plan-quality-rules.ts').includes('everyday words')
 )
 assert(
   'generate-plan workout instructions forbid a shared cooldown after the week',

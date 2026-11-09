@@ -10,7 +10,7 @@ import { sendNotification } from '@/lib/notifications/service'
 import { activatePlan } from '@/lib/plans'
 import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
 import { usesHumanCoach } from '@/lib/coach-service'
-import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
+import { fetchCapturedPlanSlug, shouldGenerateChosenWeeklyPlan } from '@/lib/plan-update-cadence'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
@@ -121,6 +121,10 @@ async function sendOneCheckin(checkinId: string) {
     trigger: 'retry',
   })
 
+  if (!result.error && !result.planId) {
+    return { checkinId, name, status: 'SKIP' as const, error: 'client kept the current plan' }
+  }
+
   if (result.error || !result.planId) {
     return { checkinId, name, status: 'FAIL' as const, error: result.error ?? 'no planId' }
   }
@@ -195,6 +199,7 @@ type MissedCheckin = {
   coach_id: string
   coaching_week: number
   submitted_at: string
+  wants_plan_update?: boolean | null
 }
 
 /** Discover weekly check-ins that still need a post-check-in plan delivery. */
@@ -204,7 +209,7 @@ async function discoverMissedWeeklyCheckins(limit: number): Promise<MissedChecki
 
   const { data: checkins, error } = await admin
     .from('checkins')
-    .select('id, client_id, coach_id, coaching_week, submitted_at')
+    .select('id, client_id, coach_id, coaching_week, submitted_at, wants_plan_update')
     .eq('checkin_type', 'weekly')
     .gte('submitted_at', since)
     .order('submitted_at', { ascending: true })
@@ -229,7 +234,15 @@ async function discoverMissedWeeklyCheckins(limit: number): Promise<MissedChecki
     if (usesHumanCoach(profile)) continue
 
     const planSlug = await fetchCapturedPlanSlug(checkin.client_id)
-    if (!shouldAutoGenerateWeeklyPlanDraft(planSlug, checkin.coaching_week)) continue
+    if (
+      !shouldGenerateChosenWeeklyPlan({
+        planSlug,
+        coachingWeek: checkin.coaching_week,
+        wantsPlanUpdate: checkin.wants_plan_update,
+      })
+    ) {
+      continue
+    }
 
     const { data: active } = await admin
       .from('plans')

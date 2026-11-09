@@ -365,6 +365,17 @@ export default function CoachCheckinDetailPage() {
           </section>
         )}
 
+        {isWeekly && typeof checkin.wants_plan_update === 'boolean' && (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>New plan this week</h2>
+            <p style={styles.notes}>
+              {checkin.wants_plan_update
+                ? 'Asked for a new plan on the Sunday check-in.'
+                : 'Chose to keep the current plan.'}
+            </p>
+          </section>
+        )}
+
         {checkin.pain_injuries && (
           <section style={styles.card}>
             <h2 style={styles.cardTitle}>Pain / injuries</h2>

@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v31'
+export const PLAN_QUALITY_RULES_VERSION = 'workout-common-v34'
 
 /** Platform soft floor before weight-based floor. Prefer formula target when higher. */
 export const DIET_FLOOR_BASE_KCAL = 1800
@@ -172,14 +172,14 @@ export const EDIT_EXPENDITURE_FIRST_RULES = [
 export const WORKOUT_VOLUME_PROMPT_RULES = [
   'TRAINING VOLUME (non-negotiable — follow Workout fit and the Training Mesocycle week):',
   '- A new month is not a new split and not a beginner week. Keep the current split, the current training days, and the muscle groups those days already train.',
-  '- Week 1 (BASE): beginners use 3 working sets. Intermediate and advanced use 4 on main lifts and 3 on accessories. Drop to 2 sets only when this week\'s difficulty is Easier or they chose Shorter. About 5 to 7 working exercises. Leave 2 to 3 reps in reserve on compounds.',
+  '- Week 1 (BASE): beginners use 3 working sets. Intermediate and advanced use 4 on main lifts and 3 on accessories. Drop to 2 sets only when this week\'s difficulty is Easier or they chose Shorter. About 5 to 7 working exercises. On squat, bench, deadlift, and row, the client stops when they could still do 2 or 3 more clean reps.',
   '- If Workout fit names an intensity or a volume, that choice wins. Comfortable leaves about 3 reps in reserve. Tough leaves about 1. Shorter is 2 working sets. Fuller is 4 on main lifts and 3 on accessories, never 5 or more.',
   '- Week 2 (BUILD): beginners stay at 3 working sets and add load or reps. Intermediate and advanced use 3 to 4 working sets on main compounds and 3 on accessories.',
   '- Weeks 3 and 4: beginners stay at 3 working sets and add load or tighter reps in reserve. Intermediate and advanced use 4 working sets on main compounds only and 3 on accessories.',
   '- Never prescribe 5 or more working sets on an exercise. Warm-up sets are extra and do not count as working sets.',
-  '- Do not copy the same two or three working lifts onto the next calendar day. Keep a curl and a triceps exercise in any week that trains the upper body. Keep a squat or leg press plus a hinge in any week that trains legs.',
+  '- Do not copy the same two or three working lifts onto the next calendar day. Keep a curl and a triceps exercise in any week that trains the upper body. Keep a squat or leg press plus a Romanian deadlift in any week that trains legs.',
   '- About 5 to 7 working exercises per session, not counting warm-up or cooldown stretches. One core finisher per training day (2 max on a dedicated core day).',
-  '- Reps by experience: beginners 8 to 15 on compounds. Intermediate 6 to 12. Advanced or strength-focused: 3 to 6 on main compounds only, 8 to 15 on accessories.',
+  '- Reps by experience: beginners 8 to 15 on squat, bench, row, and deadlift. Intermediate 6 to 12. Advanced or strength-focused: 3 to 6 on squat, deadlift, bench, overhead press, and rows, and 8 to 15 on the smaller exercises.',
   '- Fit the stated session duration. Prefer the mesocycle set count over junk volume.',
   '- Training days per week is a hard cap. Label all 7 calendar days. Remaining days after training days are rest or active recovery. Do not add extra training days. Do not require both a recovery day AND a rest day if that would steal a training day or overflow 7 days. If they train 6 days, one rest. If 7, no extra rest day.',
   '- Sticky split: keep an upper/lower or push/pull/legs week. Never keep a full-body week. New clients use upper/lower, or push/pull/legs on 3 or 6 to 7 days. Mesocycle week 1 refreshes exercises within that split. Low sleep or fatigue means lower load or more reps in reserve, not a mixed session.',
@@ -188,10 +188,18 @@ export const WORKOUT_VOLUME_PROMPT_RULES = [
 ].join('\n')
 
 export const EXERCISE_NAME_PROMPT_RULES = [
-  'EXERCISE NAMES (for in-app form videos):',
+  'EXERCISE NAMES:',
   '- Put the tool in the name when it matters: "Barbell Bench Press", "Dumbbell Romanian Deadlift", "Resistance Band Row".',
   '- One movement per line. No nicknames (skull crushers, BB bench), no two lifts in one name, no muscle-group-only labels.',
-  '- Use ordinary coach English. Do not copy a vendor catalog, and never pick a catalog name that would break equipment or injury constraints.',
+  '- Every working exercise must be a normal exercise a person can search on YouTube and find a clear demo. Use names like Barbell Bench Press, Squat, Leg Press, Romanian Deadlift, Lat Pulldown, Seated Row, Dumbbell Shoulder Press, Push Up, Biceps Curl, Triceps Pushdown, Lateral Raise, Plank.',
+  '- Do not invent a move, a combo, or a coach-made variation. Do not put tempo, pause, heel elevated, or two lifts into the exercise name.',
+  '- If equipment or an injury blocks a lift, swap it for another common exercise. Squat can become Leg Press. Barbell Bench Press can become Dumbbell Bench Press or Push Up. Cable Row can become Dumbbell Row or Band Row.',
+  'HOW EACH EXERCISE IS EXPLAINED (every client, including beginners):',
+  '- After every working exercise, add one short sentence in everyday words. Example: "Barbell Bench Press: 3 sets x 8 reps. Lie on the bench, lower the bar to your chest, then press it back up."',
+  '- That sentence says what the body does. Do not add a second how to section, a glossary, or extra headers.',
+  '- Name the day in plain words, such as Legs, Chest and arms, Back and arms, or Rest. Do not put Power, Hypertrophy, or Density in the day title.',
+  '- Do not use these words in the plan the client reads: RIR, reps in reserve, RDL, hypertrophy, mesocycle, compounds, isolation, delts, posterior chain, mind muscle connection, anti rotation.',
+  '- When you mean easy effort, write "stop when you could still do 2 more clean reps."',
 ].join('\n')
 
 export const WORKOUT_SECTION_PROMPT_RULES = [
@@ -199,7 +207,7 @@ export const WORKOUT_SECTION_PROMPT_RULES = [
   '- Under each Day N (Weekday) header, put these exact labels on their own lines, in this order: Warm-up: then Main Workout: then Post-Workout:.',
   '- Warm-up: only easy cardio, joint circles, and bodyweight activations. Do not name a lift that also appears in Main Workout. Each exercise name once per day.',
   '- A day trains one region. A lower or leg day has no chest, back, shoulder, or arm work. An upper, chest, push, pull, back, shoulder, or arm day has no squat, leg press, lunge, hinge, or calf work. Chest on a leg day is only an example of this rule. A core finisher may stay on any day.',
-  '- Main Workout: every working lift (compounds, accessories, core finisher). Goblet Squat, RDL, presses, rows, pushdowns, and curls belong here only.',
+  '- Main Workout: every working lift. Goblet Squat, Romanian Deadlift, presses, rows, pushdowns, and curls belong here only.',
   '- Post-Workout: only stretches, an easy walk, or breathing. Never strength lifts.',
   '- Do not write a shared warmup essay before Day 1 or a shared stretching block after the week that lists lifts. Repeat the three headers under every training day.',
   '- Never a lone line Recovery or Stretching. Those make the tracker treat the next lifts as Post-Workout.',

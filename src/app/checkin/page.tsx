@@ -21,6 +21,7 @@ import {
   validateWeeklyCheckinForm,
 } from '@/lib/checkin';
 import { getCheckinUnavailableReason, isCheckinAvailableToday } from '@/lib/checkin-schedule';
+import { offersSundayPlanChoice } from '@/lib/plan-update-cadence';
 import { brandTitle } from '@/lib/brand';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
@@ -66,6 +67,7 @@ export default function CheckinPage() {
   const [unavailableReason, setUnavailableReason] = useState<string>('');
   const [currentSection, setCurrentSection] = useState<Section>('measurements');
   const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forward');
+  const [planSlug, setPlanSlug] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -80,7 +82,7 @@ export default function CheckinPage() {
       }
 
       const userId = result.user.id;
-      const [{ data: checkinRows }, { data: planData }, { data: lastWeekly }] = await Promise.all([
+      const [{ data: checkinRows }, { data: planData }, { data: lastWeekly }, { data: purchase }] = await Promise.all([
         supabase.from('checkins').select('checkin_type, coaching_week').eq('client_id', userId),
         supabase.from('plans').select('*').eq('client_id', userId).eq('active', true).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
         supabase
@@ -91,11 +93,21 @@ export default function CheckinPage() {
           .order('submitted_at', { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase
+          .from('purchases')
+          .select('plan_slug')
+          .eq('user_id', userId)
+          .in('status', ['captured', 'redeemed'])
+          .not('plan_slug', 'in', '(exercise_library,exercise_videos_monthly)')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
 
       const rows = (checkinRows ?? []) as Pick<Checkin, 'checkin_type' | 'coaching_week'>[];
       setCheckins(rows);
       setActivePlan(planData);
+      setPlanSlug(purchase?.plan_slug ?? null);
 
       if (lastWeekly?.progress_photo_front || lastWeekly?.progress_photo_side || lastWeekly?.progress_photo_back) {
         setPreviousPhotos({
@@ -184,7 +196,15 @@ export default function CheckinPage() {
   const sectionIndex = SECTIONS.indexOf(currentSection);
   const progress = ((sectionIndex + 1) / SECTIONS.length) * 100;
 
+  const planChoiceRequired = offersSundayPlanChoice(planSlug);
+  const planChoiceMissing =
+    planChoiceRequired && form.wants_plan_update !== 'yes' && form.wants_plan_update !== 'no';
+
   const goNext = () => {
+    if (currentSection === 'measurements' && planChoiceMissing) {
+      setError('Choose whether you want a new plan this week.');
+      return;
+    }
     const idx = SECTIONS.indexOf(currentSection);
     if (idx < SECTIONS.length - 1) {
       setSlideDirection('forward');
@@ -204,7 +224,10 @@ export default function CheckinPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const validationError = validateWeeklyCheckinForm(form, photos, { gender: profile?.gender });
+    const validationError = validateWeeklyCheckinForm(form, photos, {
+      gender: profile?.gender,
+      requirePlanChoice: planChoiceRequired,
+    });
     if (validationError) { setError(validationError); return; }
 
     setSubmitting(true);
@@ -264,6 +287,7 @@ export default function CheckinPage() {
           workout_difficulty: form.workout_difficulty || 'keep',
           workout_intensity: form.workout_intensity || 'decide',
           workout_volume: form.workout_volume || 'decide',
+          ...(planChoiceRequired ? { wants_plan_update: form.wants_plan_update === 'yes' } : {}),
           progress_photo_front: frontUrl,
           progress_photo_side: sideUrl,
           progress_photo_back: backUrl,
@@ -376,6 +400,49 @@ export default function CheckinPage() {
         {currentSection === 'measurements' && (
           <Card variant="elevated">
             <h2 style={sectionTitle}>Measurements</h2>
+            {planChoiceRequired && (
+              <div style={{ marginBottom: spacing[4] }}>
+                <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: colors.textPrimary }}>
+                  Do you want a new plan this week? *
+                </p>
+                <p style={{ margin: '0 0 10px', fontSize: 13, color: colors.textMuted }}>
+                  Your 84-day plan can change every Sunday. Choose a new diet and workout, or keep the plan you have.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {(
+                    [
+                      { value: 'yes' as const, label: 'Yes, send me a new plan' },
+                      { value: 'no' as const, label: 'No, keep this plan' },
+                    ]
+                  ).map((option) => {
+                    const selected = form.wants_plan_update === option.value
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setForm((prev) => ({ ...prev, wants_plan_update: option.value }))
+                          setError('')
+                        }}
+                        style={{
+                          textAlign: 'left',
+                          padding: '12px 14px',
+                          borderRadius: 12,
+                          border: selected ? `2px solid ${colors.accent}` : `1px solid ${colors.borderSubtle}`,
+                          background: selected ? colors.accentMuted : colors.bgElevated,
+                          color: colors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: selected ? 700 : 500,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
             <NumberScroller
               label="Weight"
               preset="weight"
@@ -437,7 +504,7 @@ export default function CheckinPage() {
             <TextArea label="Additional notes" name="additional_notes" value={form.additional_notes} onChange={handleChange} rows={3} placeholder="Wins, struggles, questions..." />
             <ChoiceGroup
               title="How hard should each set feel?"
-              hint="Optional. This is the weight and how close you go to your limit. Decide for me matches your experience."
+              hint="Optional. This is the weight and how close you go to your limit."
               options={WORKOUT_INTENSITY_OPTIONS}
               value={form.workout_intensity}
               onChange={(workout_intensity) => setForm((prev) => ({ ...prev, workout_intensity }))}

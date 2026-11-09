@@ -5,6 +5,7 @@ import {
   normalizeExerciseQuery,
   shouldSkipExerciseForm,
 } from '../src/lib/exercise-form/normalize'
+import { exerciseHelpText, plainWorkoutFocus } from '../src/lib/exercise-form/plain-cues'
 import { exerciseFormUnlockKey, FREE_EXERCISE_FORM_LIFETIME_CAP } from '../src/lib/exercise-form/free-unlocks'
 import {
   EXERCISE_LIBRARY_ADDON_PAISE,
@@ -23,6 +24,11 @@ import {
   videosForDemoGender,
   type MuscleWikiVideo,
 } from '../src/lib/exercise-form/musclewiki'
+import {
+  exerciseFormMediaHash,
+  exerciseFormMediaPath,
+  resolveExerciseClip,
+} from '../src/lib/exercise-form/stored-media'
 
 assert.equal(normalizeExerciseQuery('Barbell Bench Press: 3 sets x 8'), 'barbell bench press')
 assert.equal(normalizeExerciseQuery('Goblet Squat (heels elevated)'), 'goblet squat')
@@ -32,6 +38,29 @@ assert.equal(applyExerciseAliases(normalizeExerciseQuery('BB Bench Press')), 'ba
 assert.equal(shouldSkipExerciseForm('Rest'), true)
 assert.equal(shouldSkipExerciseForm('Hip Flexor Stretch'), true)
 assert.equal(shouldSkipExerciseForm('Barbell Bench Press'), false)
+assert.equal(
+  exerciseHelpText('Barbell Bench Press'),
+  'Lie on your back. Lower the weight to your chest, then press it back up.'
+)
+assert.equal(
+  exerciseHelpText('RDL'),
+  'Stand tall with the weight in front of your thighs. Soften your knees, push your hips back, then stand up again.'
+)
+assert.match(exerciseHelpText('Leg Curl') ?? '', /heels toward your bum/i)
+assert.match(exerciseHelpText('Bicep Curl') ?? '', /bend your elbows/i)
+assert.match(exerciseHelpText('Hip Flexor Stretch') ?? '', /hold this gently/i)
+assert.match(exerciseHelpText('Pallof Press') ?? '', /do not let it twist you/i)
+assert.equal(
+  exerciseHelpText(
+    'Barbell Bench Press',
+    'Lie on the bench, lower the bar to your chest, then press it back up slowly.'
+  ),
+  'Lie on the bench, lower the bar to your chest, then press it back up slowly.'
+)
+assert.match(exerciseHelpText('Mountain Climbers', 'controlled, no jumping') ?? '', /steady pace/i)
+assert.equal(plainWorkoutFocus('Lower Hypertrophy'), 'Legs')
+assert.equal(plainWorkoutFocus('Upper Push'), 'Chest, shoulders, and arms')
+assert.equal(plainWorkoutFocus('Rest day'), 'Rest')
 assert.equal(EXERCISE_LIBRARY_ADDON_PAISE, 34900)
 assert.equal(EXERCISE_VIDEOS_MONTHLY_PAISE, 6900)
 assert.equal(EXERCISE_VIDEO_UNLIMITED_MIN_PAISE, 60_000)
@@ -166,7 +195,78 @@ assert.equal(videosForDemoGender(demoVideos, 'female').length, 1)
 assert.equal(videosForDemoGender(demoVideos, 'male').length, 2)
 assert.deepEqual(orderFormAngles(['side', 'front', 'rear']), ['front', 'side', 'rear'])
 
+const clipUrl = 'https://api.musclewiki.com/stream/videos/branded/male-front.mp4'
+assert.equal(exerciseFormMediaHash(clipUrl).length, 64)
+assert.equal(exerciseFormMediaHash(clipUrl), exerciseFormMediaHash(clipUrl))
+assert.notEqual(exerciseFormMediaHash(clipUrl), exerciseFormMediaHash(`${clipUrl}?angle=side`))
+assert.equal(exerciseFormMediaPath(clipUrl), `clips/${exerciseFormMediaHash(clipUrl)}`)
+
+void (async () => {
+const memoryClip = { body: Uint8Array.from([9]), contentType: 'video/mp4' }
+let memoryReads = 0
+const fromMemory = await resolveExerciseClip({
+  memory: memoryClip,
+  readStored: async () => {
+    memoryReads += 1
+    return null
+  },
+  fetchOrigin: async () => {
+    throw new Error('origin should not be called')
+  },
+  saveStored: async () => {
+    throw new Error('save should not be called')
+  },
+})
+assert.equal(fromMemory, memoryClip)
+assert.equal(memoryReads, 0)
+
+const storedClip = { body: Uint8Array.from([4]), contentType: 'video/mp4' }
+let originFetches = 0
+let storedSaves = 0
+const fromStore = await resolveExerciseClip({
+  memory: null,
+  readStored: async () => storedClip,
+  fetchOrigin: async () => {
+    originFetches += 1
+    throw new Error('origin should not be called')
+  },
+  saveStored: async () => {
+    storedSaves += 1
+  },
+})
+assert.equal(fromStore, storedClip)
+assert.equal(originFetches, 0)
+assert.equal(storedSaves, 0)
+
+const originClip = { body: Uint8Array.from([7, 8]), contentType: 'video/mp4' }
+let originSaves = 0
+const fromOrigin = await resolveExerciseClip({
+  memory: null,
+  readStored: async () => ({ body: new Uint8Array(), contentType: 'video/mp4' }),
+  fetchOrigin: async () => originClip,
+  saveStored: async (clip) => {
+    originSaves += 1
+    assert.equal(clip, originClip)
+  },
+})
+assert.equal(fromOrigin, originClip)
+assert.equal(originSaves, 1)
+
+const savedDespiteFailure = await resolveExerciseClip({
+  memory: null,
+  readStored: async () => null,
+  fetchOrigin: async () => originClip,
+  saveStored: async () => {
+    throw new Error('bucket down')
+  },
+})
+assert.equal(savedDespiteFailure, originClip)
+
 console.log('Exercise form lookup checks passed.')
+})().catch((err: unknown) => {
+  console.error(err instanceof Error ? err.message : err)
+  process.exit(1)
+})
 
 if (process.argv.includes('--live')) {
   void (async () => {

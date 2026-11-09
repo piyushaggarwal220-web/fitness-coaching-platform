@@ -13,7 +13,7 @@ import { seedPlannerCheckin } from '@/lib/ai/client-planner'
 import { findAiDraftForCheckin, generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
 import { sendNotification } from '@/lib/notifications/dispatcher'
-import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
+import { fetchCapturedPlanSlug, shouldGenerateChosenWeeklyPlan } from '@/lib/plan-update-cadence'
 import { activatePlan } from '@/lib/plans'
 import { clientCoachNotes, fallbackPublishCoachNotes } from '@/lib/plan-metadata'
 import { coachIdHasClientChat, usesHumanCoach } from '@/lib/coach-service'
@@ -70,7 +70,12 @@ async function resolveReply(
     const planSlug = await fetchCapturedPlanSlug(checkin.client_id)
     const week = checkin.coaching_week
     const draftExpected =
-      typeof week === 'number' && shouldAutoGenerateWeeklyPlanDraft(planSlug, week)
+      typeof week === 'number' &&
+      shouldGenerateChosenWeeklyPlan({
+        planSlug,
+        coachingWeek: week,
+        wantsPlanUpdate: checkin.wants_plan_update,
+      })
     if (draftExpected) {
       return { error: 'draft_not_ready' }
     }

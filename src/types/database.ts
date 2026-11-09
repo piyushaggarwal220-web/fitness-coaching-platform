@@ -570,6 +570,8 @@ export type Checkin = {
   workout_intensity?: string | null
   /** Weekly: decide | shorter | usual | fuller. Optional. */
   workout_volume?: string | null
+  /** 84-day Sunday check-in: true asks for a new plan, false keeps the current one. */
+  wants_plan_update?: boolean | null
 }
 
 export type JourneyEntry = {
@@ -673,6 +675,8 @@ export type WeeklyCheckinFormData = {
   workout_intensity: string
   /** decide | shorter | usual | fuller */
   workout_volume: string
+  /** 84-day Sunday check-in: yes asks for a new plan, no keeps the current one. */
+  wants_plan_update: '' | 'yes' | 'no'
 }
 
 export type CoachCheckinResponse = {

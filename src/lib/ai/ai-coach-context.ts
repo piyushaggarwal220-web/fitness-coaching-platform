@@ -11,7 +11,13 @@ import {
   getCoachingDay,
   getCoachingDayInWeek,
 } from '@/lib/checkin-schedule'
-import { isBiweeklyPlanUpdate, nextAutoPlanUpdateWeek, planUpdateCadenceLabel, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
+import {
+  isBiweeklyPlanUpdate,
+  nextAutoPlanUpdateWeek,
+  offersSundayPlanChoice,
+  planUpdateCadenceLabel,
+  shouldGenerateChosenWeeklyPlan,
+} from '@/lib/plan-update-cadence'
 import { getHomePlanCardCopy, getHomePlanPhase, UPDATED_PLAN_READY_WITHIN_MS } from '@/lib/checkin-reply-timing'
 import { clientFacingPlanTitle } from '@/lib/plan-metadata'
 import { getCoachingPlan } from '@/lib/payments/plans'
@@ -42,6 +48,7 @@ type CheckinRow = {
   progress_photo_side: string | null
   progress_photo_back: string | null
   pain_injuries: string | null
+  wants_plan_update?: boolean | null
 }
 
 type RecentTrackerDay = {
@@ -82,7 +89,7 @@ export function dietPreferenceLabel(value: string | null | undefined): string | 
 export function purchasedPlanLine(slug: string | null | undefined): string {
   if (!slug) return 'Purchased plan: unknown. Do not guess a price or a plan name.'
   if (slug === 'offer_84_days') {
-    return 'Purchased plan: 84-day transformation. Workout, diet, cardio, supplements, trackers, Journey, and coach chat are included. Plan updates every week. Men get a testosterone protocol. Women get hourglass guidance. All goals are unlocked.'
+    return 'Purchased plan: 84-day transformation. Workout, diet, cardio, supplements, trackers, Journey, and coach chat are included. A new plan is written each week only when they ask for one on the Sunday check-in. If they keep the current plan, do not promise a new diet or workout. Men get a testosterone protocol. Women get hourglass guidance. All goals are unlocked.'
   }
   if (slug === 'offer_1_month' || slug === 'offer_3_months') {
     const months = slug === 'offer_1_month' ? '1 month' : '3 months'
@@ -299,7 +306,11 @@ export function formatClientSituation(input: {
   const updatesPlan =
     anchor?.checkin_type === 'weekly' &&
     typeof anchor.coaching_week === 'number' &&
-    shouldAutoGenerateWeeklyPlanDraft(input.planSlug, anchor.coaching_week)
+    shouldGenerateChosenWeeklyPlan({
+      planSlug: input.planSlug,
+      coachingWeek: anchor.coaching_week,
+      wantsPlanUpdate: anchor.wants_plan_update,
+    })
   const submittedMs = anchor?.submitted_at ? Date.parse(anchor.submitted_at) : Number.NaN
   const deliveredMs = input.planDeliveredAt ? Date.parse(input.planDeliveredAt) : Number.NaN
   const phase = getHomePlanPhase({
@@ -315,6 +326,7 @@ export function formatClientSituation(input: {
     planTitle: input.planTitle ? clientFacingPlanTitle(input.planTitle) : null,
     deliveredAtLabel: input.planDeliveredAt ? formatCoachingDateTime(input.planDeliveredAt) : null,
     biweekly: isBiweeklyPlanUpdate(input.planSlug),
+    sundayChoice: offersSundayPlanChoice(input.planSlug),
     nextUpdateWeek: weekForNext != null ? nextAutoPlanUpdateWeek(input.planSlug, weekForNext) : null,
     weeklyDueNow: false,
     checkedInAt: anchor?.submitted_at ? formatCoachingDateTime(anchor.submitted_at) : null,
@@ -422,7 +434,7 @@ export async function loadAiCoachThreadContext(
     admin
       .from('checkins')
       .select(
-        'checkin_type, coaching_week, submitted_at, reviewed, diet_adherence, workout_adherence, energy_level, weight, adherence_wins, adherence_struggles, questions_for_coach, progress_photo_front, progress_photo_side, progress_photo_back, pain_injuries'
+        'checkin_type, coaching_week, submitted_at, reviewed, diet_adherence, workout_adherence, energy_level, weight, adherence_wins, adherence_struggles, questions_for_coach, progress_photo_front, progress_photo_side, progress_photo_back, pain_injuries, wants_plan_update'
       )
       .eq('client_id', userId)
       .order('submitted_at', { ascending: false })

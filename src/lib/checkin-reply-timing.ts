@@ -103,6 +103,8 @@ export function getHomePlanCardCopy(input: {
   planTitle: string | null
   deliveredAtLabel: string | null
   biweekly: boolean
+  /** 84-day plan: the Sunday check-in asks whether they want a new plan. */
+  sundayChoice?: boolean
   nextUpdateWeek: number | null
   weeklyDueNow: boolean
   checkedInAt: string | null
@@ -130,6 +132,22 @@ export function getHomePlanCardCopy(input: {
       currentLine,
       nextLine:
         'Your first plan shows up in My Plan when it is ready. After that, submit the weekly check-in Sunday through Tuesday. The next plan is ready within 30 minutes.',
+    }
+  }
+
+  if (input.sundayChoice && input.phase === 'checkin_keeps_current') {
+    return {
+      currentLine,
+      nextLine:
+        'You kept this plan on your Sunday check-in. Ask for a new one on the next Sunday check-in if you want it changed.',
+    }
+  }
+
+  if (input.sundayChoice && (input.phase === 'has_plan' || input.phase === 'delivered_for_checkin')) {
+    return {
+      currentLine,
+      nextLine:
+        'Next plan: on the Sunday check-in, choose a new plan or keep this one. If you ask for a new plan, it is ready within 30 minutes.',
     }
   }
 

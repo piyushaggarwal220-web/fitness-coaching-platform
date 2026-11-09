@@ -93,6 +93,7 @@ export const INITIAL_WEEKLY_FORM: WeeklyCheckinFormData = {
   workout_difficulty: 'keep',
   workout_intensity: 'decide',
   workout_volume: 'decide',
+  wants_plan_update: '',
 }
 
 function isScoreValid(value: string): boolean {
@@ -136,7 +137,7 @@ export function areProgressPhotosOptional(gender: string | null | undefined): bo
 export function validateWeeklyCheckinForm(
   data: WeeklyCheckinFormData,
   photos: { front: File | null; side: File | null; back: File | null },
-  options?: { gender?: string | null }
+  options?: { gender?: string | null; requirePlanChoice?: boolean }
 ): string | null {
   if (!data.weight || Number(data.weight) <= 0) return 'Scroll to select your weight.'
   if (!data.chest || Number(data.chest) <= 0) return 'Scroll to select your chest measurement.'
@@ -157,6 +158,13 @@ export function validateWeeklyCheckinForm(
   if (!isScoreValid(data.progress_rating)) return 'Rate your progress between 1 and 10.'
   if (!data.progress_notes.trim()) return 'Describe your progress compared to last week.'
   if (!data.workout_split_preference) return 'Choose whether to keep or change your workout split.'
+  if (
+    options?.requirePlanChoice &&
+    data.wants_plan_update !== 'yes' &&
+    data.wants_plan_update !== 'no'
+  ) {
+    return 'Choose whether you want a new plan this week.'
+  }
   if (areProgressPhotosOptional(options?.gender)) return null
   if (!photos.front) return 'Front progress photo is required.'
   if (!photos.side) return 'Side progress photo is required.'

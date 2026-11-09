@@ -11,7 +11,7 @@ import {
 } from '@/lib/coach-delivery-policy'
 import { getCoachWorkQueue, type WorkQueueTask } from '@/lib/coach-work-queue'
 import { processPlanChangeRequest } from '@/lib/plan-change-requests'
-import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
+import { fetchCapturedPlanSlug, shouldGenerateChosenWeeklyPlan } from '@/lib/plan-update-cadence'
 import { activatePlan } from '@/lib/plans'
 import { usesHumanCoach } from '@/lib/coach-service'
 import { runPiyushInitialPlanForClient } from '@/lib/piyush-initial-plan-auto'
@@ -126,7 +126,13 @@ async function handleCheckin(
     }
     const planSlug = await fetchCapturedPlanSlug(typed.client_id)
     const week = typed.coaching_week ?? 0
-    if (shouldAutoGenerateWeeklyPlanDraft(planSlug, week)) {
+    if (
+      shouldGenerateChosenWeeklyPlan({
+        planSlug,
+        coachingWeek: week,
+        wantsPlanUpdate: typed.wants_plan_update,
+      })
+    ) {
       const existing = await findAiDraftForCheckin(admin, typed.client_id, typed.id)
       if (!existing) {
         const generated = await generateWeeklyPlanDraft({

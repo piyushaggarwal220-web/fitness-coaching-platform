@@ -19,7 +19,12 @@ import {
   hasCoachingDayStarted,
 } from '@/lib/checkin-schedule';
 import { clientFacingPlanTitle } from '@/lib/plan-metadata';
-import { isBiweeklyPlanUpdate, nextAutoPlanUpdateWeek, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence';
+import {
+  isBiweeklyPlanUpdate,
+  nextAutoPlanUpdateWeek,
+  offersSundayPlanChoice,
+  shouldGenerateChosenWeeklyPlan,
+} from '@/lib/plan-update-cadence';
 import { getHomePlanCardCopy, UPDATED_PLAN_READY_WITHIN_MS, getHomePlanPhase } from '@/lib/checkin-reply-timing';
 import { absentPlanCopy, clientSafePlanError, livePlanSectionDetail } from '@/lib/client-plan-presence';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
@@ -74,7 +79,14 @@ type ActivityItem = {
 
 type DashboardCheckin = Pick<
   Checkin,
-  'id' | 'client_id' | 'checkin_type' | 'submitted_at' | 'coaching_week' | 'coaching_day' | 'reviewed'
+  | 'id'
+  | 'client_id'
+  | 'checkin_type'
+  | 'submitted_at'
+  | 'coaching_week'
+  | 'coaching_day'
+  | 'reviewed'
+  | 'wants_plan_update'
 >;
 
 export default function Dashboard() {
@@ -171,7 +183,7 @@ export default function Dashboard() {
         ] = await Promise.all([
           supabase
             .from('checkins')
-            .select('id, client_id, checkin_type, submitted_at, coaching_week, coaching_day, reviewed')
+            .select('id, client_id, checkin_type, submitted_at, coaching_week, coaching_day, reviewed, wants_plan_update')
             .eq('client_id', userId)
             .order('submitted_at', { ascending: false })
             .limit(24),
@@ -398,7 +410,11 @@ export default function Dashboard() {
   const weeklyWeek = latestWeekly?.coaching_week
   const expectsPlanUpdate =
     typeof weeklyWeek === 'number' &&
-    shouldAutoGenerateWeeklyPlanDraft(purchase?.plan_slug, weeklyWeek)
+    shouldGenerateChosenWeeklyPlan({
+      planSlug: purchase?.plan_slug,
+      coachingWeek: weeklyWeek,
+      wantsPlanUpdate: latestWeekly?.wants_plan_update,
+    })
   const weeklySubmittedMs = latestWeekly ? Date.parse(latestWeekly.submitted_at) : Number.NaN
   const planDeliveredMs = activePlan?.delivered_at ? Date.parse(activePlan.delivered_at) : Number.NaN
   const planPhase = getHomePlanPhase({
@@ -420,6 +436,7 @@ export default function Dashboard() {
     planTitle: activePlan ? clientFacingPlanTitle(activePlan.title) : null,
     deliveredAtLabel: activePlan?.delivered_at ? formatCoachingDateTime(activePlan.delivered_at) : null,
     biweekly: isBiweeklyPlanUpdate(purchase?.plan_slug),
+    sundayChoice: offersSundayPlanChoice(purchase?.plan_slug),
     nextUpdateWeek,
     weeklyDueNow,
     checkedInAt:
@@ -438,7 +455,9 @@ export default function Dashboard() {
     ? {
         label: `${getCheckinTypeDisplayName(upcomingCheckin.type)} · Week ${upcomingCheckin.coachingWeek}`,
         detail: dueCheckin
-          ? clientHasCoachChat(profile)
+          ? offersSundayPlanChoice(purchase?.plan_slug) && dueCheckin.type === 'weekly'
+            ? 'Due now. On this Sunday check-in, choose a new plan or keep the one you have.'
+            : clientHasCoachChat(profile)
             ? `Due now. Photos and answers go to ${clientChatNavLabel(profile)}.`
             : 'Due now. Submit photos and answers — your plan updates from this check-in.'
           : checkinSchedule?.countdownDetailed

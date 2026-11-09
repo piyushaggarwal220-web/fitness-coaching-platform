@@ -1,7 +1,7 @@
 /**
  * Generate and publish weekly plans for Sunday check-ins that never received one.
  *
- *   npx tsx --env-file=.env.local.txt scripts/send-missed-weekly-plans.ts
+ *   node -r ./scripts/tsx-server-only-hook.cjs ./node_modules/tsx/dist/cli.mjs --env-file=.env.local scripts/send-missed-weekly-plans.ts
  */
 import { hasClientEntitlement } from '../src/lib/entitlements'
 import { seedPlannerCheckin } from '../src/lib/ai/client-planner'
@@ -13,6 +13,7 @@ import { createAdminClient } from '../src/lib/supabase/admin'
 
 const START = '2026-09-05T18:30:00.000Z'
 const CONCURRENCY = 2
+const FORCE_RESEND = process.env.FORCE_RESEND === '1'
 const ONLY_CHECKIN_IDS = new Set(
   (process.env.CHECKIN_IDS ?? '')
     .split(',')
@@ -103,7 +104,7 @@ async function main() {
     const alreadyUpdated =
       active?.delivered_at &&
       new Date(active.delivered_at).getTime() >= new Date(checkin.submitted_at).getTime()
-    if (alreadyUpdated) {
+    if (alreadyUpdated && !FORCE_RESEND) {
       console.log(`SKIP already updated ${name}`)
       skipped += 1
       continue
@@ -136,6 +137,7 @@ async function main() {
       .eq('active', true)
       .maybeSingle()
     if (
+      !FORCE_RESEND &&
       active?.delivered_at &&
       new Date(active.delivered_at).getTime() >= new Date(checkin.submitted_at).getTime()
     ) {
@@ -162,6 +164,11 @@ async function main() {
       coachingWeek: checkin.coaching_week,
       trigger: 'retry',
     })
+    if (!result.error && !result.planId) {
+      skipped += 1
+      console.log(`SKIP kept current plan ${name}`)
+      return
+    }
     if (result.error || !result.planId) {
       failed += 1
       console.error(`FAIL generate ${name}: ${result.error ?? 'no planId'}`)
