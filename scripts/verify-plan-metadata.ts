@@ -30,6 +30,14 @@ const meta =
 
 assert('stripPlanMeta removes prefix', !clientCoachNotes(meta).includes('@@META'))
 assert('clientCoachNotes preserves message', clientCoachNotes(meta).includes('Great week'))
+const withDiagnostics = clientCoachNotes(
+  `${meta}\nAuto-repaired: added missing breakfast from lifestyle.\nCalorie-safety warning kept for coach review: low.\nWeekday-protein warning kept for coach review: eggs.`
+)
+assert(
+  'clientCoachNotes hides repair and safety diagnostics',
+  withDiagnostics.includes('Great week') &&
+    !/auto-repaired|calorie-safety warning|weekday-protein warning/i.test(withDiagnostics)
+)
 assert('parsePlanMeta reads checkinId', parsePlanMeta({ title: 'AI Draft · Week 3', coach_notes: meta, phase: null }).checkinId === 'abc-123')
 assert(
   'planMatchesCheckin matches by meta',

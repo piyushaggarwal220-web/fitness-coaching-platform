@@ -264,7 +264,7 @@ const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   CALORIE_FORMULA_PROMPT_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   '- Write a complete 7-day diet. Use the full output budget. Do not skip days or thin out meals to save tokens.',
-  '- Never write "Welcome to week N" as a greeting in diet prose. You MAY label the plan header with Week N so the client can see which coaching week this is.',
+  '- Never write "Welcome to week N", "Week N", or any coaching week number in the diet the client reads.',
   '- Diet text must contain ONLY food / nutrition. Never include Cardio, Steps, Conditioning, or Supplements sections in the diet prose.',
   '- Every day under a Day N header must include the FULL meal list written out in actual words with portions, cooking fats, and macro lines.',
   '- NEVER use cross-day references such as "same as Day 1", "repeat Day 2", "follow Day 1", "as above", or "use Monday\'s plan". If a day intentionally mirrors another day, rewrite that day\'s complete meals again under the new day header. The daily tracker cannot resolve day-to-day pointers.',
@@ -289,7 +289,7 @@ const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
   DAY_HEADER_PROMPT_RULES,
   '- Example training header: "Day 1 (Monday): Push" or "Day 2 (Tuesday): Legs". Label rest days "Day 3 (Wednesday): Rest". Do not put Power, Hypertrophy, or Density in the day title.',
   '- Prefer also filling workout_plan.days with one object per day (day, focus, exercises) using the same Day N (Weekday) labels.',
-  '- Never write "Welcome to week N" as a greeting in workout prose. You MAY label the plan header with Week N.',
+  '- Never write "Welcome to week N", "Week N", or any coaching week number in the workout the client reads.',
   '- Main body is strength / resistance training. You MAY weave a one-line daily step target and a short sleep note. Never add Cardio, Conditioning, or Supplements section headers, and do not write a full cardio or supplement program here (those are generated separately).',
   '- Every training day must list every exercise with sets x reps (or duration) in full under that day header — one exercise per line.',
   '- NEVER use cross-day references such as "same as Day 1", "repeat Day 2", "follow Thursday\'s workout", or "as above". If two days share a session, rewrite the complete exercise list under both headers. The daily tracker cannot resolve day-to-day pointers.',
@@ -969,11 +969,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       const repaired = applyDietPlanRepair(plan.nutrition_plan, input.profile)
       plan = { ...plan, nutrition_plan: repaired.plan }
       if (repaired.fixes.length > 0) {
-        const note = `Auto-repaired: ${repaired.fixes.join('; ')}.`
-        plan = {
-          ...plan,
-          coach_notes: plan.coach_notes?.trim() ? `${plan.coach_notes.trim()}\n${note}` : note,
-        }
+        console.warn('[diet-repair]', repaired.fixes.join('; ').slice(0, 240))
       }
 
       const calorieTargets = resolveClientCalorieTargets(input.profile)
@@ -1030,6 +1026,9 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
             'Client asked for meal variety. Write DIFFERENT breakfast/lunch/dinner on most days. Do not copy Day 1 onto Day 2–7. Repeat staples if needed, but rotate the actual plates.'
           continue
         }
+        throw new GeneratePlanError(
+          `Diet plan ignored the requested variety after ${maxAttempts} attempts.`
+        )
       }
 
       const preferenceSafety = enforceDietPreference(
@@ -1043,20 +1042,9 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
           completenessHint = preferenceSafety.hint
           continue
         }
-        const weekdayOnly = preferenceSafety.violations.every((v) =>
-          v.category.endsWith('-weekday')
+        throw new GeneratePlanError(
+          `Diet plan failed preference safety after ${maxAttempts} attempts: ${preferenceSafety.error}`
         )
-        if (weekdayOnly) {
-          const note = `Weekday-protein warning kept for coach review: ${preferenceSafety.error}`
-          plan = {
-            ...plan,
-            coach_notes: plan.coach_notes?.trim() ? `${plan.coach_notes.trim()}\n${note}` : note,
-          }
-        } else {
-          throw new GeneratePlanError(
-            `Diet plan failed preference safety after ${maxAttempts} attempts: ${preferenceSafety.error}`
-          )
-        }
       }
     }
 

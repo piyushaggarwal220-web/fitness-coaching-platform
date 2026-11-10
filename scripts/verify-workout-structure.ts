@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict'
-import { assessWorkoutStructure, isCommonYouTubeExercise } from '../src/lib/ai/workout-structure'
+import {
+  assessWorkoutStructure,
+  failedWorkoutRewriteCanKeepCurrent,
+  isCommonYouTubeExercise,
+} from '../src/lib/ai/workout-structure'
 import { assessDietFollowsRequest, clientRequestedDietChange } from '../src/lib/ai/diet-update-check'
 
 const broken = `
@@ -16,6 +20,12 @@ Back Squat: 3 sets x 8 reps
 `
 const brokenNotes = assessWorkoutStructure(broken)
 assert.ok(brokenNotes.some((line) => /back-to-back/i.test(line)), brokenNotes.join(' | '))
+assert.equal(failedWorkoutRewriteCanKeepCurrent(brokenNotes.join(' ')), true)
+assert.equal(
+  failedWorkoutRewriteCanKeepCurrent('monday is a pull day and lists Bench Press'),
+  true
+)
+assert.equal(failedWorkoutRewriteCanKeepCurrent('OpenAI billing hold'), false)
 assert.ok(brokenNotes.some((line) => /mixes body parts/i.test(line)), brokenNotes.join(' | '))
 
 const chestWithLegs = `

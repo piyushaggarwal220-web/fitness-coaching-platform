@@ -159,6 +159,13 @@ function waives(note: string | null | undefined, pattern: RegExp): boolean {
   return pattern.test(note ?? '')
 }
 
+/** A broken rewrite can keep the client's current workout instead of failing the whole week. */
+export function failedWorkoutRewriteCanKeepCurrent(message: string): boolean {
+  return /back-to-back|arm work is too low|leg work is too low|working exercise|pull day|push day|mixes body parts|not a normal exercise|\btwice\b/i.test(
+    message
+  )
+}
+
 export function assessWorkoutStructure(
   nextText: string,
   previousText?: string | null,

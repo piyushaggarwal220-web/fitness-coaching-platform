@@ -508,6 +508,49 @@ const pastePref = enforceDietPreference(
 assert('pasted lifestyle plan with chicken word does not fail eggetarian', pastePref.ok, pastePref.ok ? undefined : pastePref.error)
 assert('pasted lifestyle plan was not dumped into meals', !/weekly shopping/i.test(prose(pasteRepaired.plan)))
 
+const weekdayProtein = weekPlan(2200, (day) =>
+  day === 'Wednesday' ? '180g chicken and rice' : '2 eggs, rice, and dal'
+)
+const weekdayProfile = {
+  diet_preference: 'non_vegetarian',
+  weight: '80',
+  height: '175',
+  age: '30',
+  gender: 'male',
+  activity_level: 'moderately_active',
+  fitness_goal: 'muscle_gain',
+  onboarding_data: {
+    diet: {
+      eggDaysPerWeek: '0',
+      chickenDaysPerWeek: '1',
+      fishDaysPerWeek: '0',
+      chickenAllowedDays: ['wednesday'],
+      eggAllowedDays: [],
+      fishAllowedDays: [],
+    },
+  },
+}
+const repairedProtein = prose(applyDietPlanRepair(weekdayProtein, weekdayProfile).plan)
+const proteinDays = repairedProtein.split(/Day\s*\d+\s*\(/i).slice(1)
+assert('zero egg days removes eggs from the week', !/\beggs?\b/i.test(repairedProtein))
+assert(
+  'chicken stays on the allowed day only',
+  proteinDays.length === 7 &&
+    /chicken/i.test(proteinDays[2] ?? '') &&
+    proteinDays.filter((_, index) => index !== 2).every((day) => !/chicken/i.test(day))
+)
+const looseEggs = applyDietPlanRepair(
+  {
+    calories: 2200,
+    protein: 80,
+    carbs: 220,
+    fat: 60,
+    meals: [{ example: 'Breakfast: 2 eggs and oats' }],
+  },
+  weekdayProfile
+)
+assert('zero egg days removes eggs even without a day header', !/\beggs?\b/i.test(prose(looseEggs.plan)))
+
 if (failed > 0) {
   console.error(`\n${failed} assertion(s) failed`)
   process.exit(1)

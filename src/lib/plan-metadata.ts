@@ -41,9 +41,17 @@ export function parsePlanMeta(
   }
 }
 
+const INTERNAL_PLAN_NOTE =
+  /^(?:auto-repaired:|calorie-safety warning\b|weekday-protein warning\b)/i
+
 export function stripPlanMeta(notes: string | null | undefined): string {
   if (!notes) return ''
-  return notes.replace(/@@META\{.*?\}@@\n?/, '').trim()
+  return notes
+    .replace(/@@META\{.*?\}@@\n?/, '')
+    .split('\n')
+    .filter((line) => !INTERNAL_PLAN_NOTE.test(line.trim()))
+    .join('\n')
+    .trim()
 }
 
 export function isAiDraftTitle(title: string | null | undefined): boolean {

@@ -2,6 +2,7 @@
  * Offline unit checks for diet preference guard.
  * Run: npx tsx scripts/verify-diet-preference-guard.ts
  */
+import { readFileSync } from 'node:fs'
 import {
   calorieBumpFoodsForProfile,
   enforceDietPreference,
@@ -133,6 +134,17 @@ const lactoseBump = calorieBumpFoodsForProfile({
   onboarding_data: { diet: { allergies: 'Lactose intolerant' } },
 })
 assert('lactose calorie bump forbids dairy', /never ghee|never .*paneer/i.test(lactoseBump))
+
+const generatePlanSrc = readFileSync('src/lib/ai/generate-plan.ts', 'utf8')
+assert(
+  'a food-day miss is not shipped after the last retry',
+  !generatePlanSrc.includes('Weekday-protein warning') &&
+    generatePlanSrc.includes('Diet plan failed preference safety after')
+)
+assert(
+  'a cloned week is not shipped when variety was requested',
+  generatePlanSrc.includes('Diet plan ignored the requested variety after')
+)
 
 if (failed > 0) {
   console.error(`\n${failed} assertion(s) failed`)

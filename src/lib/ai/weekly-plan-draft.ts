@@ -6,6 +6,7 @@
  */
 import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
 import { GeneratePlanError, generatePlan } from '@/lib/ai/generate-plan'
+import { failedWorkoutRewriteCanKeepCurrent } from '@/lib/ai/workout-structure'
 import { loadClientJourneySnapshot } from '@/lib/ai/client-journey'
 import { prepareNutritionPlanForSave } from '@/lib/ai/nutrition-macro-sync'
 import {
@@ -462,8 +463,7 @@ export async function generateWeeklyPlanDraft(input: {
     } catch (error) {
       const message = error instanceof Error ? error.message : ''
       const structureFailed =
-        error instanceof GeneratePlanError &&
-        /back-to-back|Arm work is too low|Leg work is too low|working exercise/i.test(message)
+        error instanceof GeneratePlanError && failedWorkoutRewriteCanKeepCurrent(message)
       if (!structureFailed || !active?.workout_plan?.trim()) throw error
       console.warn('[weekly-plan] kept the current workout after a broken rewrite', message.slice(0, 240))
       workoutForm = workoutFormFromActive(input.clientId, active)

@@ -592,13 +592,16 @@ function repairProse(text: string, profile: DietRepairProfile, scan: DietScanOpt
 
   if (pref === 'eggetarian' || pref === 'non_vegetarian') {
     const before = out
+    const eggsNever = dayCountIsZero(scan.eggDaysPerWeek)
+    const chickenNever = dayCountIsZero(scan.chickenDaysPerWeek)
+    const fishNever = dayCountIsZero(scan.fishDaysPerWeek)
     out = mapDayBlocks(out, (weekday, body) => {
       let next = body
-      const eggsOff = dayCountIsZero(scan.eggDaysPerWeek) || !weekdayAllowed(scan.eggAllowedDays, weekday)
-      const chickenOff =
-        dayCountIsZero(scan.chickenDaysPerWeek) || !weekdayAllowed(scan.chickenAllowedDays, weekday)
-      const fishOff = dayCountIsZero(scan.fishDaysPerWeek) || !weekdayAllowed(scan.fishAllowedDays, weekday)
-      if (eggsOff && weekday !== '*') next = swapEggs(next)
+      const knownDay = weekday !== '*'
+      const eggsOff = eggsNever || (knownDay && !weekdayAllowed(scan.eggAllowedDays, weekday))
+      const chickenOff = chickenNever || (knownDay && !weekdayAllowed(scan.chickenAllowedDays, weekday))
+      const fishOff = fishNever || (knownDay && !weekdayAllowed(scan.fishAllowedDays, weekday))
+      if (eggsOff) next = swapEggs(next)
       if (chickenOff) next = swapChicken(next)
       if (fishOff) next = swapFish(next)
       return next
