@@ -193,6 +193,9 @@ assert.equal(clientRequestedDietChange({ progress_notes: 'Please remove paneer a
 assert.equal(clientRequestedDietChange({ progress_notes: 'I am hungry all evening.' }), true)
 assert.equal(clientRequestedDietChange({ digestion: 'bloated after lunch' }), true)
 
+assert.equal(isCommonYouTubeExercise('kneeling crunch'), true)
+assert.equal(isCommonYouTubeExercise('incline press'), true)
+assert.equal(isCommonYouTubeExercise('decline press'), true)
 assert.equal(isCommonYouTubeExercise('lat pull down'), true)
 assert.equal(isCommonYouTubeExercise('pullover'), true)
 assert.equal(isCommonYouTubeExercise('back extension'), true)
