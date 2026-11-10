@@ -1,59 +1,23 @@
-Write a 7-day diet plan for a client, based on their onboarding details below. Write it the way a real coach would send it to a client — warm, practical, slightly informal — not like a generated table.
+Write this client's first 7 day diet. Build it from the food they already eat. The daily tracker reads every day, so each day is written in full.
 
-**CLIENT DETAILS:**
-[paste client details here]
+CLIENT DETAILS:
+[CLIENT DETAILS]
 
-**HOW TO WRITE IT:**
+HOW TO WRITE IT:
 
-1. Start directly with the plan after the client information — no long generic intro.
+1. Start with the meals. A one or two sentence opener is enough. Do not mention a coaching week number. NEVER write "Welcome to week" or a cross-day pointer.
 
-2. Calculate the client's daily calorie and protein targets internally based on their age, height, weight, activity level, and goal. The CALORIE METHOD block is the only daily target. Write that number (within 100 kcal). Ignore any other deficit or surplus.
-   - Fat loss (already applied in CALORIE METHOD): steady is 250 kcal below maintenance, build-up is 200 below, high flux is 150 below.
-   - Muscle gain (already applied in CALORIE METHOD): steady is 200 kcal above maintenance, build-up is 300 above, high flux is 350 above.
-   - Recomp: maintenance.
-   - Protein guide: about 1.8 to 2.2 g/kg for fat loss, 1.6 to 2.0 g/kg for muscle gain when allowed foods can honestly hit it — lower the number if veg days, no whey, or budget make high protein unrealistic. Never cut calories to chase protein.
-   - Daily average must meet the platform floor in client details (at least 2000 kcal, or about 25 kcal per kg when that is higher, and never a floor above 2400). Calories come first — keep rice, roti, oil, snacks, and cooking fats on the plate.
-   - Each meal has ONE primary option. Daily Total and header macros count only that primary option. Swaps get their own macro line; never add primary plus swap together.
-   - Never state protein or calories higher than the food on the plate. Meal (P: Xg) lines, daily totals, and header macros must match honest portions.
-   Do NOT print these numbers as a formal "Target Macros" table — keep them as your internal guide so the food choices fit.
-   Never use hyphen, en dash, or em dash characters in client-facing text. Write "10 to 15" not "10-15".
+2. The only daily calorie target is the CALORIE METHOD number, within 100 kcal. Do not replace it with a floor and do not invent a different deficit. Fat loss is 350 kcal below maintenance on steady, 300 on build-up, and 250 on high flux. Muscle gain is 150 kcal above on steady, 200 on build-up, and 250 on high flux. Recomp is maintenance. Those cuts are already inside CALORIE METHOD. Write that number.
+   If the allowed foods cannot hit a high protein number, lower the protein and keep the calories. Do not cut rice, roti, oil, or snacks to chase grams. Never print a protein or calorie number higher than the food on the plate.
 
-3. Build meal timings around the client's existing routine — don't invent new meal slots. Use the Meal timings and Eating pattern lines in client details exactly. If they eat lunch at 2pm, keep it close to 2pm.
+3. Use their meal times and their usual breakfast, lunch, dinner, and snack. Adjust portions. At most one swap per meal. Do not replace their plate with a new menu. If they eat lunch at 2pm, lunch stays near 2pm. Do not put a dinner time on breakfast.
 
-3b. **Never a random chart:** Start from this client's current plate — usual breakfast, lunch, dinner, snacks, staple, who cooks, eat-out or tiffin days, morning drink, and whether dinner is shared family food. Adjust portions and at most one swap per meal. Do not substitute a generic "clean eating" or random variety plan they did not ask for.
+4. For each meal write one primary option in a plain sentence, with household portions and grams. Example: "2 rotis with 1 katori cooked dal, about 150g, and a bowl of sabzi." After that option, the next line is the macro line for that option only: (P: 28g | C: 45g | F: 12g | ~400 kcal). A swap, if you offer one, gets its own macro line. Daily Total and the header count the primary option only. Never add the primary and the swap together. Name the cooking fat in teaspoons. Oil only for a vegan. End each day with Daily Total.
 
-4. For each day, write meals in a natural flow:
-   - Use the client's actual meal names (breakfast, lunch, evening snack, dinner, etc.)
-   - Give 1 to 3 food choices per meal, written as alternatives in plain sentences — e.g. "Have 2 rotis with 1 katori (approx 150g) dal and a small bowl of sabzi, or swap the dal for 100g paneer bhurji if you're in the mood for something different."
-   - Use approximate gram weights alongside everyday portion language (roti, katori, bowl, scoop, glass) rather than only numeric bullet points.
-   - **After each meal option, add a compact macro line immediately below it: (P: 28g | C: 45g | F: 12g | ~400 kcal). Macros should be calculated for the full meal option as described, not per ingredient.**
-   - Vary the structure naturally across the week — not every day needs to look identical. When two days share the same meal, still write the full meal text again under that day's header. NEVER write "same as Monday", "repeat Tuesday", or any other cross-day shorthand (the daily tracker cannot resolve those shortcuts — copy the meals in full with the same macro line).
-   - For dal/curries/sabzi with gravy, describe the final cooked portion in everyday terms (e.g. "1 katori cooked dal, approx 150g") — no raw-to-cooked cooking formulas in the client-facing text.
-   - At the end of each day, add a **Daily Total** line summing that day's PRIMARY meal macros only.
+5. Diet preference is non negotiable. Vegetarian: no egg, chicken, fish, or meat on any day. Vegan: no milk, curd, paneer, ghee, butter, cheese, whey, honey, egg, or meat. Eggetarian: eggs only on the weekdays in Hard Constraints, and never chicken or fish. Non vegetarian: egg, chicken, or fish only on the weekdays listed for that food. If no egg days are listed, write zero eggs. If no chicken days are listed, write zero chicken. If no fish days are listed, write zero fish. Every other day is fully vegetarian. Do not add eggs just because the person eats chicken. On an allowed day, include that food unless they dislike it. Never use an allergy or a disliked food. If they do not use whey, do not write whey.
 
-5. Respect veg/non-veg days exactly as specified in Hard Constraints. On veg days, no eggs, chicken, or fish in any option. On non-veg days where animal protein is allowed, include at least one egg/chicken/fish-based choice unless the client dislikes it.
-   - VEGAN clients: never ghee, butter, milk, curd, yogurt, paneer, cheese, whey, or honey. Cooking fat = oil only. Protein = dal/soya/chana/peanuts.
-   - Never use disliked foods. Never use allergy foods.
+6. Obey their variety choice. Same daily means the same plates, still written out in full under every day. Different daily means most days change the plate. The daily tracker cannot resolve cross-day references. NEVER write "same as Monday", "repeat Tuesday", or "as above". Copy the full meal text under each day.
 
-6. Keep food choices realistic and affordable for the client's stated budget. Prioritise foods they said they enjoy, and never use anything they dislike or are allergic to. Add a few extra practical options beyond what they mentioned if it helps variety.
-   Obey diet variety preference from onboarding (same daily / 50-50 / different daily) — content may repeat but each day still needs full meal text written out.
+7. Cover Day 1 (Monday) through Day 7 (Sunday). After Day 7, one short closing line and one short note on how long the goal may take with their real schedule. No tips section. Never use a hyphen, en dash, or em dash. Write "10 to 15" not "10-15".
 
-7. If the client uses whey protein, mention it naturally as a post-workout option on training days AND include that scoop in that meal's macro line. If not, build the plan with food-based protein sources (eggs if allowed, dal, paneer, soya chunks, chana, peanuts — biased toward cheaper sources if the budget is tight).
-
-8. Add small practical touches throughout — a spice suggestion, a quick chutney, a cooking tip — written casually, like a coach giving a tip in passing, not as a separate "tips" section.
-
-8b. **Cooking fats:** For every cooked meal, specify exact fat amounts. Non-vegan: ghee/oil/butter OK. Vegan: oil only (never ghee/butter). Include a daily cooking-fat total once per day or in the daily total.
-
-9. Cover all 7 days with headers "Day 1 (Monday)" through "Day 7 (Sunday)". Never skip a day. Do not add guidance about what happens after this week.
-
-10. End with a short, casual closing line wishing them well for the week.
-
-11. Don't mention the coaching week number.
-
-12. After Day 7 and the closing line, add a short realistic roadmap: how long their goal may take with their current schedule. If they cannot gym, give an honest timeline for home training. Encourage higher metabolic flux (more food paired with more steps/training) when their schedule allows comfortably — follow Metabolic Flux Bias in client details.
-
-13. **Hard constraints:** Obey Hard Constraints in client details exactly — diet preference, allergies, dislikes, budget, and custom diet-day exceptions are non-negotiable. If anything in this prompt conflicts with Hard Constraints, obey Hard Constraints.
-
-**TONE:** Write like a coach texting/emailing a client they know personally — friendly, encouraging, practical. Use approximate gram weights alongside household measures. Human-written, not templated or AI-generated.
-
----
+8. If anything here conflicts with Hard Constraints, obey Hard Constraints.

@@ -287,7 +287,7 @@ const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
   EXERCISE_NAME_PROMPT_RULES,
   '- For timed work use "Exercise: N sets x M sec" or "Exercise: M min".',
   DAY_HEADER_PROMPT_RULES,
-  '- Example training header: "Day 1 (Monday): Lower Power". Label rest and recovery days the same way (e.g. "Day 3 (Wednesday): Rest").',
+  '- Example training header: "Day 1 (Monday): Push" or "Day 2 (Tuesday): Legs". Label rest days "Day 3 (Wednesday): Rest". Do not put Power, Hypertrophy, or Density in the day title.',
   '- Prefer also filling workout_plan.days with one object per day (day, focus, exercises) using the same Day N (Weekday) labels.',
   '- Never write "Welcome to week N" as a greeting in workout prose. You MAY label the plan header with Week N.',
   '- Main body is strength / resistance training. You MAY weave a one-line daily step target and a short sleep note. Never add Cardio, Conditioning, or Supplements section headers, and do not write a full cardio or supplement program here (those are generated separately).',

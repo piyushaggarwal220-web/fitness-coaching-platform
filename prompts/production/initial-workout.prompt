@@ -1,44 +1,27 @@
-write a personalised 1-week gym plan for a client, based on their onboarding details below. Write it the way a real coach would send it — clear and structured where it needs to be (exercises, sets, reps), but with a personal, conversational voice around it, not like an auto-generated template.
+Write this client's first gym week. The daily tracker reads the text, so the shape below is required.
 
 CLIENT DETAILS:
-[paste client details here]
+[CLIENT DETAILS]
 
 HOW TO WRITE IT:
 
-1. Start with a short personal note (2-4 sentences) addressing the client by name — reference their goal and something specific from their answers (schedule, injury history, experience level). Keep it casual, like a coach checking in.
+1. Open with 2 to 4 sentences to the client by first name. Mention their goal and one real detail from their answers. Do not mention a coaching week number. NEVER write "Welcome to week", "week N", or a cross-day pointer.
 
-2. Opening mesocycle (month 1, week 1): pick a split that fits THIS client's goal, schedule, injuries, training history, and equipment. Use upper/lower, or push/pull/legs on 3 or 6 to 7 days. One body region per session. Never a full-body day, and never a chest, back, shoulder, or arm day that also includes a squat, leg press, lunge, hinge, or calf raise. A core finisher is allowed on any day. Choose common exercises they can look up on YouTube. Do not invent a move. Name each day as "Day N (Weekday): Focus" where Day 1 is Monday through Day 7 Sunday (e.g. "Day 1 (Monday): Legs", "Day 2 (Tuesday): Chest and arms"). Use plain day names such as Legs, Chest and arms, Back and arms, or Rest. Do not put Power, Hypertrophy, or Density in the day title. Never use bare "Day N" alone or weekday-only headers — the daily tracker needs the weekday in parentheses. Use BASE (lowest) volume for week 1: 2 to 3 working sets per exercise, about 5 to 7 working exercises per session, and on the big lifts stop when they could still do 2 more clean reps. Never prescribe 5 or more working sets. Do not write calorie targets in the workout; food lives in the diet plan. Never use hyphen, en dash, or em dash characters in client-facing text.
+2. Label every day "Day N (Weekday)" with Day 1 = Monday through Day 7 = Sunday. After the colon, use a plain focus: Push, Pull, Legs, Upper, Lower, Chest and arms, Back and arms, or Rest. Example: "Day 1 (Monday): Push". Do not put Power, Hypertrophy, or Density in the day title.
 
-3. Reps by experience: beginners 8 to 15 on squat, bench, row, and deadlift. Intermediate 6 to 12. Advanced: 3 to 6 on squat, deadlift, bench, overhead press, and rows, and 8 to 15 on the smaller exercises. Machine work: 8 to 15 reps. Week 1 uses 2 to 3 working sets for every client. Later weeks in the month may use 4 working sets on the main lifts for intermediate and advanced clients only. Never 5 or more working sets. Warm-up sets do not count as working sets.
+3. Pick one split and keep it. Use upper/lower, or push/pull/legs when they train 3 or 6 to 7 days. Training days per week is a hard cap. Leftover days are Rest. One region per day. Never a full-body day.
+   A Push or Chest day is presses, dips, raises, and triceps only. No row, pulldown, or pull-up.
+   A Pull or Back day is rows, pulldowns, pull-ups, and biceps curls only. No bench press, incline press, shoulder press, dip, push-up, or fly.
+   An Upper day may include a press and a row. It has no squat, leg press, lunge, hinge, or calf raise.
+   A Lower or Legs day is a squat or leg press, a Romanian deadlift or hip hinge, and calves. No press, row, pulldown, curl, or triceps movement.
+   A core finisher may sit at the end of Main Workout on any day. Do not put the same working exercise on two calendar days in a row.
 
-4. Include 1 core finisher per training day (2 max on a dedicated core day). Do not add three or four extra ab circuits on every session — that inflates junk volume.
+4. Use only common exercises a person can search on YouTube. Allowed names: Barbell Bench Press, Dumbbell Bench Press, Incline Bench Press, Shoulder Press, Push Up, Dip, Lat Pulldown, Seated Row, Dumbbell Row, Barbell Row, Pull Up, Chin Up, Squat, Goblet Squat, Leg Press, Romanian Deadlift, Deadlift, Lunge, Split Squat, Leg Curl, Leg Extension, Hip Thrust, Glute Bridge, Calf Raise, Biceps Curl, Triceps Pushdown, Lateral Raise, Face Pull, Plank, Crunch. Do not invent a move. Do not write Pallof press, prone Y raise, tempo, pause, or deficit in the exercise name. If equipment or an injury blocks a lift, swap it for another name on this list.
 
-5. Adjust exercises for any limitations the client mentioned (e.g. no pull-ups → lat pulldown, can't squat → leg press/hack squat, no pushups → machine press).
+5. Under every training day, put these labels on their own lines, in order: Warm-up: then Main Workout: then Post-Workout:. Warm-up is an easy walk or bike and joint circles only. Do not put a named lift in the warm-up, and never repeat an exercise that is also in Main Workout. Each exercise name once per day. Dumbbell Bench Press and Barbell Bench Press are the same bench press, so write only one. Write only one row. Main Workout is the working lifts, about 5 to 7 of them. Post-Workout is stretches only. Do not add a shared warmup after the week. The daily tracker cannot resolve cross-day references. NEVER write "same as Day 1", "repeat Monday", or "as above". If two days share a session, rewrite the complete exercise list under both headers.
 
-6. Under every training day, use the tracker section labels Warm-up: then Main Workout: then Post-Workout: (each on its own line). Warm-up is easy cardio, joint mobility, and 1 or 2 very light groove sets only. Do not write a shared warmup essay before Day 1.
+6. Write each working exercise as "Exercise: N sets x M reps. One short sentence in everyday words." Example: "Barbell Bench Press: 3 sets x 8 reps. Lie on the bench, lower the bar to your chest, then press it back up." Use a plain letter x. Never 5 or more working sets. Set counts follow the TRAINING VOLUME rules. Beginners use 3 working sets. Intermediate and advanced use 4 on the main lifts and 3 on the smaller ones. Beginners use 8 to 15 reps. Intermediate use 6 to 12. On the main lifts, write "stop when you could still do 2 more clean reps." Do not write RIR, RDL, hypertrophy, mesocycle, compounds, isolation, delts, or posterior chain.
 
-7. For each training day, list exercises with sets/reps clearly using "Exercise: N sets x M reps" or "N sets x M to K reps" (plain letter x). After the sets and reps, add ONE short sentence in everyday words that tells a beginner exactly how to do that move. Example: "Barbell Bench Press: 3 sets x 8 reps. Lie on the bench, lower the bar to your chest, then press it back up."
-   Do not use gym slang in the plan the client reads. Do not write RIR, reps in reserve, RDL, hypertrophy, mesocycle, compounds, isolation, delts, posterior chain, or mind muscle connection. When you mean easy effort, write "stop when you could still do 2 more clean reps."
-   Name lifts in ordinary words with the tool when it matters (Barbell Bench Press, Dumbbell Romanian Deadlift, Resistance Band Row). One movement per line. No nicknames, no two lifts in one name. Use only common exercises a person can search on YouTube. Do not invent a move. If a lift does not fit their equipment or injury, swap it for another common exercise.
-   CRITICAL: Every training day must list every exercise with sets x reps in full under that day. NEVER write "same as Day 1", "repeat Monday", "follow Thursday's workout", "as above", or any cross-day pointer. If two days use the same session, rewrite the complete exercise list under both day headers. The daily tracker cannot resolve those references.
-   Keep each day self-contained. Working lifts go only under Main Workout. Post-Workout is stretches only. Never put the next day's lifts under Post-Workout / Recovery / Stretching of the previous day. Do not use a lone "Recovery" or "Stretching" line between days.
+7. Use only gym stations listed in Hard Constraints, plus bodyweight. Do not assume a machine they do not have. Weave one line for a daily step target. Add a short sleep note of 7.5 to 9 hours. Do not add a Cardio, Conditioning, or Supplements header. Do not write calorie targets in the workout. Close with two encouraging sentences. Never use a hyphen, en dash, or em dash. Write "6 to 8" not "6-8".
 
-8. You MAY weave a one-line daily step target into the week (training days a bit higher, rest days a bit lower) using Metabolic Flux Bias (BUILD-UP / HIGH FLUX raise steps above their current habit; STEADY stays modest). Do not add a Cardio, Conditioning, or Supplements section header. Full cardio is generated separately.
-
-9. Label all 7 calendar days. Training days per week is a hard cap — program exactly that many lifting sessions, not more. Remaining days are rest or active recovery. Do not require both a dedicated recovery day AND a rest day if that would steal a training day or overflow 7 days. If they train 6 days, one rest. If 7, no extra rest day. When flux bias is BUILD-UP or HIGH FLUX, fill allowed session duration with quality work (2 to 3 working sets, 5 to 7 exercises), not extra junk sets.
-
-10. Mention effort in one short, normal paragraph. On the big lifts (squat, deadlift, bench, overhead press, row), stop when you could still do 2 more clean reps. On the smaller lifts (curls, raises, pushdowns), the last few reps can be hard. A little extra help is ok only on the last set of those smaller lifts, never on squats, deadlifts, lunges, or any barbell lift. Do not use the words RIR, hypertrophy, or isolation.
-
-11. After the working lifts, keep Post-Workout under that same day (stretches only, 30 to 60 seconds each side). Do not add a shared stretching block after the week.
-
-12. Add a short sleep note — duration target (7.5 to 9 hours) and a few practical tips suited to an Indian lifestyle (chai cutoff, screens, meal timing). Friendly suggestions, not a clinical list, and not a Cardio or Supplements section.
-
-13. Close with a short, encouraging note for the week — no formal "Weekly Focus" bullet section, no "TRAINING INTENSITY RULES" headers, no after-week guidance.
-
-14. Cover all 7 days as "Day N (Weekday)" with Day 1 = Monday through Day 7 = Sunday. Never skip a required training day. Balance upper and lower body across the week — don't overload either.
-
-15. Don't mention the number of week it is, just skip mentioning it
-
-16. **Hard constraints:** Obey the Hard Constraints section — preferred exercises, exercises to avoid, injuries, training days, and gym stations only. If a gym station is not listed, do not prescribe it. If anything else in this prompt conflicts with Hard Constraints, obey Hard Constraints.
-
-TONE: Write like an experienced coach messaging a client they train personally — direct and practical for the workout details (sets/reps/exercises can stay in clean list form, that's expected), but wrapped in natural, encouraging language for the intros, transitions, cues, and tips. Avoid robotic section headers like "DAILY STEP TARGET" or "TRAINING INTENSITY RULES" — fold that information into the flow of the plan instead. Exception: Warm-up, Main Workout, and Post-Workout labels are required so the daily tracker can file each movement.
+8. If anything here conflicts with Hard Constraints, obey Hard Constraints.
