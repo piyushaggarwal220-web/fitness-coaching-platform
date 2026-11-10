@@ -27,6 +27,8 @@ import {
   DIET_VARIETY_OPTIONS,
   emptySavedPhotoUrls,
   EAT_OUT_DAY_OPTIONS,
+  MEAL_CONTROL_OPTIONS,
+  mealsAreFixed,
   EQUIPMENT_OPTIONS,
   FAMILY_DINNER_OPTIONS,
   GYM_STATION_OPTIONS,
@@ -1214,6 +1216,17 @@ function renderStep(
               onChange={(v) => update({ training_duration: v })}
             />
           </Field>
+          <Field
+            label="Daily activity outside the workout"
+            required
+            hint="A desk day with little walking is sedentary or lightly active."
+          >
+            <ChipGroup
+              options={ACTIVITY_OPTIONS}
+              value={form.activity_level}
+              onChange={(v) => update({ activity_level: v })}
+            />
+          </Field>
         </div>
       )
 
@@ -1711,43 +1724,114 @@ function renderStep(
       return (
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>What you eat now</h2>
-          <FoodPlatePicker
-            dietPreference={form.diet_preference}
-            placeId={form.food_place_id}
-            placeLabel={form.food_place_label}
-            setting={form.food_setting}
-            foods={form.confirmed_foods}
-            onChange={(patch) => update(patch)}
-          />
-          <Field label="Typical breakfast" required hint="Include the usual amount, such as 2 rotis or 1 bowl.">
+          <Field
+            label="Can you change breakfast, lunch, and dinner?"
+            required
+            hint="Hostel, PG, dorm, and mess meals stay as they are served."
+          >
+            <RadioCards
+              name="meal_control"
+              options={MEAL_CONTROL_OPTIONS}
+              value={form.meal_control}
+              onChange={(meal_control) =>
+                update(
+                  mealsAreFixed(meal_control)
+                    ? { meal_control, who_cooks: 'pg_hostel', family_dinner: 'no' }
+                    : {
+                        meal_control,
+                        who_cooks: form.who_cooks === 'pg_hostel' ? '' : form.who_cooks,
+                        family_dinner: '',
+                      }
+                )
+              }
+            />
+          </Field>
+          {!mealsAreFixed(form.meal_control) && (
+            <FoodPlatePicker
+              dietPreference={form.diet_preference}
+              placeId={form.food_place_id}
+              placeLabel={form.food_place_label}
+              setting={form.food_setting}
+              foods={form.confirmed_foods}
+              onChange={(patch) => update(patch)}
+            />
+          )}
+          <Field
+            label={mealsAreFixed(form.meal_control) ? 'Breakfast that is served' : 'Typical breakfast'}
+            required
+            hint={
+              mealsAreFixed(form.meal_control)
+                ? 'Write the meal as it is served. Do not change it into a different plate.'
+                : 'Include the usual amount, such as 2 rotis or 1 bowl.'
+            }
+          >
             <textarea
               value={form.breakfast}
               onChange={(e) => update({ breakfast: e.target.value })}
-              placeholder="e.g. 2 slices of bread and chai, or 1 bowl poha"
+              placeholder={
+                mealsAreFixed(form.meal_control)
+                  ? 'e.g. 4 idli, sambar, and chai'
+                  : 'e.g. 2 slices of bread and chai, or 1 bowl poha'
+              }
               style={s.textarea}
             />
           </Field>
-          <Field label="Typical lunch" required hint="Include the usual amount.">
+          <Field
+            label={mealsAreFixed(form.meal_control) ? 'Lunch that is served' : 'Typical lunch'}
+            required
+            hint={mealsAreFixed(form.meal_control) ? 'Write what is put on the plate.' : 'Include the usual amount.'}
+          >
             <textarea
               value={form.lunch}
               onChange={(e) => update({ lunch: e.target.value })}
-              placeholder="e.g. 2 rotis, 1 katori dal, and sabzi"
+              placeholder={
+                mealsAreFixed(form.meal_control)
+                  ? 'e.g. rice, dal, a vegetable, and curd'
+                  : 'e.g. 2 rotis, 1 katori dal, and sabzi'
+              }
               style={s.textarea}
             />
           </Field>
-          <Field label="Usual staple" required>
+          <Field label={mealsAreFixed(form.meal_control) ? 'What is usually served?' : 'Usual staple'} required>
             <ChipGroup options={STAPLE_OPTIONS} value={form.staple} onChange={(staple) => update({ staple })} />
           </Field>
-          <Field label="Who cooks?" required>
-            <ChipGroup options={WHO_COOKS_OPTIONS} value={form.who_cooks} onChange={(who_cooks) => update({ who_cooks })} />
-          </Field>
-          <Field label="Days you eat out, from a tiffin, or at a canteen" required>
+          {!mealsAreFixed(form.meal_control) && (
+            <Field label="Who cooks?" required>
+              <ChipGroup options={WHO_COOKS_OPTIONS} value={form.who_cooks} onChange={(who_cooks) => update({ who_cooks })} />
+            </Field>
+          )}
+          <Field
+            label={
+              mealsAreFixed(form.meal_control)
+                ? 'Days you eat away from the mess'
+                : 'Days you eat out, from a tiffin, or at a canteen'
+            }
+            required
+          >
             <ChipGroup
               options={EAT_OUT_DAY_OPTIONS}
               value={form.eat_out_days}
-              onChange={(eat_out_days) => update({ eat_out_days })}
+              onChange={(eat_out_days) =>
+                update({
+                  eat_out_days,
+                  eat_out_weekdays: eat_out_days === '0' ? [] : form.eat_out_weekdays,
+                })
+              }
             />
           </Field>
+          {Number(form.eat_out_days) > 0 && (
+            <Field
+              label="Which days are those?"
+              required
+              hint={`Select ${form.eat_out_days} day${form.eat_out_days === '1' ? '' : 's'}.`}
+            >
+              <MultiChipGroup
+                options={WEEKDAY_OPTIONS}
+                values={form.eat_out_weekdays}
+                onChange={(eat_out_weekdays) => update({ eat_out_weekdays })}
+              />
+            </Field>
+          )}
         </div>
       )
 
@@ -1755,11 +1839,23 @@ function renderStep(
       return (
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>Evening eating</h2>
-          <Field label="Typical dinner" required hint="Include the usual amount.">
+          <Field
+            label={mealsAreFixed(form.meal_control) ? 'Dinner that is served' : 'Typical dinner'}
+            required
+            hint={
+              mealsAreFixed(form.meal_control)
+                ? 'Write the dinner as it is served.'
+                : 'Include the usual amount.'
+            }
+          >
             <textarea
               value={form.dinner}
               onChange={(e) => update({ dinner: e.target.value })}
-              placeholder="e.g. 1 bowl rice, dal, and sabzi"
+              placeholder={
+                mealsAreFixed(form.meal_control)
+                  ? 'e.g. 3 chapati, a vegetable, and dal'
+                  : 'e.g. 1 bowl rice, dal, and sabzi'
+              }
               style={s.textarea}
             />
           </Field>
@@ -1779,13 +1875,15 @@ function renderStep(
               style={s.textarea}
             />
           </Field>
-          <Field label="Is dinner a shared family plate?" required>
-            <ChipGroup
-              options={FAMILY_DINNER_OPTIONS}
-              value={form.family_dinner}
-              onChange={(family_dinner) => update({ family_dinner })}
-            />
-          </Field>
+          {!mealsAreFixed(form.meal_control) && (
+            <Field label="Is dinner a shared family plate?" required>
+              <ChipGroup
+                options={FAMILY_DINNER_OPTIONS}
+                value={form.family_dinner}
+                onChange={(family_dinner) => update({ family_dinner })}
+              />
+            </Field>
+          )}
           <PhotoSourceControl
             label="Photo of one normal meal"
             onFiles={onReferencePhoto('thali_photo')}

@@ -4,6 +4,7 @@ import path from 'node:path'
 import {
   askedReviewSections,
   buildReviewSections,
+  buildOnboardingData,
   getOnboardingWizardSteps,
   INITIAL_ONBOARDING_FORM,
   REVIEW_LABEL_STEP,
@@ -51,7 +52,10 @@ for (const location of ['gym', 'home', 'both'] as const) {
   const steps = getOnboardingWizardSteps({ training_location: location })
   assert.ok(steps.includes(9), `${location} skips gym equipment`)
   assert.ok(steps.includes(16), `${location} skips monthly food budget`)
+  assert.ok(steps.includes(15), `${location} skips allergies`)
   assert.ok(steps.includes(17), `${location} skips the food plate`)
+  assert.ok(steps.includes(18), `${location} skips dinner and snacks`)
+  assert.ok(!steps.includes(4), `${location} asks the full daily-life screen`)
 }
 
 const photos = { front: null, side: null, back: null }
@@ -70,7 +74,28 @@ const shown = askedReviewSections(
 assert.ok(shown.includes('Gym stations'), 'Review hides gym stations')
 assert.ok(shown.includes('Monthly food budget'), 'Review hides food budget')
 assert.ok(shown.includes('Foods you eat'), 'Review hides confirmed foods')
+assert.ok(shown.includes('Food allergies'), 'Review hides allergies')
+assert.ok(shown.includes('Dinner'), 'Review hides dinner')
+assert.ok(shown.includes('Activity level'), 'Review hides activity level')
+assert.ok(shown.includes('Main meals'), 'Review hides the served-meal question')
 assert.ok(!shown.includes('Occupation'), 'Review shows a question the wizard does not ask')
-assert.ok(!shown.includes('Food allergies'), 'Review shows a question the wizard does not ask')
+
+const served = buildOnboardingData(
+  {
+    ...INITIAL_ONBOARDING_FORM,
+    meal_control: 'fixed',
+    breakfast: '4 idli and sambar',
+    lunch: 'rice, dal, and a vegetable',
+    dinner: '3 chapati and sabzi',
+    eat_out_days: '1',
+    eat_out_weekdays: ['sunday'],
+  },
+  22
+)
+assert.equal(served.eatingPattern?.mealControl, 'fixed')
+assert.equal(served.eatingPattern?.whoCooks, 'pg_hostel')
+assert.equal(served.eatingPattern?.eatOutWeekdays?.[0], 'sunday')
+assert.match(served.messMenu?.text ?? '', /Breakfast served: 4 idli and sambar/)
+assert.match(served.messMenu?.text ?? '', /Dinner served: 3 chapati and sabzi/)
 
 console.log('Offer and intake checks passed.')

@@ -150,22 +150,24 @@ export const ONBOARDING_SCREEN_COUNT = 23
  * Day-1 wizard content steps (must-haves for coaching).
  * Lifestyle / recovery / evening free-text / supplements are deferred —
  * coaches can collect later; plan gen accepts nulls for those fields.
- * Step 17 asks the foods they actually eat, then breakfast and lunch amounts.
- * Gym stations and home equipment (9) and monthly food budget (16) are always asked.
+ * Step 17 asks whether meals can change, then breakfast and lunch.
+ * Hostel and mess meals stay as served. Gym stations (9) and food budget (16) are always asked.
  */
 export const ONBOARDING_DAY1_CORE_STEPS = [
   0, // Basic info
   1, // About you
   2, // Goals
-  7, // Training setup
+  7, // Training setup, including daily activity
   8, // Training schedule
   9, // Gym stations / home equipment
   10, // Movement comfort + recent program
   11, // Medical background
   13, // Diet type
   14, // Protein sources
+  15, // Allergies and dislikes
   16, // Budget & cooking
-  17, // Foods they eat, then breakfast and lunch
+  17, // Foods they eat, or the meal that is served
+  18, // Dinner, snacks, morning drink
   19, // Meal timings
   21, // Progress photos
   22, // Review / terms
@@ -428,6 +430,15 @@ export const FAMILY_DINNER_OPTIONS = [
   { value: 'sometimes', label: 'Sometimes' },
   { value: 'no', label: 'No, I plate my own dinner' },
 ] as const
+
+export const MEAL_CONTROL_OPTIONS = [
+  { value: 'flexible', label: 'I can change what I eat' },
+  { value: 'fixed', label: 'Hostel, PG, dorm, or mess. I eat what is served' },
+] as const
+
+export function mealsAreFixed(value: string | null | undefined): boolean {
+  return value === 'fixed'
+}
 
 export const EAT_OUT_DAY_OPTIONS = [
   { value: '0', label: '0 days' },
@@ -746,7 +757,9 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   snacks: '',
   staple: '',
   who_cooks: '',
+  meal_control: '',
   eat_out_days: '',
+  eat_out_weekdays: [],
   morning_drink: '',
   family_dinner: '',
   food_place_id: '',
@@ -942,7 +955,9 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     snacks: data.eatingPattern?.snacks ?? '',
     staple: data.eatingPattern?.staple ?? '',
     who_cooks: data.eatingPattern?.whoCooks ?? '',
+    meal_control: data.eatingPattern?.mealControl === 'fixed' ? 'fixed' : data.eatingPattern?.mealControl === 'flexible' ? 'flexible' : '',
     eat_out_days: data.eatingPattern?.eatOutDays ?? '',
+    eat_out_weekdays: normalizeWeekdayList(data.eatingPattern?.eatOutWeekdays),
     morning_drink: data.eatingPattern?.morningDrink ?? '',
     family_dinner: data.eatingPattern?.familyDinner ?? '',
     food_place_id: data.eatingPattern?.foodPlaceId ?? '',
@@ -1142,8 +1157,11 @@ export function buildOnboardingData(
       dinner: form.dinner.trim() || null,
       snacks: form.snacks.trim() || null,
       staple: form.staple || null,
-      whoCooks: form.who_cooks || null,
+      mealControl: mealsAreFixed(form.meal_control) ? 'fixed' : form.meal_control === 'flexible' ? 'flexible' : null,
+      whoCooks: mealsAreFixed(form.meal_control) ? 'pg_hostel' : form.who_cooks || null,
       eatOutDays: form.eat_out_days || null,
+      eatOutWeekdays:
+        form.eat_out_weekdays.length > 0 ? normalizeWeekdayList(form.eat_out_weekdays) : null,
       morningDrink: form.morning_drink.trim() || null,
       familyDinner: form.family_dinner || null,
       foodPlaceId: form.food_place_id || null,
@@ -1165,6 +1183,20 @@ export function buildOnboardingData(
     supplements: {
       current: form.current_supplements.trim() || null,
     },
+    messMenu: mealsAreFixed(form.meal_control)
+      ? {
+          text: [
+            form.breakfast.trim() ? `Breakfast served: ${form.breakfast.trim()}` : '',
+            form.lunch.trim() ? `Lunch served: ${form.lunch.trim()}` : '',
+            form.dinner.trim() ? `Dinner served: ${form.dinner.trim()}` : '',
+          ]
+            .filter(Boolean)
+            .join('\n'),
+          weekStart: null,
+          photoPath: null,
+          updatedAt: new Date().toISOString(),
+        }
+      : undefined,
   }
 }
 
@@ -1435,6 +1467,7 @@ export function validateOnboardingStep(
       if (!data.training_location) return 'Please select where you train.'
       if (!data.training_experience) return 'Please select your training experience.'
       if (!data.training_duration) return 'Please select how long you have been training.'
+      if (!data.activity_level) return 'Please select your daily activity level.'
       return null
     }
     case 8: {
@@ -1516,15 +1549,33 @@ export function validateOnboardingStep(
       return null
     }
     case 17: {
-      if (options?.requirePlateDetail !== false && !hasEnoughConfirmedFoods(data.confirmed_foods, data.diet_preference)) {
+      if (!data.meal_control) return 'Please say whether you can change your meals.'
+      const fixed = mealsAreFixed(data.meal_control)
+      if (!fixed && options?.requirePlateDetail !== false && !hasEnoughConfirmedFoods(data.confirmed_foods, data.diet_preference)) {
         return 'Pick at least 3 foods you actually eat. Search if your city is not listed.'
       }
-      if (!data.breakfast.trim()) return 'Please describe your typical breakfast, including the usual amount.'
-      if (!data.lunch.trim()) return 'Please describe your typical lunch, including the usual amount.'
+      if (!data.breakfast.trim()) {
+        return fixed
+          ? 'Write what is served for breakfast.'
+          : 'Please describe your typical breakfast, including the usual amount.'
+      }
+      if (!data.lunch.trim()) {
+        return fixed
+          ? 'Write what is served for lunch.'
+          : 'Please describe your typical lunch, including the usual amount.'
+      }
       if (options?.requirePlateDetail !== false) {
         if (!data.staple) return 'Please choose whether you usually eat roti, rice, or both.'
-        if (!data.who_cooks) return 'Please say who cooks your meals.'
-        if (!data.eat_out_days) return 'Please say how many days you eat out, from a tiffin, or at a canteen.'
+        if (!fixed && !data.who_cooks) return 'Please say who cooks your meals.'
+        if (!data.eat_out_days) {
+          return fixed
+            ? 'Please say how many days you eat away from the mess.'
+            : 'Please say how many days you eat out, from a tiffin, or at a canteen.'
+        }
+        const away = Number(data.eat_out_days)
+        if (Number.isFinite(away) && away > 0 && (data.eat_out_weekdays ?? []).length !== away) {
+          return `Select the ${away} day${away === 1 ? '' : 's'} you eat out, from a tiffin, or at a canteen.`
+        }
       }
       return null
     }
@@ -1533,7 +1584,9 @@ export function validateOnboardingStep(
       if (!data.snacks.trim()) return 'Please describe your snacks (or write "None").'
       if (options?.requirePlateDetail !== false) {
         if (!data.morning_drink.trim()) return 'Describe your morning drink, or write "None".'
-        if (!data.family_dinner) return 'Please say whether dinner is a shared family plate.'
+        if (!mealsAreFixed(data.meal_control) && !data.family_dinner) {
+          return 'Please say whether dinner is a shared family plate.'
+        }
       }
       return null
     }
@@ -1757,8 +1810,17 @@ export function buildReviewSections(
         { label: 'Dinner', value: form.dinner.trim() || 'Not set' },
         { label: 'Snacks', value: form.snacks.trim() || 'Not set' },
         { label: 'Staple', value: getOnboardingLabel('staple', form.staple) || 'Not set' },
+        {
+          label: 'Main meals',
+          value: mealsAreFixed(form.meal_control)
+            ? 'Served. Hostel, PG, dorm, or mess'
+            : form.meal_control === 'flexible'
+              ? 'Can change'
+              : 'Not set',
+        },
         { label: 'Who cooks', value: getOnboardingLabel('who_cooks', form.who_cooks) || 'Not set' },
         { label: 'Eat out / tiffin days', value: form.eat_out_days ? `${form.eat_out_days} days` : 'Not set' },
+        { label: 'Eat-out days', value: formatWeekdays(form.eat_out_weekdays) },
         { label: 'Morning drink', value: form.morning_drink.trim() || 'Not set' },
         {
           label: 'Shared family dinner',
@@ -1813,7 +1875,7 @@ export const REVIEW_LABEL_STEP: Record<string, number> = {
   'Goal details': 2,
   Occupation: 4,
   'Work / school schedule': 4,
-  'Activity level': 4,
+  'Activity level': 7,
   'Daily steps': 5,
   Sleep: 5,
   Stress: 6,
@@ -1824,6 +1886,9 @@ export const REVIEW_LABEL_STEP: Record<string, number> = {
   'Training duration': 7,
   'Days per week': 8,
   'Training days': 8,
+  'Workout split': 8,
+  'How hard each set feels': 8,
+  'How much work': 8,
   Duration: 8,
   'Preferred time': 8,
   Equipment: 9,
@@ -1867,8 +1932,10 @@ export const REVIEW_LABEL_STEP: Record<string, number> = {
   Dinner: 18,
   Snacks: 18,
   Staple: 17,
+  'Main meals': 17,
   'Who cooks': 17,
   'Eat out / tiffin days': 17,
+  'Eat-out days': 17,
   'Morning drink': 18,
   'Shared family dinner': 18,
   'Meal photo': 18,

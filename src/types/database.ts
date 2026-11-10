@@ -180,10 +180,14 @@ export type OnboardingData = {
     snacks?: string | null
     /** rice | roti | both */
     staple?: string | null
+    /** flexible | fixed. Fixed means hostel, PG, dorm, or mess food cannot be changed. */
+    mealControl?: 'flexible' | 'fixed' | null
     /** self | family | tiffin | pg_hostel | eating_out | mix */
     whoCooks?: string | null
     /** Days per week they eat from a tiffin, canteen, or restaurant. */
     eatOutDays?: string | null
+    /** Weekdays those meals fall on. */
+    eatOutWeekdays?: string[] | null
     morningDrink?: string | null
     /** yes | sometimes | no — dinner is the shared family plate. */
     familyDinner?: string | null
@@ -389,7 +393,10 @@ export type OnboardingFormData = {
   snacks: string
   staple: string
   who_cooks: string
+  /** flexible | fixed. Fixed meals are served and cannot be changed. */
+  meal_control: string
   eat_out_days: string
+  eat_out_weekdays: string[]
   morning_drink: string
   family_dinner: string
   /** Region id, or empty when they skipped the place. */

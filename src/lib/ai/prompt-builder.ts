@@ -464,7 +464,9 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
     const plate = [
       ep.staple?.trim() ? `staple ${ep.staple}` : null,
       ep.whoCooks?.trim() ? `who cooks ${ep.whoCooks}` : null,
+      ep.mealControl === 'fixed' ? 'main meals are served and cannot be changed' : ep.mealControl === 'flexible' ? 'main meals can be changed' : null,
       ep.eatOutDays?.trim() ? `eat-out or tiffin days per week ${ep.eatOutDays}` : null,
+      ep.eatOutWeekdays?.length ? `those days are ${ep.eatOutWeekdays.join(', ')}` : null,
       ep.morningDrink?.trim() ? `morning drink ${ep.morningDrink}` : null,
       ep.familyDinner?.trim() ? `shared family dinner ${ep.familyDinner}` : null,
     ].filter(Boolean)
@@ -478,7 +480,7 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   const mess = data.messMenu
   if (mess?.text?.trim()) {
     lines.push(
-      `FIXED MESS MENU for the week of ${mess.weekStart ?? 'this week'} (PG, hostel, or canteen). Build meals ONLY from these foods, plus a small add-on they can buy. Do not replace this menu with a home-cooked chart.`
+      `FIXED MESS MENU for the week of ${mess.weekStart ?? 'this week'} (PG, hostel, or canteen). Copy these served meals. Do not replace them with a home-cooked chart. A small bought snack is the only change allowed.`
     )
     lines.push(mess.text.trim())
   }
@@ -583,6 +585,20 @@ export function buildDietHardConstraintsSection(profile: OnboardingProfile): str
   }
   if (diet?.cookingAbility?.trim()) {
     lines.push(`- Cooking ability: ${diet.cookingAbility.trim()} — match meal complexity.`)
+  }
+  if (data?.eatingPattern?.mealControl === 'fixed' || data?.eatingPattern?.whoCooks === 'pg_hostel') {
+    const away = (data.eatingPattern?.eatOutWeekdays ?? []).filter(Boolean)
+    lines.push(
+      '- FIXED SERVED MEALS: breakfast, lunch, and dinner are whatever the hostel, PG, dorm, or mess serves. Copy those meals as written. Do not change the food or the portion. Do not replace them with a home-cooked menu.'
+    )
+    lines.push(
+      away.length > 0
+        ? `- On ${away.join(', ')} they eat away from the mess. Those days can use the outside meal. Every other day keeps the served meals.`
+        : '- Every day keeps the served breakfast, lunch, and dinner.'
+    )
+    lines.push(
+      '- If calories are short or high, change only a snack or a small item they can buy, such as fruit, curd, roasted chana, or whey when they use whey.'
+    )
   }
   if (diet?.previousDietsFailed?.trim()) {
     lines.push(`- Previous diets that failed (never repeat): ${diet.previousDietsFailed.trim()}`)
