@@ -292,7 +292,7 @@ export function formatStickySplitGuidance(opts: {
           : sticky.source === 'onboarding'
             ? `- Client onboarding preference: ${label}. Use this split.`
             : `- No established split on file — system default for this client: ${label}${days != null ? ` (${days} training days/week)` : ''}.`,
-    '- Never mix body parts in one session. No full-body day. An upper day may combine chest, back, shoulders, and arms. A lower day may combine a squat or leg press, a hinge, and calves. Push, pull, and legs stay on their own days when that is the split. A core finisher is allowed on any day.',
+    '- Never mix body parts in one session. No full-body day. An upper day may combine chest, back, shoulders, and arms. A lower day may combine a squat or leg press, a hinge, and calves. On a push/pull/legs week, a pull day is only rows, pulldowns, and pull-ups, and a push day is only presses, dips, and raises. Do not put a bench press on a pull day. A core finisher is allowed on any day.',
     sticky.source === 'unmixed'
       ? '- Replace the mixed week with the split named above. Volume still follows Workout fit.'
       : sticky.mode === 'keep'

@@ -76,6 +76,51 @@ Dumbbell Bench Press: 3 sets x 8 reps
 assert.ok(assessWorkoutStructure(twice).some((line) => /twice/i.test(line)))
 assert.deepEqual(assessWorkoutStructure(good), [])
 
+const benchOnPull = `
+Day 3 (Wednesday): Pull
+Main Workout:
+Lat Pulldown: 4 sets x 8 reps
+Barbell Bench Press: 4 sets x 6 reps
+Seated Cable Row: 3 sets x 10 reps
+`
+const pullNotes = assessWorkoutStructure(benchOnPull)
+assert.ok(pullNotes.some((line) => /pull day/i.test(line) && /bench press/i.test(line)), pullNotes.join(' | '))
+
+const rowOnPush = `
+Day 2 (Tuesday): Push
+Main Workout:
+Barbell Bench Press: 4 sets x 6 reps
+Lat Pulldown: 4 sets x 8 reps
+`
+assert.ok(assessWorkoutStructure(rowOnPush).some((line) => /push day/i.test(line) && /pulldown/i.test(line)))
+
+const upperMayMix = `
+Day 1 (Monday): Upper
+Main Workout:
+Barbell Bench Press: 4 sets x 6 reps
+Lat Pulldown: 4 sets x 8 reps
+Dumbbell Curl: 3 sets x 10 reps
+Tricep Pushdown: 3 sets x 12 reps
+Day 2 (Tuesday): Lower
+Main Workout:
+Back Squat: 4 sets x 6 reps
+Romanian Deadlift: 3 sets x 8 reps
+Leg Press: 3 sets x 10 reps
+Leg Curl: 3 sets x 12 reps
+Calf Raise: 3 sets x 12 reps
+`
+assert.deepEqual(assessWorkoutStructure(upperMayMix), [])
+
+const supportedRowOnPull = `
+Day 2 (Tuesday): Pull, Back and arms
+Main Workout:
+Chest Supported Dumbbell Row: 4 sets x 8 reps
+Lat Pulldown: 4 sets x 10 reps
+Dumbbell Curl: 3 sets x 10 reps
+Tricep Pushdown: 3 sets x 12 reps
+`
+assert.deepEqual(assessWorkoutStructure(supportedRowOnPull), [])
+
 const invented = `
 Day 1 (Monday)
 Main Workout:

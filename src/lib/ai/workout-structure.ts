@@ -52,7 +52,24 @@ export function isCommonYouTubeExercise(name: string): boolean {
 
 export type TrainingDay = {
   weekday: string
+  /** Push or pull when the day title says so. Upper and lower days stay unset. */
+  pattern: 'push' | 'pull' | null
   exercises: WorkingExercise[]
+}
+
+const PRESS_MOVE =
+  /\b(bench press|chest press|floor press|incline press|decline press|overhead press|shoulder press|military press|push ups?|press ups?|pec deck|flye?s?|dips?)\b/i
+const ROW_MOVE = /\b(rows?|pulldowns?|pull downs?|pull ups?|chin ups?|chinups?)\b/i
+
+/** Upper and lower days may mix a press with a row. A titled push or pull day may not. */
+function sessionPattern(header: string): 'push' | 'pull' | null {
+  const label = header.split(':').slice(1).join(':').toLowerCase()
+  if (!label.trim() || /\b(upper|lower|full)\b/.test(label)) return null
+  if (/\bpull\b/.test(label) && !/\bpush\b/.test(label)) return 'pull'
+  if (/\bpush\b/.test(label) && !/\bpull\b/.test(label)) return 'push'
+  if (/\b(back|lats?)\b/.test(label) && !/\b(chest|shoulder|push)\b/.test(label)) return 'pull'
+  if (/\b(chest|shoulders?)\b/.test(label) && !/\b(back|pull)\b/.test(label)) return 'push'
+  return null
 }
 
 function normalizeName(name: string): string {
@@ -113,7 +130,11 @@ export function parseTrainingDays(text: string): TrainingDay[] {
     const existing = days.find((day) => day.weekday === marks[i].weekday)
     // A second copy of the same weekday is the week pasted again. Keep the first session.
     if (existing) continue
-    days.push({ weekday: marks[i].weekday, exercises })
+    const header = body
+      .split('\n')
+      .map((line) => line.trim())
+      .find(Boolean) ?? ''
+    days.push({ weekday: marks[i].weekday, pattern: sessionPattern(header), exercises })
   }
   return days.sort(
     (a, b) => WEEKDAYS.indexOf(a.weekday as (typeof WEEKDAYS)[number]) - WEEKDAYS.indexOf(b.weekday as (typeof WEEKDAYS)[number])
@@ -154,6 +175,23 @@ export function assessWorkoutStructure(
     if (legs.length > 0 && upper.length > 0) {
       errors.push(
         `${day.weekday} mixes body parts (${upper[0]?.name} with ${legs[0]?.name}). One region per day: upper, lower, push, pull, or legs. Chest on a leg day is only an example. A core finisher may stay. Do not write a full-body day.`
+      )
+    }
+    const wrongPattern =
+      day.pattern === 'pull'
+        ? day.exercises.filter((exercise) => PRESS_MOVE.test(exercise.name))
+        : day.pattern === 'push'
+          ? day.exercises.filter((exercise) => ROW_MOVE.test(exercise.name))
+          : []
+    if (wrongPattern.length > 0) {
+      const shown = wrongPattern
+        .slice(0, 3)
+        .map((exercise) => exercise.label)
+        .join(', ')
+      errors.push(
+        day.pattern === 'pull'
+          ? `${day.weekday} is a pull day and lists ${shown}. A pull day is rows, pulldowns, and pull-ups. Move bench press, incline press, shoulder press, dips, push-ups, and flies to a push day.`
+          : `${day.weekday} is a push day and lists ${shown}. A push day is presses, dips, and raises. Move rows, pulldowns, and pull-ups to a pull day.`
       )
     }
     const unusual = day.exercises.filter((exercise) => !isCommonYouTubeExercise(exercise.name))
