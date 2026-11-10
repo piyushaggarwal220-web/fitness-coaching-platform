@@ -195,6 +195,7 @@ assert.equal(clientRequestedDietChange({ digestion: 'bloated after lunch' }), tr
 
 assert.equal(isCommonYouTubeExercise('kneeling crunch'), true)
 assert.equal(isCommonYouTubeExercise('incline press'), true)
+assert.equal(isCommonYouTubeExercise('rope triceps pressdown'), true)
 assert.equal(isCommonYouTubeExercise('decline press'), true)
 assert.equal(isCommonYouTubeExercise('lat pull down'), true)
 assert.equal(isCommonYouTubeExercise('pullover'), true)
