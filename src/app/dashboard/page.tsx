@@ -457,9 +457,9 @@ export default function Dashboard() {
         detail: dueCheckin
           ? offersSundayPlanChoice(purchase?.plan_slug) && dueCheckin.type === 'weekly'
             ? 'Due now. On this Sunday check-in, choose a new plan or keep the one you have.'
-            : clientHasCoachChat(profile)
-            ? `Due now. Photos and answers go to ${clientChatNavLabel(profile)}.`
-            : 'Due now. Submit photos and answers — your plan updates from this check-in.'
+            : dueCheckin.type === 'weekly'
+              ? 'Due now. Submit photos and answers. Your updated plan is ready within 30 minutes.'
+              : 'Due now. Submit your answers. A short reply follows within 30 minutes.'
           : checkinSchedule?.countdownDetailed
             ? `Opens in ${checkinSchedule.countdownDetailed}`
             : checkinSchedule?.countdownLabel

@@ -16,7 +16,7 @@ import { sendNotification } from '@/lib/notifications/dispatcher'
 import { fetchCapturedPlanSlug, shouldGenerateChosenWeeklyPlan } from '@/lib/plan-update-cadence'
 import { activatePlan } from '@/lib/plans'
 import { clientCoachNotes, fallbackPublishCoachNotes } from '@/lib/plan-metadata'
-import { coachIdHasClientChat, usesHumanCoach } from '@/lib/coach-service'
+import { coachIdHasClientChat } from '@/lib/coach-service'
 import type { Checkin, CoachCheckinResponse, OnboardingProfile, Plan } from '@/types/database'
 
 export { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply'
@@ -141,12 +141,6 @@ export async function sendCheckinAutoReply(
 ): Promise<AutoReplyOutcome> {
   if (checkin.reviewed) return { status: 'skipped', reason: 'already_reviewed' }
 
-  // Mid-week answers feed Sunday's next-week plan. Never send an AI reply for them.
-  if (checkin.checkin_type === 'mid_week') {
-    await supabase.from('checkins').update({ auto_reply_at: null }).eq('id', checkin.id)
-    return { status: 'skipped', reason: 'midweek_in_weekly' }
-  }
-
   if (!shouldScheduleCheckinAutoReply(checkin.checkin_type, checkin.coach_id)) {
     await supabase.from('checkins').update({ auto_reply_at: null }).eq('id', checkin.id)
     return { status: 'skipped', reason: 'manual_plan_delivery' }
@@ -172,16 +166,6 @@ export async function sendCheckinAutoReply(
   const profile = profileRow as OnboardingProfile
   // Ended memberships drop out of the coach queue, so they must not receive automated coaching either.
   if (!hasClientEntitlement(profile)) return { status: 'skipped', reason: 'membership_ended' }
-
-  // Coach-chat clients never receive an AI check-in reply or an AI-published plan.
-  // A mid-week check-in is read with the weekly check-in instead of answered on its own.
-  if (usesHumanCoach(profile)) {
-    await supabase.from('checkins').update({ auto_reply_at: null }).eq('id', checkin.id)
-    return {
-      status: 'skipped',
-      reason: 'coach_writes',
-    }
-  }
 
   const { data: coach } = await supabase
     .from('coaches')

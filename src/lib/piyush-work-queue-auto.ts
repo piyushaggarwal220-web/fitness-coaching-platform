@@ -110,20 +110,6 @@ async function handleCheckin(
   const typed = checkin as Checkin
 
   if (typed.checkin_type === 'weekly') {
-    const { data: serviceRow } = await admin
-      .from('profiles')
-      .select('coach_service, coach_id')
-      .eq('id', typed.client_id)
-      .maybeSingle()
-    if (usesHumanCoach(serviceRow)) {
-      return {
-        taskId: task.id,
-        type: task.type,
-        clientName: task.clientName,
-        status: 'left_for_coach',
-        detail: 'coach chat does not auto-write plans',
-      }
-    }
     const planSlug = await fetchCapturedPlanSlug(typed.client_id)
     const week = typed.coaching_week ?? 0
     if (

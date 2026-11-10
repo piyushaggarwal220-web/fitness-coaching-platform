@@ -9,7 +9,6 @@ import { hasClientEntitlement } from '@/lib/entitlements'
 import { sendNotification } from '@/lib/notifications/service'
 import { activatePlan } from '@/lib/plans'
 import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
-import { usesHumanCoach } from '@/lib/coach-service'
 import { fetchCapturedPlanSlug, shouldGenerateChosenWeeklyPlan } from '@/lib/plan-update-cadence'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -81,9 +80,6 @@ async function sendOneCheckin(checkinId: string) {
   }
   if (!hasClientEntitlement(profile)) {
     return { checkinId, name, status: 'SKIP' as const, error: 'no entitlement' }
-  }
-  if (usesHumanCoach(profile)) {
-    return { checkinId, name, status: 'SKIP' as const, error: 'coach_chat_silent' }
   }
   if (coachRequiresManualPlanDelivery(checkin.coach_id)) {
     return { checkinId, name, status: 'SKIP' as const, error: 'manual_plan_delivery' }
@@ -231,7 +227,6 @@ async function discoverMissedWeeklyCheckins(limit: number): Promise<MissedChecki
 
     if (profile?.email?.includes('@lurvox.test')) continue
     if (!hasClientEntitlement(profile)) continue
-    if (usesHumanCoach(profile)) continue
 
     const planSlug = await fetchCapturedPlanSlug(checkin.client_id)
     if (

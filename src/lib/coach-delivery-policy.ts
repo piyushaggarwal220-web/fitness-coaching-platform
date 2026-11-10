@@ -107,12 +107,12 @@ export function shouldAutoJourneyAndDeliverInitialPlan(
   return isAutoDeliveryCoach(coachId)
 }
 
-/** Mid-week is never auto-replied. Weekly replies auto-send unless the coach is still on manual delivery. */
+/** Weekly plans and mid-week notes auto-send unless the coach is still on manual delivery. */
 export function shouldScheduleCheckinAutoReply(
   checkinType: 'mid_week' | 'weekly',
   coachId: string | null | undefined
 ): boolean {
-  if (checkinType === 'mid_week') return false
+  if (checkinType !== 'mid_week' && checkinType !== 'weekly') return false
   return !coachRequiresManualPlanDelivery(coachId)
 }
 

@@ -61,8 +61,8 @@ function checkin(partial: Partial<Checkin> & Pick<Checkin, 'id' | 'checkin_type'
   }
 }
 
-assert.equal(shouldScheduleCheckinAutoReply('mid_week', PIYUSH_COACH_ID), false)
-assert.equal(shouldScheduleCheckinAutoReply('mid_week', 'any-coach'), false)
+assert.equal(shouldScheduleCheckinAutoReply('mid_week', PIYUSH_COACH_ID), true)
+assert.equal(shouldScheduleCheckinAutoReply('mid_week', 'any-coach'), true)
 
 const weekly = checkin({
   id: 'weekly-4',
@@ -102,8 +102,10 @@ assert.match(snapshot, /Late dinners/)
 
 const root = process.cwd()
 const autoReplySrc = readFileSync(join(root, 'src/lib/checkin-auto-reply.ts'), 'utf8')
-assert.match(autoReplySrc, /midweek_in_weekly/)
 assert.match(autoReplySrc, /checkin_type === 'mid_week'/)
+assert.match(autoReplySrc, /generateMidWeekAnalysis/)
+assert.doesNotMatch(autoReplySrc, /midweek_in_weekly/)
+assert.doesNotMatch(autoReplySrc, /usesHumanCoach/)
 
 const draftSrc = readFileSync(join(root, 'src/lib/ai/weekly-plan-draft.ts'), 'utf8')
 assert.match(draftSrc, /loadSameWeekMidWeekCheckin/)
@@ -115,6 +117,15 @@ assert.match(submitSrc, /checkinType === 'weekly'[\s\S]*checkin_awaiting: true/)
 
 assert.equal(
   checkinNeedsCoachResponse({ checkin_type: 'mid_week', reviewed: false, auto_reply_at: null }),
+  true
+)
+assert.equal(
+  checkinNeedsCoachResponse({
+    checkin_type: 'mid_week',
+    reviewed: false,
+    auto_reply_at: '2026-10-26T10:30:00.000Z',
+    auto_replied_at: null,
+  }),
   false
 )
 assert.equal(
@@ -135,4 +146,4 @@ const dashSrc = readFileSync(join(root, 'src/app/coach/dashboard/page.tsx'), 'ut
 assert.match(dashSrc, /checkinNeedsCoachResponse/)
 assert.match(dashSrc, /checkin_type/)
 
-console.log('✓ mid-week is not auto-replied; same-week Day 3 feeds Sunday plan generation')
+console.log('✓ mid-week sends a short reply; same-week Day 3 still feeds Sunday plan generation')

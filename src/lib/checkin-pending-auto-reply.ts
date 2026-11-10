@@ -12,11 +12,10 @@ export function isCheckinPendingAutoReply(checkin: AutoReplyQueueFields): boolea
 
 /**
  * True when a submitted check-in still needs a coach reply.
- * Mid-week rows feed Sunday's next-week plan and are never coach-response work.
+ * Scheduled weekly plans and mid-week notes are delivered automatically.
  */
 export function checkinNeedsCoachResponse(checkin: AutoReplyQueueFields): boolean {
   if (checkin.reviewed) return false
-  if (checkin.checkin_type === 'mid_week') return false
   if (isCheckinPendingAutoReply(checkin)) return false
   return checkin.auto_reply_at == null
 }
