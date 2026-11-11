@@ -26,7 +26,7 @@ import {
  readMetaBrowserIds,
 } from '@/lib/analytics/meta-attribution';
 import { trackFunnelStep } from '@/lib/analytics/funnel';
-import { PREVIEW7_AD_PATH, PREVIEW_AD_PATH, previewAdFunnelSource, previewAdLandingPath } from '@/lib/analytics/ad-landing';
+import { PREVIEW10_AD_PATH, PREVIEW7_AD_PATH, PREVIEW_AD_PATH, previewAdFunnelSource, previewAdLandingPath } from '@/lib/analytics/ad-landing';
 import { isPreview7SaleCode, preview7PricedPlan } from '@/lib/payments/preview7-prices';
 import { checkoutThemeForLanding } from '@/lib/payments/checkout-theme';
 import {
@@ -195,7 +195,7 @@ function CheckoutForm() {
  : COACHING_PLAN_LIST).map((item) => preview7PricedPlan(item, adLandingPath));
  const coachingLadder =
  !isDigitalCheckout && !isTrialCheckout && !isDurationOfferSlug(plan.slug) && !singleOffer;
- const visiblePlans = coachingLadder
+ const visiblePlans = coachingLadder && adLandingPath !== PREVIEW10_AD_PATH
  ? planPickerList.filter((item) => item.durationMonths >= plan.durationMonths)
  : planPickerList;
  const planPayablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;

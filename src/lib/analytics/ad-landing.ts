@@ -19,6 +19,9 @@ export const PREVIEW6_AD_PATH = '/preview6'
 /** Ad entry for the live quiz-v3 Shopify theme. Checkout from that theme uses its prices. */
 export const PREVIEW7_AD_PATH = '/preview7'
 
+/** Colour storefront with the 30-day refund line. Separate from the live /preview4 page. */
+export const PREVIEW10_AD_PATH = '/preview10'
+
 export type PreviewAdPath =
   | typeof PREVIEW_AD_PATH
   | typeof PREVIEW2_AD_PATH
@@ -27,6 +30,7 @@ export type PreviewAdPath =
   | typeof PREVIEW5_AD_PATH
   | typeof PREVIEW6_AD_PATH
   | typeof PREVIEW7_AD_PATH
+  | typeof PREVIEW10_AD_PATH
 
 export const PREVIEW_DROPOFF_SECTIONS = [
   { id: 'hero', key: 'p1_hero', index: 0, label: 'Hero' },
@@ -118,17 +122,19 @@ export function previewAdLandingPath(value: unknown): PreviewAdPath | null {
   if (value === PREVIEW5_AD_PATH) return PREVIEW5_AD_PATH
   if (value === PREVIEW6_AD_PATH) return PREVIEW6_AD_PATH
   if (value === PREVIEW7_AD_PATH) return PREVIEW7_AD_PATH
+  if (value === PREVIEW10_AD_PATH) return PREVIEW10_AD_PATH
   return null
 }
 
 export function previewAdFunnelSource(
   path: PreviewAdPath
-): 'preview1' | 'preview2' | 'preview3' | 'preview4' | 'preview5' | 'preview6' | 'preview7' {
+): 'preview1' | 'preview2' | 'preview3' | 'preview4' | 'preview5' | 'preview6' | 'preview7' | 'preview10' {
   if (path === PREVIEW2_AD_PATH) return 'preview2'
   if (path === PREVIEW3_AD_PATH) return 'preview3'
   if (path === PREVIEW4_AD_PATH) return 'preview4'
   if (path === PREVIEW5_AD_PATH) return 'preview5'
   if (path === PREVIEW6_AD_PATH) return 'preview6'
   if (path === PREVIEW7_AD_PATH) return 'preview7'
+  if (path === PREVIEW10_AD_PATH) return 'preview10'
   return 'preview1'
 }

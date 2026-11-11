@@ -261,11 +261,12 @@ export const INSTRUMENTED_LANDING_SESSIONS: MetricSourceOfTruth = {
   code_path: [
     'src/lib/landing/preview7-tracking.ts',
     'src/components/studio/PreviewAdCapture.tsx',
+    'src/app/preview10/page.tsx',
     'scripts/shopify-install-landing-dropoff.mjs',
   ],
   database_or_api: 'Supabase public.landing_dropoff (session_id, path, source, created_at)',
   calculation:
-    'count(distinct session_id) where created_at is in the IST day. session_id is sessionStorage, not a person. Only paths that have the dropoff script. The live colourful storefront records colourful section keys with path /preview4, in page order: hero, plans, truth, steps, changes, quiz, faq, close. Reach is which of those keys exist, not the highest section_index. Older beige /preview4 rows keep the p4_ keys. A successful query with zero rows is explicit zero for those pages only.',
+    'count(distinct session_id) where created_at is in the IST day. session_id is sessionStorage, not a person. Only paths that have the dropoff script. The live colourful storefront records colourful section keys with path /preview4, in page order: hero, plans, truth, steps, changes, quiz, faq, close. /preview10 records the same colourful keys on its own path. A before-and-after swipe sits after the plan cards on /preview10 and is not one of those keys. A talk-to-coach form also sits on /preview10 and is not one of those keys; it posts to /api/public/talk-to-a-coach. Quiz and expected-changes keys still record when those sections exist on the page. Reach is which of those keys exist, not the highest section_index. Older beige /preview4 rows keep the p4_ keys. A successful query with zero rows is explicit zero for those pages only.',
   timezone: `${BUSINESS_TIMEZONE} calendar days.`,
   refund_adjustment: 'N/A — not a cash metric.',
   data_status_rule:

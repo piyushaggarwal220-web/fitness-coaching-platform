@@ -1,13 +1,14 @@
 /**
  * Public Terms & Conditions body — intentionally long and company-favoring.
- * Marketing surfaces must not restate guarantees; link here only.
+ * The only public refund promise is the 30-day refund guarantee in Section 2.
+ * Landing pages may repeat that guarantee. They must not add to it.
  */
 export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] }[] = [
   {
     title: '0. Absolute supremacy of these Terms',
     paragraphs: [
       'By accessing, browsing, creating an account on, purchasing from, messaging through, or otherwise using any LURVOX website, app, checkout, chatbot, WhatsApp channel, email, phone call, form, quiz, tracker, coaching plan, league feature, or related service (collectively, the “Service”), you irrevocably agree that these Terms & Conditions (“Terms”) are the sole and complete statement of the relationship between you and LURVOX (“we”, “us”, “our”, “Company”).',
-      'Marketing pages, ads, plan cards, sales copy, coach chats, emails, social posts, call scripts, FAQs, quizzes, landing pages, and “money-back” or “guarantee” phrases used outside this page are advertising only. They create no contractual promise. If anything outside this page conflicts with these Terms, these Terms win. Always.',
+      'The 30-day refund guarantee in Section 2 is a real promise. A landing page may repeat it in those words. Other marketing pages, ads, plan cards, sales copy, coach chats, emails, social posts, call scripts, FAQs, quizzes, and “money-back” or “guarantee” phrases used outside this page are advertising only. They create no extra contractual promise. If anything outside this page conflicts with these Terms, these Terms win. Always.',
       'If you do not agree to every word of these Terms, do not buy, do not use the Service, and leave immediately. Continued use after posting of an updated version is acceptance.',
     ],
   },
@@ -15,7 +16,7 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
     title: '1. We can do basically anything',
     paragraphs: [
       'To the maximum extent permitted by applicable law, LURVOX may, at any time, with or without notice, for any reason or no reason: change prices; change plan names, durations, inclusions, goals, or benefits; remove features; add features; pause coaching; reassign coaches; change coaches; change coaching tools; change check-in cadence; change delivery timelines; change upgrade fees; change refund criteria; refuse service; refuse a refund; reverse a prior courtesy; suspend accounts; delete content; throttle access; require extra verification; require extra payments; require add-on purchases; end promotions; end “guarantees”; rewrite these Terms; and interpret these Terms in whatever way we reasonably believe protects the Company.',
-      'Any “promise”, “guarantee”, “risk reversal”, “money back”, “delivery within X hours”, “results”, or similar language is discretionary goodwill only unless and until an authorized administrator issues a written approval that expressly creates a binding obligation under these Terms. Silence is not approval. A coach chat is not approval. An ad is not approval.',
+      'The 30-day refund guarantee in Section 2 is binding. Any other “promise”, “guarantee”, “risk reversal”, “money back”, “delivery within X hours”, “results”, or similar language is discretionary goodwill only unless these Terms say otherwise. Silence is not approval. A coach chat is not approval. An ad is not approval.',
       'You acknowledge that LURVOX is a private coaching business, not a public utility, not a hospital, not an insurer, and not a consumer bank. Access is a privilege we can condition, limit, or withdraw.',
     ],
   },
@@ -24,8 +25,9 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
     title: '2. Payments, refunds, money-back, and “guarantees” (all inside these Terms)',
     paragraphs: [
       'All fees are due in advance. Payment is processed by third-party processors (including Razorpay). Their failures, delays, holds, chargeback rules, and bank timelines are outside our control. You authorize recurring or additional charges only where you opt into them; otherwise one-time plan fees are charged as shown at checkout.',
-      'DEFAULT RULE: ALL SALES ARE FINAL. Fees are non-refundable once payment is captured, except where (a) applicable law non-excludably requires a remedy, or (b) LURVOX, in its sole and absolute discretion, chooses to issue a partial or full refund as a courtesy.',
-      'Any “money-back guarantee”, “results guarantee”, “delivery refund”, “7-day refund”, “48-hour delivery refund”, or similar is NOT a public offer outside this page. It exists only as an internal discretionary framework described below and may be withdrawn, narrowed, or denied case-by-case.',
+      'DEFAULT RULE: ALL SALES ARE FINAL. Fees are non-refundable once payment is captured, except where (a) applicable law non-excludably requires a remedy, (b) the 30-day refund guarantee below applies, or (c) LURVOX, in its sole and absolute discretion, chooses to issue a partial or full refund as a courtesy.',
+      'The only public money-back promise is the 30-day refund guarantee in this section. Other labels such as “results guarantee”, “delivery refund”, “7-day refund”, or “48-hour delivery refund” are not public offers. The discretionary courtesies below may be withdrawn, narrowed, or denied case-by-case. The 30-day refund guarantee may not.',
+      '30-day refund guarantee: If you do not see a visible change between your onboarding photos and a later progress photo within 30 days after your first plan is delivered, you may ask for a refund of the full plan fee you paid for that purchase. We return 100% of that fee. You must have finished onboarding, including front, side, and back photos, and you must send the request through in-app support or the official support email within 7 days after those 30 days end. Say that you do not see a visible change. We do not refuse the refund because we think the photos look better. One guarantee refund per person. When the refund is issued, access to that plan ends. This is a refund of the fee. It is not a promise that a change will happen, and it is not medical care.',
       'Discretionary delivery courtesy (not a right): If, and only if, you completed payment, account creation, and onboarding with complete truthful information and usable photos, and we failed to deliver any first personal plan within a time we alone consider reasonable, you may request a courtesy review within a short window we alone define. We may deny for incomplete onboarding, delayed photos, inaccurate details, spam requests, chargebacks, abuse, or any other reason we find sufficient.',
       'Discretionary results courtesy (not a right): A results-related courtesy refund, if considered at all, requires ALL of the following as determined solely by LURVOX administrators using our logs and timestamps:',
       '(A) Check-ins: you answered EVERY due check-in (mid-week and weekly, as scheduled for your plan) within each check-in’s submission window (mid-week: 48 hours; weekly: Sunday through Tuesday IST). Missing, late, skipped, or incomplete check-ins mean ineligible. No due check-ins yet means ineligible.',
@@ -50,7 +52,7 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
   {
     title: '4. No promised results',
     paragraphs: [
-      'Nothing guarantees fat loss, muscle gain, aesthetic change, strength, league rankings, certificates, prizes, habit change, or any timeline. Genetics, adherence, sleep, stress, work, travel, honesty in logging, and luck matter. Before/after marketing is illustrative only.',
+      'Nothing guarantees fat loss, muscle gain, aesthetic change, strength, league rankings, certificates, prizes, habit change, or any timeline. Genetics, adherence, sleep, stress, work, travel, honesty in logging, and luck matter. Before/after marketing is illustrative only. The only exception is the 30-day refund guarantee in Section 2: if you do not see a visible change in that window, you get the plan fee back. That promise is a refund. It is not a promise that your body will change.',
       'If you dislike your coach, plan, macros, protein target, workout split, tone of messages, or pace of replies, that is not a refund event unless we discretionary decide otherwise.',
     ],
   },
@@ -154,7 +156,7 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
     title: '17. Exhaustive acknowledgements you make by paying',
     paragraphs: [
       'You acknowledge that you read Section 2 on refunds and guarantees.',
-      'You acknowledge that outside pages do not create money-back rights.',
+      'You acknowledge that outside pages do not create money-back rights, except where they repeat the 30-day refund guarantee in Section 2.',
       'You acknowledge that coaches cannot bind LURVOX to refunds.',
       'You acknowledge that check-in adherence and daily tracker completion are tracked by our systems and our timestamps control.',
       'You acknowledge that any discretionary results courtesy requires answering every due check-in on time and filling all trackers to at least 90% on at least 90% of days, and that even then a refund is not guaranteed.',
@@ -175,7 +177,7 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
   {
     title: '19. Marketing silence rule',
     paragraphs: [
-      'Homepage cards, compare tables, floating buttons, plan finder results, consultation forms, and checkout badges must not be read as creating money-back, results, or delivery guarantees. Those topics live only in these Terms.',
+      'The landing page may state the 30-day refund guarantee. That statement does not add to Section 2. Homepage cards, compare tables, floating buttons, plan finder results, consultation forms, and checkout badges must not be read as creating any other money-back, results, or delivery guarantee.',
       'If an outside page still shows old guarantee language due to caching, CDN delay, theme drafts, or third-party mirrors, that language is void as against LURVOX and these Terms control.',
     ],
   },
@@ -321,7 +323,7 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
   {
     title: '43. Entire refund philosophy (restated so it cannot be missed)',
     paragraphs: [
-      'Again: there is no externally advertised money-back guarantee on cards or landing pages that creates rights. Any refund is either (1) legally mandatory and non-excludable, or (2) a discretionary courtesy under Section 2 that requires every due check-in answered on time plus all trackers filled to at least 90% on at least 90% of days — and still may be denied. If you need certainty of refunds, do not purchase.',
+      'The 30-day refund guarantee in Section 2 is the one refund you can count on: no visible change in 30 days, and you get the plan fee back if you ask in time. Every other refund is either (1) legally mandatory and non-excludable, or (2) a discretionary courtesy under Section 2 that requires every due check-in answered on time plus all trackers filled to at least 90% on at least 90% of days — and still may be denied.',
     ],
   },
   {

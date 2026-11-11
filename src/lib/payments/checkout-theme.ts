@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import {
   PREVIEW2_AD_PATH,
   PREVIEW3_AD_PATH,
+  PREVIEW10_AD_PATH,
   PREVIEW5_AD_PATH,
   PREVIEW6_AD_PATH,
   PREVIEW7_AD_PATH,
@@ -403,7 +404,7 @@ export function checkoutThemeForLanding(
     })
   }
 
-  if (path === PREVIEW3_AD_PATH || path === PREVIEW6_AD_PATH) {
+  if (path === PREVIEW3_AD_PATH || path === PREVIEW6_AD_PATH || path === PREVIEW10_AD_PATH) {
     return themeFrom({
       page: '#12100f',
       pageImage:
