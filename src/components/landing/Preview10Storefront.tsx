@@ -379,17 +379,18 @@ function ResultSwipe() {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const el = scroller.current
     if (!el) return
+    const row = el
     let frame = 0
 
     function visible() {
-      const rect = el.getBoundingClientRect()
+      const rect = row.getBoundingClientRect()
       const shown = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0)
       return shown > 80
     }
 
     function animateTo(left: number, done: () => void) {
       window.cancelAnimationFrame(frame)
-      const start = el.scrollLeft
+      const start = row.scrollLeft
       const delta = left - start
       if (Math.abs(delta) < 2) {
         done()
@@ -397,18 +398,18 @@ function ResultSwipe() {
       }
       const duration = 700
       const t0 = performance.now()
-      el.style.scrollSnapType = 'none'
+      row.style.scrollSnapType = 'none'
       const step = (now: number) => {
         if (heldRef.current) {
-          el.style.scrollSnapType = ''
+          row.style.scrollSnapType = ''
           return
         }
         const progress = Math.min(1, (now - t0) / duration)
         const eased = 1 - (1 - progress) ** 3
-        el.scrollLeft = start + delta * eased
+        row.scrollLeft = start + delta * eased
         if (progress < 1) frame = window.requestAnimationFrame(step)
         else {
-          el.style.scrollSnapType = ''
+          row.style.scrollSnapType = ''
           done()
         }
       }
@@ -426,16 +427,16 @@ function ResultSwipe() {
         return
       }
       const next = (indexRef.current + 1) % CLIENT_RESULTS.length
-      const card = el.children[next] as HTMLElement | undefined
+      const card = row.children[next] as HTMLElement | undefined
       if (!card) return
-      animateTo(card.getBoundingClientRect().left - el.getBoundingClientRect().left + el.scrollLeft, () => queue(1000))
+      animateTo(card.getBoundingClientRect().left - row.getBoundingClientRect().left + row.scrollLeft, () => queue(1000))
     }
     queue(1000)
 
     return () => {
       window.clearTimeout(timer)
       window.cancelAnimationFrame(frame)
-      el.style.scrollSnapType = ''
+      row.style.scrollSnapType = ''
     }
   }, [held])
 
