@@ -1,17 +1,21 @@
 'use client'
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { trackFunnelStep } from '@/lib/analytics/funnel'
 import { persistMetaClickIdsFromLocation } from '@/lib/analytics/meta-attribution'
 import Link from 'next/link'
 import { CheckoutFunnelLink } from '@/components/analytics/CheckoutFunnelLink'
+import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations'
+import { InstantFitnessQuiz } from '@/components/landing/InstantFitnessQuiz'
 import { PreviewAdCapture } from '@/components/studio/PreviewAdCapture'
 import { PREVIEW3_DROPOFF_SECTIONS, PREVIEW10_AD_PATH } from '@/lib/analytics/ad-landing'
 import { COACHING_PLANS, type CoachingPlanSlug } from '@/lib/payments/plans'
 
 const LANDING = PREVIEW10_AD_PATH
 
-const PIYUSH_PORTRAIT = '/landing/instant-coach-piyush.png'
+const PORTRAIT = {
+  piyush: '/landing/coach-piyush-dark.webp',
+} as const
 
 const GOAL_HERO: Record<
   CoachingPlanSlug,
@@ -49,12 +53,14 @@ type StorefrontCoach = {
 
 type PlanCard = {
   slug: CoachingPlanSlug
+  chip: string
   length: string
   monthly: string
   tone: 'fat' | 'mid' | 'athletic'
   tag?: string
   note: string
   points: string[]
+  extras?: { label: string; items: string[] }
   cta: string
 }
 
@@ -62,12 +68,13 @@ const SHARED = [
   'Personal workout and diet',
   'Mid-week and weekly check-ins',
   'Coach chat in the app',
-  'Daily trackers and progress photos',
+  'Daily trackers, Journey, and progress photos',
 ]
 
 const PLANS: PlanCard[] = [
   {
     slug: '3_months',
+    chip: 'Fat loss · 3 months',
     length: '3 months',
     monthly: '≈ ₹200/mo',
     tone: 'fat',
@@ -77,22 +84,32 @@ const PLANS: PlanCard[] = [
   },
   {
     slug: '6_months',
+    chip: 'Fat loss + muscle · 6 months',
     length: '6 months',
     monthly: '≈ ₹167/mo',
     tone: 'mid',
-    tag: 'Most people start here',
+    tag: 'Most popular',
     note: 'Fat loss + muscle. A new workout and diet every week, plus cardio and supplements.',
     points: ['New plan every week', 'Cardio and supplements', ...SHARED],
+    extras: {
+      label: 'At no extra cost',
+      items: ['Muscle programming', 'Weekly plan updates', 'Cardio and supplements'],
+    },
     cta: 'Get 6 months',
   },
   {
     slug: '12_months',
+    chip: 'Athletic body · 12 months (weight gain included)',
     length: '12 months',
     monthly: '≈ ₹142/mo · lowest monthly cost',
     tone: 'athletic',
     tag: 'Best value',
     note: 'Athletic body. Weekly plans for a full year, plus stamina coaching.',
     points: ['New plan every week', 'Stamina coaching', 'Cardio and supplements', ...SHARED],
+    extras: {
+      label: '12-month athletic runway',
+      items: ['Stamina coaching', 'Lowest ₹/month'],
+    },
     cta: 'Get 12 months',
   },
 ]
@@ -128,11 +145,11 @@ const FAQ = [
   },
   {
     q: 'What exactly is included?',
-    a: 'Every plan includes a personal workout and diet, mid-week and weekly check-ins, coach chat, daily trackers, and progress photos. The 3-month plan is rewritten every 14 days. The 6- and 12-month plans are rewritten every week. Six months adds cardio and supplements. Twelve months adds stamina coaching. One price. No weekly phone calls.',
+    a: 'Every plan includes a personal workout and diet, mid-week and weekly check-ins, coach chat, daily trackers, Journey, and progress photos. This is not a one-time PDF. The 3-month plan is rewritten every 14 days. The 6- and 12-month plans are rewritten every week. Six months adds cardio and supplements. Twelve months adds stamina coaching. One price. No weekly phone calls.',
   },
   {
     q: 'Is this real 1-to-1 coaching?',
-    a: 'You get your own plan and your own check-ins. Chat is inside the app. It is not a weekly phone call, and a trainer is not with you in the gym. For an account problem, message Coach Piyush on Instagram.',
+    a: 'Yes. You get your own plan, your own check-ins, and chat in the app. It is not a weekly phone call, and a trainer is not with you in the gym. For an account problem, message Coach Piyush on Instagram.',
   },
   {
     q: 'Gym or home? Beginners? Vegetarians?',
@@ -143,6 +160,18 @@ const FAQ = [
     a: 'If you do not see a visible change in your progress photos within 30 days of your first plan, you can ask for the full plan fee back. The rules are in the Terms.',
   },
 ]
+
+function Stamp() {
+  return (
+    <div className="lx3-stamp" aria-label="Plan fee back if there is no visible change in 30 days">
+      <span>
+        <b>30 days</b>
+        <strong>Fee back</strong>
+        <b>If no change</b>
+      </span>
+    </div>
+  )
+}
 
 function PlanLink({
   plan,
@@ -272,10 +301,58 @@ const CLIENT_RESULTS = [
 
 function ResultSwipe() {
   const scroller = useRef<HTMLDivElement>(null)
+  const indexRef = useRef(0)
+  const heldRef = useRef(false)
   const [index, setIndex] = useState(0)
+  const [held, setHeld] = useState(false)
 
   function cardLeft(el: HTMLElement, card: HTMLElement) {
     return card.getBoundingClientRect().left - el.getBoundingClientRect().left + el.scrollLeft
+  }
+
+  function hold() {
+    if (heldRef.current) return
+    heldRef.current = true
+    setHeld(true)
+    const el = scroller.current
+    if (!el) return
+    el.style.scrollSnapType = ''
+    el.scrollTo({ left: el.scrollLeft, behavior: 'auto' })
+  }
+
+  function noteGesture(event: ReactPointerEvent<HTMLDivElement>) {
+    if (heldRef.current) return
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+    const startX = event.clientX
+    const startY = event.clientY
+    const pointerId = event.pointerId
+    const stopListening = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', cancel)
+    }
+    const move = (e: PointerEvent) => {
+      if (e.pointerId !== pointerId) return
+      const dx = Math.abs(e.clientX - startX)
+      const dy = Math.abs(e.clientY - startY)
+      if (dx < 10 && dy < 10) return
+      stopListening()
+      if (dx > dy) hold()
+    }
+    const up = (e: PointerEvent) => {
+      if (e.pointerId !== pointerId) return
+      const dx = Math.abs(e.clientX - startX)
+      const dy = Math.abs(e.clientY - startY)
+      stopListening()
+      if (dx < 10 && dy < 10) hold()
+    }
+    const cancel = (e: PointerEvent) => {
+      if (e.pointerId !== pointerId) return
+      stopListening()
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', cancel)
   }
 
   function nearestIndex() {
@@ -292,6 +369,75 @@ function ResultSwipe() {
     })
     return best
   }
+
+  useEffect(() => {
+    indexRef.current = index
+  }, [index])
+
+  useEffect(() => {
+    if (held) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const el = scroller.current
+    if (!el) return
+    let frame = 0
+
+    function visible() {
+      const rect = el.getBoundingClientRect()
+      const shown = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0)
+      return shown > 80
+    }
+
+    function animateTo(left: number, done: () => void) {
+      window.cancelAnimationFrame(frame)
+      const start = el.scrollLeft
+      const delta = left - start
+      if (Math.abs(delta) < 2) {
+        done()
+        return
+      }
+      const duration = 700
+      const t0 = performance.now()
+      el.style.scrollSnapType = 'none'
+      const step = (now: number) => {
+        if (heldRef.current) {
+          el.style.scrollSnapType = ''
+          return
+        }
+        const progress = Math.min(1, (now - t0) / duration)
+        const eased = 1 - (1 - progress) ** 3
+        el.scrollLeft = start + delta * eased
+        if (progress < 1) frame = window.requestAnimationFrame(step)
+        else {
+          el.style.scrollSnapType = ''
+          done()
+        }
+      }
+      frame = window.requestAnimationFrame(step)
+    }
+
+    let timer = 0
+    function queue(delay: number) {
+      timer = window.setTimeout(advance, delay)
+    }
+    function advance() {
+      if (heldRef.current) return
+      if (!visible()) {
+        queue(200)
+        return
+      }
+      const next = (indexRef.current + 1) % CLIENT_RESULTS.length
+      const card = el.children[next] as HTMLElement | undefined
+      if (!card) return
+      animateTo(card.getBoundingClientRect().left - el.getBoundingClientRect().left + el.scrollLeft, () => queue(1000))
+    }
+    queue(1000)
+
+    return () => {
+      window.clearTimeout(timer)
+      window.cancelAnimationFrame(frame)
+      el.style.scrollSnapType = ''
+    }
+  }, [held])
 
   function go(next: number) {
     const el = scroller.current
@@ -339,11 +485,17 @@ function ResultSwipe() {
           className="lx3-swipe"
           ref={scroller}
           tabIndex={0}
+          onPointerDown={noteGesture}
+          onWheel={(event) => {
+            if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) hold()
+          }}
           onScroll={() => {
             const next = nearestIndex()
             setIndex((current) => (current === next ? current : next))
           }}
           onKeyDown={(event) => {
+            if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+            hold()
             if (event.key === 'ArrowRight') go(Math.min(index + 1, CLIENT_RESULTS.length - 1))
             if (event.key === 'ArrowLeft') go(Math.max(index - 1, 0))
           }}
@@ -367,12 +519,12 @@ function ResultSwipe() {
         </div>
       </div>
       <div className="lx3-voices-count">
-        <button type="button" aria-label="Previous result" disabled={index === 0} onClick={() => go(index - 1)}>
+        <button type="button" aria-label="Previous result" disabled={index === 0} onPointerDown={hold} onClick={() => go(index - 1)}>
           <svg viewBox="0 0 20 20" aria-hidden="true">
             <path d="M12.5 4.5 7 10l5.5 5.5" />
           </svg>
         </button>
-        <p aria-live="polite">
+        <p aria-live={held ? 'polite' : 'off'}>
           <span>{String(index + 1).padStart(2, '0')}</span>
           <span className="lx3-voices-track" aria-hidden="true">
             <span style={{ width: `${((index + 1) / CLIENT_RESULTS.length) * 100}%` }} />
@@ -383,6 +535,7 @@ function ResultSwipe() {
           type="button"
           aria-label="Next result"
           disabled={index === CLIENT_RESULTS.length - 1}
+          onPointerDown={hold}
           onClick={() => go(index + 1)}
         >
           <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -497,10 +650,9 @@ function planBySlug(slug: CoachingPlanSlug) {
 
 export function Preview10Storefront({ coaches }: { coaches: StorefrontCoach[] }) {
   const [sticky, setSticky] = useState(false)
-  const [goalSlug, setGoalSlug] = useState<CoachingPlanSlug>('6_months')
+  const goalSlug: CoachingPlanSlug = '6_months'
   const goal = GOAL_HERO[goalSlug]
   const goalPlan = planBySlug(goalSlug)
-  const coach = coaches.find((item) => item.key === 'piyush') ?? coaches[0]
 
   useEffect(() => {
     const onScroll = () => {
@@ -531,6 +683,7 @@ export function Preview10Storefront({ coaches }: { coaches: StorefrontCoach[] })
           <a href="#voices">Results</a>
           <a href="#talk">Talk</a>
           <a href="#steps">How it works</a>
+          <a href="#quiz">Quiz</a>
           <a href="#faq">Questions</a>
         </nav>
         <details className="lx3-bar-menu">
@@ -542,6 +695,7 @@ export function Preview10Storefront({ coaches }: { coaches: StorefrontCoach[] })
             <a href="#voices" onClick={(event) => event.currentTarget.closest('details')?.removeAttribute('open')}>Results</a>
             <a href="#talk" onClick={(event) => event.currentTarget.closest('details')?.removeAttribute('open')}>Talk</a>
             <a href="#steps" onClick={(event) => event.currentTarget.closest('details')?.removeAttribute('open')}>How it works</a>
+            <a href="#quiz" onClick={(event) => event.currentTarget.closest('details')?.removeAttribute('open')}>Quiz</a>
             <a href="#faq" onClick={(event) => event.currentTarget.closest('details')?.removeAttribute('open')}>Questions</a>
           </nav>
         </details>
@@ -556,18 +710,28 @@ export function Preview10Storefront({ coaches }: { coaches: StorefrontCoach[] })
 
       <section className="lx3-hero lx3-hero-goal" id="top" aria-labelledby="lx3-title">
         <div className="lx3-goal-layout">
-          {coach ? (
+          {coaches[0] ? (
             <div className="lx3-coach-stage">
               <figure className="lx3-portrait">
-                <div className="lx3-photo">
-                  <img src={PIYUSH_PORTRAIT} alt={`${coach.name}, LURVOX coach`} width={400} height={533} />
-                </div>
+                <a
+                  className="lx3-photo"
+                  href={coaches[0].href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${coaches[0].name} on Instagram ${coaches[0].handle}`}
+                >
+                  <img src={PORTRAIT[coaches[0].key]} alt={`${coaches[0].name}, LURVOX coach`} width={400} height={533} />
+                </a>
                 <figcaption>
-                  <p className="lx3-eyebrow">Your coach</p>
-                  <strong>{coach.name.split(' ')[0]}</strong>
-                  <span>Writes your workout and diet.</span>
+                  <strong>{coaches[0].name.split(' ')[0]}</strong>
+                  <a href={coaches[0].href} target="_blank" rel="noopener noreferrer">{coaches[0].handle}</a>
                 </figcaption>
               </figure>
+              <p className="lx3-hint">Tap the photo to open Instagram</p>
+              <div className="lx3-people">
+                <p>Transformed over 7000 people</p>
+                <span>First plan usually within 1–2 hours of your photos</span>
+              </div>
             </div>
           ) : null}
           <div className="lx3-goal-copy">
@@ -579,41 +743,30 @@ export function Preview10Storefront({ coaches }: { coaches: StorefrontCoach[] })
               {goal.before}<span>{goal.accent}</span>{goal.after}
             </h1>
             <p className="lx3-lede">{goal.line}</p>
-            <ul className="lx3-hero-facts">
-              <li>{goalPlan.length}</li>
-              <li>{goalPlan.slug === '3_months' ? 'New plan every 14 days' : 'New plan every week'}</li>
-              <li>{goalPlan.monthly.replace(' · lowest monthly cost', '')}</li>
+            <ul className="lx3-trust">
+              <li>Trackers, coach chat, Journey included</li>
+              <li>Beginner friendly</li>
+              <li>Not a one-time PDF</li>
             </ul>
-            <div className="lx3-goal-tabs" role="tablist" aria-label="Choose a goal">
+            <div className="lx3-offers" aria-label="Choose a plan">
               {PLANS.map((plan) => (
-                <button
-                  key={plan.slug}
-                  type="button"
-                  role="tab"
-                  aria-selected={plan.slug === goalSlug}
-                  className={plan.slug === goalSlug ? 'is-on' : plan.slug === '6_months' ? 'is-lead' : undefined}
-                  onClick={() => setGoalSlug(plan.slug)}
-                >
-                  <span>{GOAL_HERO[plan.slug].label}</span>
-                  <em>{plan.length}</em>
+                <PlanLink key={plan.slug} plan={plan} className={`lx3-offer lx3-offer-${plan.tone}`}>
+                  <span>
+                    {plan.tag === 'Most popular' ? <em>Most popular</em> : null}
+                    {plan.chip}
+                  </span>
                   <strong>{COACHING_PLANS[plan.slug].displayPrice}</strong>
-                </button>
+                </PlanLink>
               ))}
             </div>
-            <PlanLink plan={goalPlan} className="lx3-cta lx3-hero-buy">
-              Get {goal.label} · {COACHING_PLANS[goalSlug].displayPrice}
-            </PlanLink>
-            <p className="lx3-promise">First plan usually within 1–2 hours of your photos.</p>
           </div>
+        </div>
+        <div className="lx3-stamp-row">
+          <Stamp />
         </div>
       </section>
 
-      <section className="lx3-plans" id="plans" aria-labelledby="lx3-plans-title">
-        <p className="lx3-eyebrow">Choose your plan</p>
-        <h2 id="lx3-plans-title">Same coaching. Three lengths of time.</h2>
-        <p className="lx3-plans-lede">
-          Workout, diet, check-ins, and coach chat are on every plan. Longer plans are rewritten every week and cost less per month.
-        </p>
+      <section className="lx3-plans" id="plans" aria-label="Plans">
         <div className="lx3-stack">
           {PLANS.map((plan) => (
             <article key={plan.slug} className={`lx3-card lx3-card-${plan.tone}`}>
@@ -638,6 +791,22 @@ export function Preview10Storefront({ coaches }: { coaches: StorefrontCoach[] })
                   </li>
                 ))}
               </ul>
+              {plan.extras ? (
+                <div className={`lx3-extras${plan.tone === 'athletic' ? ' lx3-extras-gold' : ''}`}>
+                  <p>
+                    <span>{plan.tone === 'athletic' ? 'PLUS' : 'INCLUDED'}</span>
+                    {plan.extras.label}
+                  </p>
+                  <ul>
+                    {plan.extras.items.map((item) => (
+                      <li key={item}>
+                        <em>PLUS</em>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               <PlanLink plan={plan} className="lx3-cta">
                 {plan.cta} · {COACHING_PLANS[plan.slug].displayPrice}
               </PlanLink>
@@ -703,6 +872,18 @@ export function Preview10Storefront({ coaches }: { coaches: StorefrontCoach[] })
         </ol>
       </section>
 
+      <div id="changes">
+        <AnimatedTransformations
+          eyebrow="Expected changes"
+          heading="Within 30 days of consistent work"
+          lede="Skinny to bulky. Fat to shredded. Soft to toned. Men and women. Results vary."
+        />
+      </div>
+
+      <div id="quiz" className="lx3-quiz">
+        <InstantFitnessQuiz offer="coaching" fromLabel="See plans — ₹599 · ₹999 · ₹1,699" />
+      </div>
+
       <section className="lx3-faq" id="faq" aria-labelledby="lx3-faq-title">
         <p className="lx3-eyebrow lx3-eyebrow-orange">FAQ</p>
         <h2 id="lx3-faq-title">Questions before you start</h2>
@@ -726,8 +907,13 @@ export function Preview10Storefront({ coaches }: { coaches: StorefrontCoach[] })
         <p className="lx3-eyebrow lx3-eyebrow-orange">Ready to start</p>
         <h2>Most people take 6 months.</h2>
         <p>
-          <strong>6 months · ₹999</strong> is rewritten every week. <strong>3 months · ₹599</strong> is rewritten every 14 days. <strong>12 months · ₹1,699</strong> is the lowest monthly cost, with stamina coaching.
+          <strong>12 months · ₹1,699</strong> is the lowest monthly cost, with stamina coaching. <strong>6 months · ₹999</strong> is rewritten every week. <strong>3 months · ₹599</strong> is rewritten every 14 days.
         </p>
+        <a className="lx3-jump" href="#plans">See plans — ₹599 · ₹999 · ₹1,699</a>
+        <div className="lx3-stamp-row">
+          <Stamp />
+        </div>
+        <p className="lx3-stamp-note">Visible change in 30 days, or your plan fee back.</p>
         <div className="lx3-badges" aria-label="Secure checkout">
           <span>Razorpay</span>
           <span>UPI</span>
@@ -757,6 +943,8 @@ export function Preview10Storefront({ coaches }: { coaches: StorefrontCoach[] })
         </p>
         <p className="lx3-alt">
           <Link href="/login">Existing client log in</Link>
+          {' · '}
+          <a href="#quiz">Still deciding? Take the fitness quiz</a>
         </p>
       </section>
 
