@@ -97,11 +97,27 @@ export async function summarizeCoachChat(
   return summary
 }
 
+class TruncatedPlanDecisionError extends Error {
+  constructor() {
+    super('The plan decision was cut off before it finished.')
+    this.name = 'TruncatedPlanDecisionError'
+  }
+}
+
 function parseDecision(raw: string): AssistDecision {
   const trimmed = raw.trim()
   const jsonText = trimmed.startsWith('{') ? trimmed : trimmed.match(/\{[\s\S]*\}/)?.[0]
   if (!jsonText) throw new Error('Could not read the plan decision.')
-  const parsed = JSON.parse(jsonText) as Partial<AssistDecision>
+  let parsed: Partial<AssistDecision>
+  try {
+    parsed = JSON.parse(jsonText) as Partial<AssistDecision>
+  } catch (error) {
+    const detail = error instanceof SyntaxError ? error.message : ''
+    if (/unterminated string|unexpected end of json/i.test(detail)) {
+      throw new TruncatedPlanDecisionError()
+    }
+    throw new Error('Could not read the plan decision.')
+  }
   return {
     updatePlan: parsed.updatePlan === true,
     instruction: typeof parsed.instruction === 'string' ? parsed.instruction.trim() : '',
@@ -121,22 +137,33 @@ export async function publishPlanFromCoachChat(
     throw new Error('This client has no active plan to update.')
   }
 
-  const generated = await generateOpenAIResponse({
+  const decisionPrompt = {
     systemPrompt: [
       'Return JSON only, with keys updatePlan, instruction, coachNote, summary.',
-      'summary is a private note for the coach.',
+      'Keep every value on one line. Do not put raw line breaks inside strings.',
+      'summary is a private note for the coach, at most 60 words.',
       'updatePlan is true only when the client asked to change diet, training, running, steps, or schedule.',
-      'instruction tells an editor exactly what to change and what to leave alone.',
+      'instruction tells an editor exactly what to change and what to leave alone, at most 120 words.',
       'coachNote is 2 to 4 sentences the client will read, written as their coach.',
       'Never say AI, Smart Coach, bot, or draft.',
     ].join(' '),
     userPrompt: `Chat:\n${context.transcript || '(no messages)'}\n\nCheck-ins, including mid-week inside the week:\n${context.checkinText || '(none)'}`,
     model: MODELS.GPT_LUNA,
-    maxTokens: 700,
     temperature: 0.2,
-  })
-
-  const decision = parseDecision(generated.text)
+  }
+  // 700 output tokens is shared with reasoning and cuts this JSON mid-string
+  // (the coach then sees "Unterminated string in JSON").
+  let generated = await generateOpenAIResponse({ ...decisionPrompt, maxTokens: 4000 })
+  let decision: AssistDecision
+  try {
+    decision = parseDecision(generated.text)
+  } catch (error) {
+    if (!(error instanceof TruncatedPlanDecisionError) && generated.stopReason !== 'max_tokens') {
+      throw error
+    }
+    generated = await generateOpenAIResponse({ ...decisionPrompt, maxTokens: 8000 })
+    decision = parseDecision(generated.text)
+  }
   const summary = decision.summary || 'No summary was returned.'
   if (!decision.updatePlan || !decision.instruction) {
     return { updated: false, planId: null, summary }
