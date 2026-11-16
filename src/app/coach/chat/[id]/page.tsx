@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Copy, Phone, Sparkles, UserRound } from 'lucide-react'
@@ -44,6 +44,24 @@ function CoachChatDetailInner() {
   const [loadError, setLoadError] = useState('')
   const [loadStatus, setLoadStatus] = useState<number | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(() => new Set())
+
+  const toggleMessageSelect = useCallback((messageId: string) => {
+    setSelectedMessageIds((current) => {
+      const next = new Set(current)
+      if (next.has(messageId)) next.delete(messageId)
+      else if (next.size < 40) next.add(messageId)
+      return next
+    })
+  }, [])
+
+  const clearMessageSelection = useCallback(() => {
+    setSelectedMessageIds(new Set())
+  }, [])
+
+  useEffect(() => {
+    setSelectedMessageIds(new Set())
+  }, [conversationId])
 
   useEffect(() => {
     let active = true
@@ -111,7 +129,14 @@ function CoachChatDetailInner() {
           setActivePlanId(detail.data.activePlanId ?? null)
           setPlanSlug(detail.data.plan_slug ?? null)
           setAccessSource(detail.data.access_source ?? null)
-          setMessages(messageResult.data.messages ?? [])
+          const nextMessages = messageResult.data.messages ?? []
+          setMessages(nextMessages)
+          setSelectedMessageIds((current) => {
+            if (current.size === 0) return current
+            const ids = new Set(nextMessages.map((message) => message.id))
+            const kept = new Set([...current].filter((id) => ids.has(id)))
+            return kept.size === current.size ? current : kept
+          })
           setLoading(false)
           return
         } catch {
@@ -273,9 +298,16 @@ function CoachChatDetailInner() {
               coachId={conversation.coach_id}
               viewer="coach"
               initialMessages={messages}
+              selectedMessageIds={selectedMessageIds}
+              onToggleMessageSelect={toggleMessageSelect}
+              selectionHint="Tap a message to use it for plan edit"
             />
           </div>
-          <CoachChatAssistPanel conversationId={conversation.id} messages={messages} />
+          <CoachChatAssistPanel
+            conversationId={conversation.id}
+            selectedMessageIds={selectedMessageIds}
+            onClearSelection={clearMessageSelection}
+          />
         </div>
       </div>
     </CoachShell>

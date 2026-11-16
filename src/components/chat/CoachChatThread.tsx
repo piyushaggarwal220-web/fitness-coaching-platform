@@ -84,6 +84,10 @@ type CoachChatThreadProps = {
   viewer: 'client' | 'coach'
   initialMessages?: ConversationMessage[]
   readOnly?: boolean
+  /** Coach-only: message ids picked for plan assist. */
+  selectedMessageIds?: ReadonlySet<string>
+  onToggleMessageSelect?: (messageId: string) => void
+  selectionHint?: string
 }
 
 function formatDuration(milliseconds: number): string {
@@ -137,7 +141,18 @@ function dayLabelOf(iso: string): string {
   })
 }
 
-export function CoachChatThread({ conversationId, coachId, viewer, initialMessages = [], readOnly = false }: CoachChatThreadProps) {
+export function CoachChatThread({
+  conversationId,
+  coachId,
+  viewer,
+  initialMessages = [],
+  readOnly = false,
+  selectedMessageIds,
+  onToggleMessageSelect,
+  selectionHint,
+}: CoachChatThreadProps) {
+  const canSelectMessages =
+    viewer === 'coach' && typeof onToggleMessageSelect === 'function' && selectedMessageIds != null
   const palette = viewer === 'coach' ? waCoach : waDark
   const incomingText = viewer === 'coach' ? waCoach.incomingText : waDark.text
   const incomingMeta = viewer === 'coach' ? waCoach.metaIncoming : waDark.meta
@@ -628,6 +643,13 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       ) : null}
       <div style={styles.contextBar}>
         <span style={{ color: peerOnline ? '#53d769' : wa.textMuted }}>{presenceText}</span>
+        {canSelectMessages && selectedMessageIds.size > 0 ? (
+          <span style={{ color: '#ea580c', fontWeight: 700 }}>
+            {selectedMessageIds.size} selected for plan edit
+          </span>
+        ) : canSelectMessages && selectionHint ? (
+          <span style={{ color: wa.textMuted }}>{selectionHint}</span>
+        ) : null}
       </div>
 
       {viewer === 'client' && remainingMs !== null && workingHours?.isOpen && (
@@ -736,6 +758,12 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
             )
           }
 
+          const selectable =
+            canSelectMessages &&
+            !msg.id.startsWith('temp-') &&
+            Boolean(msg.content?.trim() || msg.media_url)
+          const selected = selectable && selectedMessageIds.has(msg.id)
+
           return (
             <Fragment key={msg.id}>
             {dateChip}
@@ -763,6 +791,35 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                       ? 'coach-chat-bubble-other coach-incoming-readable'
                       : 'coach-chat-bubble-other'
                 }
+                role={selectable ? 'button' : undefined}
+                tabIndex={selectable ? 0 : undefined}
+                aria-pressed={selectable ? selected : undefined}
+                aria-label={
+                  selectable
+                    ? selected
+                      ? 'Remove this message from the plan edit'
+                      : 'Use this message for the plan edit'
+                    : undefined
+                }
+                onClick={
+                  selectable
+                    ? (event) => {
+                        const target = event.target as HTMLElement | null
+                        if (target?.closest('button, a, input, label, audio, video')) return
+                        onToggleMessageSelect?.(msg.id)
+                      }
+                    : undefined
+                }
+                onKeyDown={
+                  selectable
+                    ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          onToggleMessageSelect?.(msg.id)
+                        }
+                      }
+                    : undefined
+                }
                 ref={(el) => {
                   if (!el || isMine || viewer !== 'coach') return
                   // Beat any cached light-theme rule that pairs white bubbles with WA light text.
@@ -780,8 +837,40 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                       }
                     : null),
                   ...(msg.message_type === 'image' ? { padding: 4 } : null),
+                  ...(selectable
+                    ? {
+                        cursor: 'pointer',
+                        outline: selected ? '2px solid #ea580c' : '2px solid transparent',
+                        outlineOffset: 2,
+                        boxShadow: selected
+                          ? '0 0 0 3px rgba(234, 88, 12, 0.22)'
+                          : '0 1px 0.5px rgba(0,0,0,0.18)',
+                      }
+                    : null),
                 }}
               >
+                {selected ? (
+                  <span
+                    aria-hidden
+                    style={{
+                      position: 'absolute',
+                      top: -8,
+                      ...(isMine ? { left: -8 } : { right: -8 }),
+                      width: 20,
+                      height: 20,
+                      borderRadius: 999,
+                      background: '#ea580c',
+                      color: '#fff',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+                      zIndex: 2,
+                    }}
+                  >
+                    <Check size={12} strokeWidth={3} />
+                  </span>
+                ) : null}
                 {msg.message_type === 'voice' && msg.media_url ? (
                   <div className="coach-chat-voice">
                     <VoicePlayer

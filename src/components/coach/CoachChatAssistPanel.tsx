@@ -1,22 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { colors } from '@/lib/coach-theme'
-import type { ConversationMessage } from '@/types/database'
-
-function messagePreview(message: ConversationMessage): string {
-  const text = message.content?.replace(/\s+/g, ' ').trim() ?? ''
-  if (text) return text.length > 140 ? `${text.slice(0, 140).trimEnd()}…` : text
-  if (message.message_type === 'image') return 'Photo'
-  if (message.message_type === 'voice') return 'Voice message'
-  return 'Attachment'
-}
-
-function senderLabel(message: ConversationMessage): string {
-  if (message.sender_type === 'client') return 'Client'
-  if (message.sender_type === 'coach') return 'You'
-  return 'Note'
-}
 
 const fieldStyle = {
   display: 'block' as const,
@@ -34,15 +19,18 @@ const fieldStyle = {
   resize: 'vertical' as const,
 }
 
+type SectionId = 'edit' | 'ask'
+
 export function CoachChatAssistPanel({
   conversationId,
-  messages,
+  selectedMessageIds,
+  onClearSelection,
 }: {
   conversationId: string
-  messages: ConversationMessage[]
+  selectedMessageIds: ReadonlySet<string>
+  onClearSelection: () => void
 }) {
-  const [thread, setThread] = useState<ConversationMessage[]>(messages)
-  const [selected, setSelected] = useState<Set<string>>(() => new Set())
+  const [section, setSection] = useState<SectionId>('edit')
   const [comment, setComment] = useState('')
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
@@ -52,41 +40,15 @@ export function CoachChatAssistPanel({
   const [publishing, setPublishing] = useState(false)
   const [asking, setAsking] = useState(false)
   const [notice, setNotice] = useState('')
-  const latestClientMessageId = [...thread].reverse().find((message) => message.sender_type === 'client')?.id ?? ''
 
   useEffect(() => {
-    setThread(messages)
-    setSelected(new Set())
     setComment('')
     setQuestion('')
     setAnswer('')
     setNotice('')
-  }, [conversationId, messages])
-
-  useEffect(() => {
-    let active = true
-    const loadMessages = async () => {
-      try {
-        const res = await fetch(`/api/chat/messages?conversationId=${encodeURIComponent(conversationId)}`, {
-          credentials: 'include',
-          cache: 'no-store',
-        })
-        const json = (await res.json().catch(() => null)) as { messages?: ConversationMessage[] } | null
-        if (!active || !res.ok || !json?.messages) return
-        setThread(json.messages)
-        setSelected((current) => {
-          const ids = new Set(json.messages?.map((message) => message.id))
-          return new Set([...current].filter((id) => ids.has(id)))
-        })
-      } catch {
-        // The list from the page stays usable if a refresh fails.
-      }
-    }
-    void loadMessages()
-    return () => {
-      active = false
-    }
-  }, [conversationId, latestClientMessageId])
+    setError('')
+    setSection('edit')
+  }, [conversationId])
 
   useEffect(() => {
     let active = true
@@ -115,26 +77,12 @@ export function CoachChatAssistPanel({
     return () => {
       active = false
     }
-  }, [conversationId, latestClientMessageId])
-
-  const selectable = useMemo(
-    () => thread.filter((message) => message.content?.trim() || message.media_url),
-    [thread]
-  )
-
-  const toggle = (id: string) => {
-    setSelected((current) => {
-      const next = new Set(current)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+  }, [conversationId])
 
   const publish = async () => {
     const coachComment = comment.trim()
-    if (selected.size === 0 && !coachComment) {
-      setError('Select the messages to use, or write a comment.')
+    if (selectedMessageIds.size === 0 && !coachComment) {
+      setError('Tap messages in the chat, or write a comment.')
       return
     }
     setPublishing(true)
@@ -148,7 +96,7 @@ export function CoachChatAssistPanel({
         body: JSON.stringify({
           intent: 'update_plan',
           conversationId,
-          messageIds: [...selected],
+          messageIds: [...selectedMessageIds],
           coachComment,
         }),
       })
@@ -191,7 +139,7 @@ export function CoachChatAssistPanel({
           intent: 'ask_plan',
           conversationId,
           question: text,
-          messageIds: [...selected],
+          messageIds: [...selectedMessageIds],
         }),
       })
       const json = (await res.json().catch(() => null)) as
@@ -209,6 +157,19 @@ export function CoachChatAssistPanel({
     }
   }
 
+  const tabStyle = (active: boolean) => ({
+    flex: 1,
+    minHeight: 36,
+    padding: '0 10px',
+    borderRadius: 8,
+    border: `1px solid ${active ? colors.accent : colors.borderSubtle}`,
+    background: active ? colors.accentMuted : colors.bgCard,
+    color: active ? colors.accent : colors.textSecondary,
+    fontWeight: 700,
+    fontSize: 13,
+    cursor: 'pointer' as const,
+  })
+
   return (
     <aside
       className="coach-chat-assist"
@@ -219,110 +180,146 @@ export function CoachChatAssistPanel({
         background: colors.bgElevated,
       }}
     >
-      <div className="coach-chat-assist-body">
-        <p style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors.textMuted }}>
-          Plan edit from chat
-        </p>
-        <p style={{ margin: '6px 0 0', fontSize: 13, lineHeight: 1.45, color: colors.textSecondary }}>
-          {loading && !summary ? 'Reading what they said…' : summary || 'Tick the messages to use as the reference.'}
-        </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, flexShrink: 0 }}>
+        <button type="button" onClick={() => setSection('edit')} style={tabStyle(section === 'edit')}>
+          Edit plan
+        </button>
+        <button type="button" onClick={() => setSection('ask')} style={tabStyle(section === 'ask')}>
+          Ask about plan
+        </button>
+      </div>
 
-        <p style={{ margin: '12px 0 6px', fontSize: 13, fontWeight: 700, color: colors.textPrimary }}>
-          Messages to use ({selected.size} selected)
-        </p>
-        <div
+      <div className="coach-chat-assist-body" style={{ marginTop: 12 }}>
+        {section === 'edit' ? (
+          <>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors.textMuted }}>
+              AI plan edit
+            </p>
+            <p style={{ margin: '6px 0 0', fontSize: 13, lineHeight: 1.45, color: colors.textSecondary }}>
+              Tap messages in the chat to use them. Add a comment if you want.
+            </p>
+            <p style={{ margin: '10px 0 0', fontSize: 13, fontWeight: 700, color: colors.textPrimary }}>
+              {selectedMessageIds.size} message{selectedMessageIds.size === 1 ? '' : 's'} selected
+            </p>
+            {selectedMessageIds.size > 0 ? (
+              <button
+                type="button"
+                onClick={onClearSelection}
+                style={{
+                  marginTop: 6,
+                  minHeight: 30,
+                  padding: '0 10px',
+                  borderRadius: 8,
+                  border: `1px solid ${colors.borderSubtle}`,
+                  background: colors.bgCard,
+                  color: colors.textSecondary,
+                  fontWeight: 600,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                }}
+              >
+                Clear selection
+              </button>
+            ) : null}
+            <p style={{ margin: '12px 0 0', fontSize: 12, lineHeight: 1.4, color: colors.textMuted }}>
+              {loading && !summary ? 'Reading what they said…' : summary || 'Private note loads here after chat activity.'}
+            </p>
+            <label htmlFor="coach-plan-edit-comment" style={{ display: 'block', marginTop: 12, fontSize: 13, fontWeight: 700, color: colors.textPrimary }}>
+              Comments (optional)
+            </label>
+            <textarea
+              id="coach-plan-edit-comment"
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+              rows={4}
+              maxLength={1500}
+              placeholder="What the plan should change, or what to leave alone."
+              style={fieldStyle}
+            />
+            {error ? <p style={{ margin: '8px 0 0', fontSize: 13, color: '#9f1239' }}>{error}</p> : null}
+            {notice ? <p style={{ margin: '8px 0 0', fontSize: 13, color: colors.textSecondary }}>{notice}</p> : null}
+          </>
+        ) : (
+          <>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors.textMuted }}>
+              Live plan Q&A
+            </p>
+            <p style={{ margin: '6px 0 0', fontSize: 13, lineHeight: 1.45, color: colors.textSecondary }}>
+              Private answer from the plan the client has now. Use it to reply in chat.
+            </p>
+            {selectedMessageIds.size > 0 ? (
+              <p style={{ margin: '8px 0 0', fontSize: 12, color: colors.textMuted }}>
+                {selectedMessageIds.size} chat message{selectedMessageIds.size === 1 ? '' : 's'} will be included as context.
+              </p>
+            ) : null}
+            <label htmlFor="coach-plan-ask-question" style={{ display: 'block', marginTop: 12, fontSize: 13, fontWeight: 700, color: colors.textPrimary }}>
+              Your question
+            </label>
+            <textarea
+              id="coach-plan-ask-question"
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              rows={4}
+              maxLength={1500}
+              placeholder="Example: Why is Day 3 only 4 exercises? What can I tell them about paneer swaps?"
+              style={fieldStyle}
+            />
+            {answer ? (
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: 10,
+                  borderRadius: 8,
+                  border: `1px solid ${colors.borderSubtle}`,
+                  background: colors.bgCard,
+                }}
+              >
+                <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: colors.textMuted }}>
+                  For you only
+                </p>
+                <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.5, color: colors.textPrimary, whiteSpace: 'pre-wrap' }}>
+                  {answer}
+                </p>
+              </div>
+            ) : null}
+            {error ? <p style={{ margin: '8px 0 0', fontSize: 13, color: '#9f1239' }}>{error}</p> : null}
+          </>
+        )}
+      </div>
+
+      {section === 'edit' ? (
+        <button
+          type="button"
+          onClick={() => void publish()}
+          disabled={publishing || asking}
           style={{
-            display: 'grid',
-            gap: 6,
-            maxHeight: 180,
-            overflow: 'auto',
-            paddingRight: 2,
+            marginTop: 10,
+            minHeight: 36,
+            padding: '0 12px',
+            borderRadius: 8,
+            border: `1px solid ${colors.accent}`,
+            background: colors.accentMuted,
+            color: colors.accent,
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: publishing || asking ? 'wait' : 'pointer',
           }}
         >
-          {selectable.length === 0 ? (
-            <p style={{ margin: 0, fontSize: 13, color: colors.textMuted }}>No messages in this chat yet.</p>
-          ) : (
-            selectable.map((message) => {
-              const checked = selected.has(message.id)
-              return (
-                <label
-                  key={message.id}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '18px minmax(0, 1fr)',
-                    gap: 8,
-                    alignItems: 'start',
-                    padding: '8px 8px',
-                    borderRadius: 8,
-                    border: `1px solid ${checked ? colors.accent : colors.borderSubtle}`,
-                    background: checked ? colors.accentMuted : colors.bgCard,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggle(message.id)}
-                    aria-label={`Use ${senderLabel(message)} message as a reference`}
-                    style={{ marginTop: 2 }}
-                  />
-                  <span style={{ minWidth: 0 }}>
-                    <span style={{ display: 'block', fontSize: 11, fontWeight: 700, color: colors.textMuted }}>
-                      {senderLabel(message)}
-                    </span>
-                    <span style={{ display: 'block', fontSize: 13, lineHeight: 1.4, color: colors.textPrimary }}>
-                      {messagePreview(message)}
-                    </span>
-                  </span>
-                </label>
-              )
-            })
-          )}
-        </div>
-
-        <label htmlFor="coach-plan-edit-comment" style={{ display: 'block', marginTop: 12, fontSize: 13, fontWeight: 700, color: colors.textPrimary }}>
-          Your comments
-        </label>
-        <textarea
-          id="coach-plan-edit-comment"
-          value={comment}
-          onChange={(event) => setComment(event.target.value)}
-          rows={3}
-          maxLength={1500}
-          placeholder="Add what the plan should change, or what to leave alone."
-          style={fieldStyle}
-        />
-
-        <p style={{ margin: '16px 0 0', fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors.textMuted }}>
-          Ask about the live plan
-        </p>
-        <p style={{ margin: '6px 0 0', fontSize: 13, lineHeight: 1.45, color: colors.textSecondary }}>
-          Private answer from the plan the client has now. Use it to reply in chat. Ticked messages are optional context.
-        </p>
-        <label htmlFor="coach-plan-ask-question" style={{ display: 'block', marginTop: 10, fontSize: 13, fontWeight: 700, color: colors.textPrimary }}>
-          Your question
-        </label>
-        <textarea
-          id="coach-plan-ask-question"
-          value={question}
-          onChange={(event) => setQuestion(event.target.value)}
-          rows={3}
-          maxLength={1500}
-          placeholder="Example: Why is Day 3 only 4 exercises? What can I tell them about swaps for paneer?"
-          style={fieldStyle}
-        />
+          {publishing ? 'Updating the plan…' : 'Update the plan from the selection'}
+        </button>
+      ) : (
         <button
           type="button"
           onClick={() => void askAboutPlan()}
           disabled={asking || publishing}
           style={{
-            marginTop: 8,
-            minHeight: 34,
+            marginTop: 10,
+            minHeight: 36,
             padding: '0 12px',
             borderRadius: 8,
-            border: `1px solid ${colors.borderSubtle}`,
-            background: colors.bgCard,
-            color: colors.textPrimary,
+            border: `1px solid ${colors.accent}`,
+            background: colors.accentMuted,
+            color: colors.accent,
             fontWeight: 700,
             fontSize: 13,
             cursor: asking || publishing ? 'wait' : 'pointer',
@@ -330,47 +327,7 @@ export function CoachChatAssistPanel({
         >
           {asking ? 'Reading the plan…' : 'Ask about this plan'}
         </button>
-        {answer ? (
-          <div
-            style={{
-              marginTop: 10,
-              padding: 10,
-              borderRadius: 8,
-              border: `1px solid ${colors.borderSubtle}`,
-              background: colors.bgCard,
-            }}
-          >
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: colors.textMuted }}>
-              For you only
-            </p>
-            <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.5, color: colors.textPrimary, whiteSpace: 'pre-wrap' }}>
-              {answer}
-            </p>
-          </div>
-        ) : null}
-
-        {error ? <p style={{ margin: '8px 0 0', fontSize: 13, color: '#9f1239' }}>{error}</p> : null}
-        {notice ? <p style={{ margin: '8px 0 0', fontSize: 13, color: colors.textSecondary }}>{notice}</p> : null}
-      </div>
-      <button
-        type="button"
-        onClick={() => void publish()}
-        disabled={publishing || asking}
-        style={{
-          marginTop: 10,
-          minHeight: 36,
-          padding: '0 12px',
-          borderRadius: 8,
-          border: `1px solid ${colors.accent}`,
-          background: colors.accentMuted,
-          color: colors.accent,
-          fontWeight: 700,
-          fontSize: 13,
-          cursor: publishing || asking ? 'wait' : 'pointer',
-        }}
-      >
-        {publishing ? 'Updating the plan…' : 'Update the plan from the selected messages'}
-      </button>
+      )}
     </aside>
   )
 }
