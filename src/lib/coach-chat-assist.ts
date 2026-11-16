@@ -19,14 +19,26 @@ function clip(value: string | null | undefined, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max).trimEnd()}…`
 }
 
-async function loadChatContext(admin: SupabaseClient, clientId: string, conversationId: string) {
-  const [{ data: messages }, { data: checkins }, { data: plan }, { data: profile }] = await Promise.all([
-    admin
-      .from('conversation_messages')
-      .select('sender_type, content, created_at')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: false })
-      .limit(40),
+async function loadChatContext(
+  admin: SupabaseClient,
+  clientId: string,
+  conversationId: string,
+  messageIds?: string[]
+) {
+  const messageQuery = admin
+    .from('conversation_messages')
+    .select('id, sender_type, content, created_at')
+    .eq('conversation_id', conversationId)
+  const messagesPromise =
+    messageIds == null
+      ? messageQuery.order('created_at', { ascending: false }).limit(40)
+      : messageIds.length === 0
+        ? Promise.resolve({ data: [], error: null })
+        : messageQuery.in('id', messageIds)
+
+  const [{ data: messages, error: messageError }, { data: checkins }, { data: plan }, { data: profile }] =
+    await Promise.all([
+    messagesPromise,
     admin
       .from('checkins')
       .select('checkin_type, coaching_week, submitted_at, weight, questions_for_coach, progress_notes, adherence_wins, adherence_struggles, pain_injuries')
@@ -42,8 +54,13 @@ async function loadChatContext(admin: SupabaseClient, clientId: string, conversa
     admin.from('profiles').select('*').eq('id', clientId).maybeSingle(),
   ])
 
+  if (messageError) throw new Error(`Could not read the selected messages: ${messageError.message}`)
+  if (messageIds && messageIds.length > 0 && (messages ?? []).length === 0) {
+    throw new Error('Those messages are not in this chat.')
+  }
+
   const transcript = [...(messages ?? [])]
-    .reverse()
+    .sort((a, b) => new Date(a.created_at as string).getTime() - new Date(b.created_at as string).getTime())
     .map((row) => {
       const who = row.sender_type === 'client' ? 'Client' : row.sender_type === 'coach' ? 'Coach' : 'Note'
       return `${who}: ${clip(row.content as string | null, 700) || '(attachment)'}`
@@ -128,9 +145,16 @@ function parseDecision(raw: string): AssistDecision {
 
 export async function publishPlanFromCoachChat(
   admin: SupabaseClient,
-  input: { clientId: string; conversationId: string; coachId: string }
+  input: {
+    clientId: string
+    conversationId: string
+    coachId: string
+    messageIds: string[]
+    coachComment: string
+  }
 ): Promise<{ updated: boolean; planId: string | null; summary: string }> {
-  const context = await loadChatContext(admin, input.clientId, input.conversationId)
+  const coachComment = input.coachComment.trim()
+  const context = await loadChatContext(admin, input.clientId, input.conversationId, input.messageIds)
   if (!context.profile) throw new Error('Client profile was not found.')
   if (context.profile.coach_id !== input.coachId) throw new Error('This client is not assigned to you.')
   if (!context.plan?.nutrition_plan?.trim() && !context.plan?.workout_plan?.trim()) {
@@ -142,12 +166,14 @@ export async function publishPlanFromCoachChat(
       'Return JSON only, with keys updatePlan, instruction, coachNote, summary.',
       'Keep every value on one line. Do not put raw line breaks inside strings.',
       'summary is a private note for the coach, at most 60 words.',
-      'updatePlan is true only when the client asked to change diet, training, running, steps, or schedule.',
-      'instruction tells an editor exactly what to change and what to leave alone, at most 120 words.',
+      'The selected messages are the only chat reference. Do not use requests that are not in that list.',
+      'The coach comments are instructions from the coach. Follow them.',
+      'updatePlan is true when a selected message or a coach comment asks to change diet, training, running, steps, or schedule.',
+      'instruction tells an editor exactly what to change and what to leave alone, at most 120 words. Include the coach comments.',
       'coachNote is 2 to 4 sentences the client will read, written as their coach.',
       'Never say AI, Smart Coach, bot, or draft.',
     ].join(' '),
-    userPrompt: `Chat:\n${context.transcript || '(no messages)'}\n\nCheck-ins, including mid-week inside the week:\n${context.checkinText || '(none)'}`,
+    userPrompt: `Selected messages:\n${context.transcript || '(none selected)'}\n\nCoach comments:\n${coachComment || '(none)'}\n\nCheck-ins, including mid-week inside the week:\n${context.checkinText || '(none)'}`,
     model: MODELS.GPT_LUNA,
     temperature: 0.2,
   }
@@ -165,13 +191,16 @@ export async function publishPlanFromCoachChat(
     decision = parseDecision(generated.text)
   }
   const summary = decision.summary || 'No summary was returned.'
-  if (!decision.updatePlan || !decision.instruction) {
+  const instruction = [decision.instruction, coachComment ? `Coach comment: ${coachComment}` : '']
+    .filter(Boolean)
+    .join(' ')
+  if ((!decision.updatePlan && !coachComment) || !instruction) {
     return { updated: false, planId: null, summary }
   }
 
   const active = context.plan
   const shared = {
-    coachInstruction: decision.instruction,
+    coachInstruction: instruction,
     editSource: 'coach' as const,
     remakeFromScratch: false,
     clientId: context.profile.id,
