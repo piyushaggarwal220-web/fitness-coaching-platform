@@ -114,6 +114,72 @@ export async function summarizeCoachChat(
   return summary
 }
 
+function planTextForCoachQuestion(plan: Plan): string {
+  return [
+    plan.title ? `Title: ${plan.title}` : '',
+    plan.phase ? `Phase: ${plan.phase}` : '',
+    plan.coach_notes?.trim() ? `Coach notes on the plan:\n${clip(plan.coach_notes, 1200)}` : '',
+    plan.nutrition_plan?.trim() ? `Diet:\n${clip(plan.nutrition_plan, 8000)}` : '',
+    plan.workout_plan?.trim() ? `Workout:\n${clip(plan.workout_plan, 8000)}` : '',
+    plan.cardio_plan?.trim() ? `Cardio:\n${clip(plan.cardio_plan, 2000)}` : '',
+    plan.supplement_plan?.trim() ? `Supplements:\n${clip(plan.supplement_plan, 1500)}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+}
+
+export async function answerCoachPlanQuestion(
+  admin: SupabaseClient,
+  input: {
+    clientId: string
+    conversationId: string
+    coachId: string
+    question: string
+    messageIds?: string[]
+  }
+): Promise<{ answer: string }> {
+  const question = input.question.trim()
+  if (!question) throw new Error('Write a question about the plan.')
+  if (question.length > 1500) throw new Error('That question is too long.')
+
+  const context = await loadChatContext(
+    admin,
+    input.clientId,
+    input.conversationId,
+    input.messageIds
+  )
+  if (!context.profile) throw new Error('Client profile was not found.')
+  if (context.profile.coach_id !== input.coachId) throw new Error('This client is not assigned to you.')
+  if (!context.plan?.nutrition_plan?.trim() && !context.plan?.workout_plan?.trim()) {
+    throw new Error('This client has no active plan to ask about.')
+  }
+
+  const planBody = planTextForCoachQuestion(context.plan)
+  const generated = await generateOpenAIResponse({
+    systemPrompt: [
+      'You help the human coach answer the client about the live plan that was delivered.',
+      'Your reply is private for the coach. The client never sees it unless the coach copies it.',
+      'Answer only from the delivered plan and the selected chat messages when they are given.',
+      'If the plan does not say, say that clearly. Do not invent meals, exercises, sets, or calories.',
+      'Write in plain sentences the coach can send or adapt to the client.',
+      'Do not change the plan. Do not call yourself an AI, Smart Coach, or bot.',
+      'Keep the answer under 180 words unless the coach asked for detail.',
+    ].join(' '),
+    userPrompt: [
+      `Client name: ${context.profile.name || 'Client'}`,
+      `Coach question:\n${question}`,
+      `Selected chat messages (optional context):\n${context.transcript || '(none selected)'}`,
+      `Live plan delivered to the client:\n${planBody || '(empty)'}`,
+    ].join('\n\n'),
+    model: MODELS.GPT_LUNA,
+    maxTokens: 900,
+    temperature: 0.2,
+  })
+  const answer = generated.text.trim()
+  if (!answer) throw new Error('No answer came back.')
+  return { answer }
+}
+
 class TruncatedPlanDecisionError extends Error {
   constructor() {
     super('The plan decision was cut off before it finished.')

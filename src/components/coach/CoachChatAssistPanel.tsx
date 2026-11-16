@@ -18,6 +18,22 @@ function senderLabel(message: ConversationMessage): string {
   return 'Note'
 }
 
+const fieldStyle = {
+  display: 'block' as const,
+  width: '100%',
+  boxSizing: 'border-box' as const,
+  marginTop: 6,
+  padding: 8,
+  borderRadius: 8,
+  border: `1px solid ${colors.borderSubtle}`,
+  background: colors.bgCard,
+  color: colors.textPrimary,
+  font: 'inherit',
+  fontSize: 14,
+  lineHeight: 1.45,
+  resize: 'vertical' as const,
+}
+
 export function CoachChatAssistPanel({
   conversationId,
   messages,
@@ -28,10 +44,13 @@ export function CoachChatAssistPanel({
   const [thread, setThread] = useState<ConversationMessage[]>(messages)
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
   const [comment, setComment] = useState('')
+  const [question, setQuestion] = useState('')
+  const [answer, setAnswer] = useState('')
   const [summary, setSummary] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [asking, setAsking] = useState(false)
   const [notice, setNotice] = useState('')
   const latestClientMessageId = [...thread].reverse().find((message) => message.sender_type === 'client')?.id ?? ''
 
@@ -39,6 +58,8 @@ export function CoachChatAssistPanel({
     setThread(messages)
     setSelected(new Set())
     setComment('')
+    setQuestion('')
+    setAnswer('')
     setNotice('')
   }, [conversationId, messages])
 
@@ -125,6 +146,7 @@ export function CoachChatAssistPanel({
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          intent: 'update_plan',
           conversationId,
           messageIds: [...selected],
           coachComment,
@@ -147,6 +169,43 @@ export function CoachChatAssistPanel({
       setError('The plan was not updated.')
     } finally {
       setPublishing(false)
+    }
+  }
+
+  const askAboutPlan = async () => {
+    const text = question.trim()
+    if (!text) {
+      setError('Write a question about the plan.')
+      return
+    }
+    setAsking(true)
+    setError('')
+    setNotice('')
+    setAnswer('')
+    try {
+      const res = await fetch('/api/coach/chat-assist', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intent: 'ask_plan',
+          conversationId,
+          question: text,
+          messageIds: [...selected],
+        }),
+      })
+      const json = (await res.json().catch(() => null)) as
+        | { success?: boolean; answer?: string; error?: string }
+        | null
+      if (!res.ok || !json?.success || !json.answer) {
+        setError(json?.error || 'No answer came back.')
+        return
+      }
+      setAnswer(json.answer)
+    } catch {
+      setError('No answer came back.')
+    } finally {
+      setAsking(false)
     }
   }
 
@@ -175,7 +234,7 @@ export function CoachChatAssistPanel({
           style={{
             display: 'grid',
             gap: 6,
-            maxHeight: 220,
+            maxHeight: 180,
             overflow: 'auto',
             paddingRight: 2,
           }}
@@ -228,32 +287,75 @@ export function CoachChatAssistPanel({
           id="coach-plan-edit-comment"
           value={comment}
           onChange={(event) => setComment(event.target.value)}
-          rows={4}
+          rows={3}
           maxLength={1500}
           placeholder="Add what the plan should change, or what to leave alone."
+          style={fieldStyle}
+        />
+
+        <p style={{ margin: '16px 0 0', fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors.textMuted }}>
+          Ask about the live plan
+        </p>
+        <p style={{ margin: '6px 0 0', fontSize: 13, lineHeight: 1.45, color: colors.textSecondary }}>
+          Private answer from the plan the client has now. Use it to reply in chat. Ticked messages are optional context.
+        </p>
+        <label htmlFor="coach-plan-ask-question" style={{ display: 'block', marginTop: 10, fontSize: 13, fontWeight: 700, color: colors.textPrimary }}>
+          Your question
+        </label>
+        <textarea
+          id="coach-plan-ask-question"
+          value={question}
+          onChange={(event) => setQuestion(event.target.value)}
+          rows={3}
+          maxLength={1500}
+          placeholder="Example: Why is Day 3 only 4 exercises? What can I tell them about swaps for paneer?"
+          style={fieldStyle}
+        />
+        <button
+          type="button"
+          onClick={() => void askAboutPlan()}
+          disabled={asking || publishing}
           style={{
-            display: 'block',
-            width: '100%',
-            boxSizing: 'border-box',
-            marginTop: 6,
-            padding: 8,
+            marginTop: 8,
+            minHeight: 34,
+            padding: '0 12px',
             borderRadius: 8,
             border: `1px solid ${colors.borderSubtle}`,
             background: colors.bgCard,
             color: colors.textPrimary,
-            font: 'inherit',
-            fontSize: 14,
-            lineHeight: 1.45,
-            resize: 'vertical',
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: asking || publishing ? 'wait' : 'pointer',
           }}
-        />
+        >
+          {asking ? 'Reading the plan…' : 'Ask about this plan'}
+        </button>
+        {answer ? (
+          <div
+            style={{
+              marginTop: 10,
+              padding: 10,
+              borderRadius: 8,
+              border: `1px solid ${colors.borderSubtle}`,
+              background: colors.bgCard,
+            }}
+          >
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: colors.textMuted }}>
+              For you only
+            </p>
+            <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.5, color: colors.textPrimary, whiteSpace: 'pre-wrap' }}>
+              {answer}
+            </p>
+          </div>
+        ) : null}
+
         {error ? <p style={{ margin: '8px 0 0', fontSize: 13, color: '#9f1239' }}>{error}</p> : null}
         {notice ? <p style={{ margin: '8px 0 0', fontSize: 13, color: colors.textSecondary }}>{notice}</p> : null}
       </div>
       <button
         type="button"
         onClick={() => void publish()}
-        disabled={publishing}
+        disabled={publishing || asking}
         style={{
           marginTop: 10,
           minHeight: 36,
@@ -264,7 +366,7 @@ export function CoachChatAssistPanel({
           color: colors.accent,
           fontWeight: 700,
           fontSize: 13,
-          cursor: publishing ? 'wait' : 'pointer',
+          cursor: publishing || asking ? 'wait' : 'pointer',
         }}
       >
         {publishing ? 'Updating the plan…' : 'Update the plan from the selected messages'}
