@@ -9,6 +9,8 @@ import { planIncludesTestosteroneBoost } from '@/lib/athletic-body-extras'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasAccessSourceColumn } from '@/lib/db/profile-columns'
 import type { CoachingPlan } from '@/lib/payments/plans'
+import { loadHeldPlansForUpgrade } from '@/lib/payments/plan-upgrade-lookup'
+import { quotePlanUpgrade } from '@/lib/payments/plan-upgrade-pricing'
 import { getCoachingPlan, subscriptionExpiryFromPlan } from '@/lib/payments/plans'
 import type { CheckoutAddonId } from '@/lib/payments/checkout-discounts'
 import { checkoutAddonsPaise } from '@/lib/payments/checkout-discounts'
@@ -636,7 +638,28 @@ export async function claimPurchaseWithPassword(
 
   const now = new Date().toISOString()
   const includeAccessSource = await hasAccessSourceColumn()
-  const planExpiry = subscriptionExpiryFromPlan(plan)
+  let planExpiry = subscriptionExpiryFromPlan(plan)
+  // Leftover upgrades extend the original start to the longer plan. A full-price
+  // purchase still starts a new term from today.
+  if (!plan.isDigital && !plan.isTrial && purchase.amount_paise < plan.amountPaise) {
+    const held = await loadHeldPlansForUpgrade(admin, email, {
+      now: new Date(purchase.created_at),
+      excludePurchaseId: purchase.id,
+    })
+    if (held.ok) {
+      const upgradeQuote = quotePlanUpgrade({
+        held: held.plans,
+        targetSlug: plan.slug,
+        targetListPaise: plan.amountPaise,
+        now: new Date(purchase.created_at),
+      })
+      if (upgradeQuote.applies && upgradeQuote.anchorAt) {
+        planExpiry = subscriptionExpiryFromPlan(plan, upgradeQuote.anchorAt)
+      }
+    } else {
+      logPurchaseStep('upgrade_anchor_unavailable', { email, purchaseId: purchase.id, error: held.error })
+    }
+  }
 
   const existingRole = existingProfile?.role as string | null | undefined
   const preservePrivilegedRole = existingRole === 'coach' || existingRole === 'admin'

@@ -17,6 +17,7 @@ export const META_AD_PURCHASES_METRIC = 'meta_ad_purchases'
 export const INSTAGRAM_ORGANIC_ENGAGEMENT_METRIC = 'instagram_organic_engagement'
 export const META_LANDING_PAGE_VIEWS_METRIC = 'meta_landing_page_views'
 export const INSTRUMENTED_LANDING_SESSIONS_METRIC = 'instrumented_landing_sessions'
+export const PLAN_UPGRADE_CHARGE_METRIC = 'plan_upgrade_charge'
 
 export type MetricAlignment = 'aligned' | 'mismatch_pending_approval' | 'unverified'
 
@@ -285,6 +286,48 @@ export const INSTRUMENTED_LANDING_SESSIONS: MetricSourceOfTruth = {
   ],
 }
 
+/**
+ * What an active member pays to move to a higher plan in the same family.
+ * Not a dashboard total. The charge is the leftover, not the full target price.
+ */
+export const PLAN_UPGRADE_CHARGE: MetricSourceOfTruth = {
+  metric: PLAN_UPGRADE_CHARGE_METRIC,
+  business_concept: 'Leftover amount an active member pays to upgrade to a higher plan',
+  source_of_truth:
+    'quotePlanUpgrade in src/lib/payments/plan-upgrade-pricing.ts. Target list is the live catalog price. Credit is the published price of the plan they hold, or net cash on that purchase when cash is higher. Coaching adds ₹250 after 48 hours. The charge never exceeds the target plan price.',
+  source_of_truth_verified: true,
+  accepted_sources: ['public.purchases', 'public.profiles'],
+  code_path: [
+    'src/lib/payments/plan-upgrade-pricing.ts',
+    'src/lib/payments/plan-upgrade-lookup.ts',
+    'src/lib/payments/checkout-discounts.ts',
+    'src/app/api/payment/create-order/route.ts',
+    'src/app/checkout/page.tsx',
+  ],
+  database_or_api:
+    'Supabase public.purchases (captured/redeemed plan_slug, amount_paise, refunded_amount_paise, created_at) and profiles.subscription_expires_at. Razorpay order notes.plan_upgrade records the credit used.',
+  calculation:
+    'Same family only (coaching 3/6/12 including legacy 1 month and trial, duration offer 1/3 months, or digital workout/diet toward Complete). Payable = min(target list, max(0, target list − credit + late fee)). Credit = min(target list, max(catalog price, net paid)). Late fee is ₹250 only for coaching after 48 hours from the current plan start. Expired membership pays the full target price. A failed purchase/profile lookup is not ₹0 and is not the full price.',
+  timezone: '48 hour window is elapsed UTC milliseconds from purchases.created_at, not a calendar day.',
+  refund_adjustment:
+    'Fully refunded or cancelled purchases are not credit. Partial refunds reduce net paid. Catalog credit still applies when it is higher than net paid.',
+  data_status_rule:
+    'Purchase or profile query failure must not become a full-price charge or a ₹0 charge. Checkout returns an error until the current plan can be read.',
+  existing_tests: ['scripts/verify-plan-upgrade-pricing.ts'],
+  jarvis_current: {
+    source: 'quotePlanUpgrade',
+    tool: 'none',
+    code_path: 'src/lib/payments/plan-upgrade-pricing.ts',
+  },
+  alignment: 'aligned',
+  do_not: [
+    'Charge the full target plan price while a lower plan in the same family is still active',
+    'Turn a failed membership lookup into ₹0 or into the full price',
+    'Stack a discount code on top of the leftover',
+    'Use Shopify prices for this charge',
+  ],
+}
+
 export const METRIC_SOURCES: readonly MetricSourceOfTruth[] = [
   LURVOX_PRODUCT_REVENUE,
   SHOPIFY_STORE_COMMERCE,
@@ -292,6 +335,7 @@ export const METRIC_SOURCES: readonly MetricSourceOfTruth[] = [
   INSTAGRAM_ORGANIC_ENGAGEMENT,
   META_LANDING_PAGE_VIEWS,
   INSTRUMENTED_LANDING_SESSIONS,
+  PLAN_UPGRADE_CHARGE,
 ]
 
 export function getMetricSource(metric: string): MetricSourceOfTruth | null {

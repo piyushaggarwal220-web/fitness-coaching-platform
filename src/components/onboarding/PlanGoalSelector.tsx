@@ -5,7 +5,7 @@ import { useMemo, useState, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { onboardingStyles as s } from '@/components/onboarding/styles'
 import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
-import { isDigitalPlanSlug } from '@/lib/payments/plans'
+import { COACHING_PLANS, isDigitalPlanSlug } from '@/lib/payments/plans'
 import {
   ALL_PLAN_GOAL_OPTIONS,
   DIGITAL_GOAL_TIER,
@@ -472,6 +472,9 @@ function UpgradePrompt({
 }) {
   const requiredMeta = PLAN_GOAL_TIER_META[goal.tier]
   const currentMeta = PLAN_GOAL_TIER_META[currentTier]
+  const restPaise = COACHING_PLANS[goal.tier].amountPaise - COACHING_PLANS[currentTier].amountPaise
+  const restLabel =
+    restPaise > 0 ? `₹${Math.round(restPaise / 100).toLocaleString('en-IN')}` : null
 
   return (
     <div
@@ -488,8 +491,9 @@ function UpgradePrompt({
         Upgrade to unlock “{goal.label}”
       </p>
       <p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.5, color: colors.textSecondary }}>
-        This goal is part of the {requiredMeta.title} plan ({requiredMeta.shortLabel}). Your current{' '}
-        {currentMeta.title} plan already includes the goals below it — upgrade to add this one.
+        {restLabel
+          ? `You already have ${currentMeta.title}. Pay ${restLabel} to upgrade to ${requiredMeta.title}. After 48 hours, add ₹250.`
+          : `This goal is part of the ${requiredMeta.title} plan (${requiredMeta.shortLabel}). Your current ${currentMeta.title} plan already includes the goals below it — upgrade to add this one.`}
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 14 }}>
         <Link

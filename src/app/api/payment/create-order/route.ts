@@ -12,7 +12,9 @@ import {
   checkoutTotalPaise,
   resolveCheckoutPricing,
 } from '@/lib/payments/checkout-discounts'
+import { applyCoveredPlanUpgrade } from '@/lib/payments/plan-upgrade-lookup'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { isPublicDemoEmail } from '@/lib/public-demo'
 import { publicDemoReadOnlyJson } from '@/lib/public-demo-guard'
 import { previewAdLandingPath } from '@/lib/analytics/ad-landing'
@@ -92,6 +94,43 @@ export async function POST(request: Request) {
   const addonIds: string[] = []
   const totalPaise = checkoutTotalPaise(pricing, [])
   const discountNotes = checkoutDiscountNotes(pricing)
+
+  if (pricing.upgrade && totalPaise <= 0) {
+    const sessionEmail = body.email!.trim().toLowerCase()
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user?.email || user.email.trim().toLowerCase() !== sessionEmail) {
+      return NextResponse.json(
+        {
+          error: 'Nothing left to pay. Sign in with the email on your plan to switch it.',
+          covered: true,
+          needsSignIn: true,
+        },
+        { status: 401 }
+      )
+    }
+    const switched = await applyCoveredPlanUpgrade(admin, {
+      userId: user.id,
+      email: sessionEmail,
+      name: body.name!.trim(),
+      phone: body.phone,
+      planSlug: plan.slug,
+      fromSlug: pricing.upgrade.fromSlug,
+      anchorAt: pricing.upgrade.anchorAt,
+    })
+    if (!switched.ok) {
+      return NextResponse.json({ error: switched.error }, { status: 500 })
+    }
+    return NextResponse.json({
+      covered: true,
+      amount: 0,
+      redirectTo: '/dashboard',
+      purchaseId: switched.purchaseId,
+      plan: pricing.plan,
+    })
+  }
 
   if (shouldBypassPayment()) {
     const orderId = `test_order_${Date.now()}`

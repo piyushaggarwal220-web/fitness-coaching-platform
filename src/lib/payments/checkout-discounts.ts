@@ -19,6 +19,14 @@ import {
   PREVIEW_SALE_CODE,
   previewSaleDiscountPaise,
 } from '@/lib/payments/preview-sale-code'
+import { loadHeldPlansForUpgrade } from '@/lib/payments/plan-upgrade-lookup'
+import {
+  formatPlanUpgradeNote,
+  parsePlanUpgradeNote,
+  quotePlanUpgrade,
+  upgradePayableFromNote,
+  type PlanUpgradeNote,
+} from '@/lib/payments/plan-upgrade-pricing'
 import {
   isPreview7SaleCode,
   PREVIEW7_LEGACY_PAY_PAISE,
@@ -242,6 +250,8 @@ export type CheckoutPricing = {
   listAmountPaise: number
   amountPaise: number
   discount: AppliedCheckoutDiscount | null
+  /** Set when the buyer already holds a lower plan and pays the leftover. */
+  upgrade?: PlanUpgradeNote | null
 }
 
 export function normalizeDiscountCode(raw: string | null | undefined): string {
@@ -372,6 +382,36 @@ export async function resolveCheckoutPricing(input: {
     input.landingPath === PREVIEW7_AD_PATH ? preview7AmountPaise(plan.slug) : null
   const listAmountPaise = preview7Pay ?? plan.amountPaise
   const code = normalizeDiscountCode(input.discountCode)
+
+  const upgradeEmail = (input.email ?? '').trim().toLowerCase()
+  if (upgradeEmail.includes('@')) {
+    const held = await loadHeldPlansForUpgrade(input.admin, upgradeEmail)
+    if (!held.ok) {
+      return { ok: false, error: held.error, status: 503 }
+    }
+    const upgradeQuote = quotePlanUpgrade({
+      held: held.plans,
+      targetSlug: plan.slug,
+      targetListPaise: plan.amountPaise,
+    })
+    if (upgradeQuote.applies && upgradeQuote.fromSlug && upgradeQuote.anchorAt) {
+      return {
+        ok: true,
+        pricing: {
+          plan,
+          listAmountPaise: plan.amountPaise,
+          amountPaise: upgradeQuote.payablePaise,
+          discount: null,
+          upgrade: {
+            fromSlug: upgradeQuote.fromSlug,
+            creditPaise: upgradeQuote.creditPaise,
+            lateFeePaise: upgradeQuote.lateFeePaise,
+            anchorAt: upgradeQuote.anchorAt.toISOString(),
+          },
+        },
+      }
+    }
+  }
 
   if (isRetiredPublicDiscountCode(code)) {
     return { ok: false, error: 'This code is no longer valid.', status: 400 }
@@ -652,6 +692,19 @@ function expectedPlanAmountPaiseFromOrderNotes(
   const discountPaise = notes?.discount_paise ? Number(notes.discount_paise) : 0
   const code = normalizeDiscountCode(notes?.discount_code)
 
+  const upgradeNote = parsePlanUpgradeNote(notes?.plan_upgrade)
+  if (upgradeNote && Number.isFinite(charged) && charged > 0) {
+    const notedList = Number.isFinite(listFromNotes) && listFromNotes > 0 ? listFromNotes : plan.amountPaise
+    const knownLists = new Set<number>([
+      plan.amountPaise,
+      ...(LEGACY_CATALOG_PAISE[plan.slug as CoachingPlanSlug] ?? []),
+    ])
+    const previewList = preview7AmountPaise(plan.slug)
+    if (previewList != null) knownLists.add(previewList)
+    const upgradePayable = knownLists.has(notedList) ? upgradePayableFromNote(notedList, upgradeNote) : null
+    if (upgradePayable != null && charged === upgradePayable) return charged
+  }
+
   const preview7Noted = (list: number | null, salePay: number | null): number | null => {
     if (list == null || !Number.isFinite(charged) || charged <= 0) return null
     if (!Number.isFinite(listFromNotes) || listFromNotes !== list) return null
@@ -777,6 +830,10 @@ export function checkoutDiscountNotes(
     if (pricing.discount.referrerLabel) {
       notes.referrer_label = pricing.discount.referrerLabel
     }
+  }
+
+  if (pricing.upgrade) {
+    notes.plan_upgrade = formatPlanUpgradeNote(pricing.upgrade)
   }
 
   const addonIds = parseCheckoutAddonIds(options?.addonIds ?? (options?.supplementAddon ? ['testo_boost'] : []))

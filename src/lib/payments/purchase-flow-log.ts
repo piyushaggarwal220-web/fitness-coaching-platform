@@ -35,7 +35,8 @@ export function logPurchaseStep(
     | 'webhook_failed'
     | 'checkout_intake_basics_merged'
     | 'checkout_intake_basics_none'
-    | 'checkout_intake_basics_merge_failed',
+    | 'checkout_intake_basics_merge_failed'
+    | 'upgrade_anchor_unavailable',
   details?: Record<string, unknown>
 ): void {
   const enabled =

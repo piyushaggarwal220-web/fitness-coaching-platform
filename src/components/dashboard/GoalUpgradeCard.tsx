@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { clientColors as colors, spacing } from '@/lib/design-tokens'
-import { isDigitalPlanSlug } from '@/lib/payments/plans'
+import { COACHING_PLANS, isDigitalPlanSlug } from '@/lib/payments/plans'
 import {
   GOAL_BODY_TYPE_META,
   PLAN_GOAL_TIER_META,
@@ -49,6 +49,11 @@ export function GoalUpgradeCard({ planSlug, accessSource, gender, bodyType }: Pr
 
   const meta = PLAN_GOAL_TIER_META[upgradeTier]
   const bodyLabel = resolvedBodyType ? GOAL_BODY_TYPE_META[resolvedBodyType].title : null
+  const restPaise =
+    currentTier in COACHING_PLANS && upgradeTier in COACHING_PLANS
+      ? COACHING_PLANS[upgradeTier].amountPaise - COACHING_PLANS[currentTier].amountPaise
+      : 0
+  const restLabel = restPaise > 0 ? `₹${Math.round(restPaise / 100).toLocaleString('en-IN')}` : null
 
   return (
     <Card
@@ -88,11 +93,12 @@ export function GoalUpgradeCard({ planSlug, accessSource, gender, bodyType }: Pr
             Unlock more goals
           </p>
           <p style={{ margin: '6px 0 0', fontSize: 17, fontWeight: 800, letterSpacing: '-0.02em', color: colors.textPrimary }}>
-            Upgrade to {meta.title}
+            {restLabel ? `Upgrade for ${restLabel}` : `Upgrade to ${meta.title}`}
           </p>
           <p style={{ margin: '8px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
             You’re on {planDisplayName(currentTier)}
-            {bodyLabel ? ` · ${bodyLabel}` : ''}. These goals stay locked until you upgrade:
+            {bodyLabel ? ` · ${bodyLabel}` : ''}.
+            {restLabel ? ` ${meta.title} is ${restLabel} more. After 48 hours, add ₹250.` : ''} These goals stay locked until you upgrade:
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
             {locked.map((goal) => (
@@ -121,7 +127,7 @@ export function GoalUpgradeCard({ planSlug, accessSource, gender, bodyType }: Pr
             style={{ marginTop: 14 }}
             onClick={() => router.push(upgradeHrefForTier(upgradeTier))}
           >
-            Upgrade to {meta.title}
+            {restLabel ? `Pay ${restLabel} to upgrade` : `Upgrade to ${meta.title}`}
             <ArrowUpRight size={16} style={{ marginLeft: 6 }} />
           </Button>
         </div>

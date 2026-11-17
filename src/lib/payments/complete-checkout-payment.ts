@@ -22,6 +22,8 @@ import {
 } from '@/lib/payments/checkout-discounts'
 import { isAffiliateDiscountCode } from '@/lib/payments/affiliate-codes'
 import { notifyAffiliateCodeUsage } from '@/lib/payments/affiliate-notify'
+import { loadHeldPlansForUpgrade } from '@/lib/payments/plan-upgrade-lookup'
+import { quotePlanUpgrade } from '@/lib/payments/plan-upgrade-pricing'
 import { recordPromoCodeUsage } from '@/lib/payments/promo-codes'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveAppBaseUrl } from '@/lib/admin/portal-urls'
@@ -217,6 +219,17 @@ export async function completeCheckoutPayment(
   }
   if (!trustedEmail || !trustedName) {
     return { ok: false, status: 400, error: 'Email and name are required' }
+  }
+
+  if (shouldBypassPayment()) {
+    const held = await loadHeldPlansForUpgrade(createAdminClient(), trustedEmail)
+    if (!held.ok) return { ok: false, status: 503, error: held.error }
+    const upgradeQuote = quotePlanUpgrade({
+      held: held.plans,
+      targetSlug: plan.slug,
+      targetListPaise: plan.amountPaise,
+    })
+    if (upgradeQuote.applies) chargedAmountPaise = upgradeQuote.payablePaise
   }
 
   logPurchaseStep('payment_verified', {

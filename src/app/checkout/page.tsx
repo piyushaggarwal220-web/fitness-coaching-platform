@@ -26,7 +26,7 @@ import {
  readMetaBrowserIds,
 } from '@/lib/analytics/meta-attribution';
 import { trackFunnelStep } from '@/lib/analytics/funnel';
-import { PREVIEW10_AD_PATH, PREVIEW7_AD_PATH, PREVIEW_AD_PATH, previewAdFunnelSource, previewAdLandingPath } from '@/lib/analytics/ad-landing';
+import { PREVIEW4_AD_PATH, PREVIEW10_AD_PATH, PREVIEW7_AD_PATH, PREVIEW_AD_PATH, previewAdFunnelSource, previewAdLandingPath } from '@/lib/analytics/ad-landing';
 import { isPreview7SaleCode, preview7PricedPlan } from '@/lib/payments/preview7-prices';
 import { checkoutThemeForLanding } from '@/lib/payments/checkout-theme';
 import {
@@ -40,6 +40,8 @@ import {
  publicSaleDiscountPaise,
  PUBLIC_SALE_CODE,
 } from '@/lib/payments/checkout-discounts';
+import { heldPlansFromSnapshot, type HeldPlanSnapshot } from '@/lib/payments/plan-upgrade-lookup';
+import { quotePlanUpgrade } from '@/lib/payments/plan-upgrade-pricing';
 import {
  affiliateDiscountPaise,
  affiliateSalePaise,
@@ -156,6 +158,8 @@ function CheckoutForm() {
  const welcomeCode = getFirstTimerDiscountCode();
  const [referralCode, setReferralCode] = useState(codeFromUrl);
  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountPreview | null>(null);
+ const [heldPlans, setHeldPlans] = useState<HeldPlanSnapshot[] | null>(null);
+ const [upgradeCheckFailed, setUpgradeCheckFailed] = useState(false);
  const [saleCountdown, setSaleCountdown] = useState('08:00:00');
  const [applyingCode, setApplyingCode] = useState(false);
  const [enrollmentHref, setEnrollmentHref] = useState<string | null>(null);
@@ -195,10 +199,20 @@ function CheckoutForm() {
  : COACHING_PLAN_LIST).map((item) => preview7PricedPlan(item, adLandingPath));
  const coachingLadder =
  !isDigitalCheckout && !isTrialCheckout && !isDurationOfferSlug(plan.slug) && !singleOffer;
- const visiblePlans = coachingLadder && adLandingPath !== PREVIEW10_AD_PATH
+ const visiblePlans = coachingLadder && adLandingPath !== PREVIEW4_AD_PATH && adLandingPath !== PREVIEW10_AD_PATH
  ? planPickerList.filter((item) => item.durationMonths >= plan.durationMonths)
  : planPickerList;
- const planPayablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
+ const upgradeListPaise = getPurchasablePlan(plan.slug)?.amountPaise ?? plan.amountPaise;
+ const upgradeQuote = heldPlans?.length
+ ? quotePlanUpgrade({
+ held: heldPlansFromSnapshot(heldPlans),
+ targetSlug: plan.slug,
+ targetListPaise: upgradeListPaise,
+ })
+ : null;
+ const planPayablePaise = upgradeQuote?.applies
+ ? upgradeQuote.payablePaise
+ : (appliedDiscount?.amountPaise ?? plan.amountPaise);
  const payablePaise = planPayablePaise;
  const payableDisplay = formatInrFromPaise(payablePaise);
  const firstTimerPreviewPaise = firstTimerSalePaise(plan.slug);
@@ -256,6 +270,67 @@ function CheckoutForm() {
  cancelled = true
  }
  }, [])
+
+ useEffect(() => {
+ let cancelled = false
+ void (async () => {
+ const { data } = await supabase.auth.getUser()
+ const user = data.user
+ if (!user || isPublicDemoEmail(user.email)) return
+ if (user.email) setEmail((prev) => prev.trim() || user.email || prev)
+ const { data: profile } = await supabase
+ .from('profiles')
+ .select('name, phone')
+ .eq('id', user.id)
+ .maybeSingle()
+ if (cancelled || !profile) return
+ const row = profile as { name?: string | null; phone?: string | null }
+ if (row.name) setName((prev) => prev.trim() || row.name || prev)
+ if (row.phone) setPhone((prev) => prev.trim() || row.phone || prev)
+ })()
+ return () => {
+ cancelled = true
+ }
+ }, [])
+
+ useEffect(() => {
+ const normalized = email.trim().toLowerCase()
+ if (!normalized.includes('@')) {
+ setHeldPlans(null)
+ setUpgradeCheckFailed(false)
+ return
+ }
+ let cancelled = false
+ const timer = window.setTimeout(() => {
+ void (async () => {
+ try {
+ const res = await fetch('/api/payment/upgrade-quote', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ email: normalized }),
+ })
+ const data = await res.json()
+ if (cancelled) return
+ if (!res.ok) {
+ setUpgradeCheckFailed(true)
+ setHeldPlans(null)
+ return
+ }
+ setUpgradeCheckFailed(false)
+ setHeldPlans(Array.isArray(data.held) ? data.held : [])
+ } catch {
+ if (!cancelled) {
+ setUpgradeCheckFailed(true)
+ setHeldPlans(null)
+ }
+ }
+ })()
+ }, 250)
+ return () => {
+ cancelled = true
+ window.clearTimeout(timer)
+ }
+ }, [email])
 
  useEffect(() => {
  setEnrollmentHref(null);
@@ -774,11 +849,10 @@ function CheckoutForm() {
  try {
  const checkoutVerificationId = verificationId;
 
- const sale = adLandingPath === PREVIEW7_AD_PATH ? null : firstTimerSalePaise(plan.slug);
  trackFunnelStep('pay_click', {
  plan: plan.slug,
  plan_name: plan.name,
- value: (appliedDiscount?.amountPaise ?? sale ?? plan.amountPaise) / 100,
+ value: planPayablePaise / 100,
  ...adFunnel,
  });
 
@@ -809,6 +883,10 @@ function CheckoutForm() {
  });
 
  const orderData = await orderRes.json();
+ if (orderData.covered && orderData.redirectTo) {
+ window.location.replace(orderData.redirectTo);
+ return;
+ }
  if (!orderRes.ok) {
  if (Array.isArray(orderData.missing) && orderData.missing.length > 0) {
  setMissingItems(orderData.missing);
@@ -842,7 +920,7 @@ function CheckoutForm() {
  amount: orderData.amount,
  currency: orderData.currency,
  name: 'LURVOX',
- description: `${plan.name} coaching plan`,
+ description: upgradeQuote?.applies ? `Upgrade to ${plan.name} — leftover` : `${plan.name} coaching plan`,
  order_id: orderData.orderId,
  prefill: { name, email, contact: payPhone },
  callback_url: razorpayCallbackUrl(plan.slug),
@@ -908,7 +986,9 @@ function CheckoutForm() {
  )
  }
 
- const pricePrimary = appliedDiscount?.displaySalePrice ?? plan.displayPrice;
+ const pricePrimary = upgradeQuote?.applies
+ ? formatInrFromPaise(upgradeQuote.payablePaise)
+ : (appliedDiscount?.displaySalePrice ?? plan.displayPrice);
  const priceMrp = appliedDiscount?.displayListPrice ?? plan.displayPrice;
  const discountLockedIn = Boolean(appliedDiscount);
  const showListStrike =
@@ -961,7 +1041,11 @@ function CheckoutForm() {
  : 'Pay for your plan'}
  </h1>
  <p style={{ ...dig(styles.subtitle, 'subtitle'), ...(storefrontCheckout ? styles.subtitleFit : null) }}>
- All questions are asked after payment.
+ {isDigitalCheckout
+ ? 'After payment, finish the short questionnaire. Your plan usually arrives within 1–2 hours.'
+ : isTrialCheckout
+ ? 'After payment, set your password and finish a short setup with photos. Your plan usually arrives within 1–2 hours.'
+ : 'Pay with UPI, card, or netbanking. Then a short form and three photos. The first plan usually arrives within 1–2 hours.'}
  </p>
 
  {checkoutScreen === 3 && (
@@ -977,11 +1061,23 @@ function CheckoutForm() {
  {visiblePlans.map((item) => {
  const selected = item.slug === plan.slug;
  const card = STOREFRONT_PLAN_CARDS[item.slug];
+ const catalogPaise = getPurchasablePlan(item.slug)?.amountPaise ?? item.amountPaise;
+ const itemQuote = heldPlans?.length
+ ? quotePlanUpgrade({
+ held: heldPlansFromSnapshot(heldPlans),
+ targetSlug: item.slug,
+ targetListPaise: catalogPaise,
+ })
+ : null;
+ const leftoverPaise = itemQuote?.applies ? itemQuote.payablePaise : null;
+ const leftoverCovered = itemQuote?.applies ? itemQuote.covered : false;
  const monthly =
- item.durationMonths > 0
+ leftoverPaise == null && item.durationMonths > 0
  ? `≈ ₹${Math.round(item.amountPaise / 100 / item.durationMonths).toLocaleString('en-IN')}/month`
  : '';
- const cardPrice = `₹${Math.round(item.amountPaise / 100).toLocaleString('en-IN')}`;
+ const cardPrice = leftoverPaise != null
+ ? formatInrFromPaise(leftoverPaise)
+ : `₹${Math.round(item.amountPaise / 100).toLocaleString('en-IN')}`;
  return (
  <Link
  key={item.slug}
@@ -992,7 +1088,7 @@ function CheckoutForm() {
  trackFunnelStep('checkout_plan_switch', {
  plan: item.slug,
  plan_name: item.name,
- value: item.amountPaise / 100,
+ value: (leftoverPaise ?? item.amountPaise) / 100,
  ...adFunnel,
  })
  }
@@ -1017,7 +1113,9 @@ function CheckoutForm() {
  <span style={styles.planTileName}>{planGoalName(item.slug)}</span>
  <span style={styles.planTileDuration}>{card?.duration || planDurationLabel(item.slug)}</span>
  <span style={styles.planTilePrice}>{cardPrice}</span>
- {monthly ? <span style={styles.planTileMonthly}>{monthly}</span> : null}
+ {leftoverPaise != null ? (
+ <span style={styles.planTileMonthly}>{leftoverCovered ? 'Already covered' : 'Leftover to pay'}</span>
+ ) : monthly ? <span style={styles.planTileMonthly}>{monthly}</span> : null}
  </>
  ) : (
  <>
@@ -1027,7 +1125,14 @@ function CheckoutForm() {
  <span style={dig(styles.planChipDuration, 'planChipDuration')}>
  {isDigitalCheckout ? item.saveLabel : planDurationLabel(item.slug)}
  </span>
- <span style={dig(styles.planChipPrice, 'planChipPrice')}>{item.displayPrice}</span>
+ <span style={dig(styles.planChipPrice, 'planChipPrice')}>
+ {leftoverPaise != null ? formatInrFromPaise(leftoverPaise) : item.displayPrice}
+ </span>
+ {leftoverPaise != null ? (
+ <span style={{ ...styles.planChipBadge, ...intakeTheme.planChipPopular }}>
+ {leftoverCovered ? 'Covered' : 'Leftover'}
+ </span>
+ ) : null}
  {item.popular ? (
  <span style={{ ...styles.planChipBadge, ...intakeTheme.planChipPopular }}>Most popular</span>
  ) : null}
@@ -1147,14 +1252,35 @@ function CheckoutForm() {
  autoComplete="tel"
  style={{ ...dig(styles.input, 'input'), ...(storefrontCheckout ? styles.inputFit : null) }}
  />
+ {!isDigitalCheckout && !isTrialCheckout ? (
+ <p style={{ ...dig(styles.secure, 'secure'), marginTop: 6, marginBottom: 0 }}>
+ WhatsApp is for your plan updates.
+ </p>
+ ) : null}
 
  {isInAppBrowser() ? (
  <p style={{ ...dig(styles.error, 'error'), marginBottom: 10 }} role="note">{IN_APP_PAY_HINT}</p>
  ) : null}
+ {upgradeCheckFailed ? (
+ <p style={{ ...styles.error, marginBottom: 10 }} role="alert">
+ We couldn&apos;t check your current plan. Refresh before you pay so the leftover price can load.
+ </p>
+ ) : null}
+ {upgradeQuote?.applies ? (
+ <p style={{ ...dig(styles.secure, 'secure'), marginTop: 0, marginBottom: 10 }}>
+ {upgradeQuote.covered
+ ? `Your ${upgradeQuote.fromName} plan already covers this. Nothing more to pay.`
+ : `Leftover after your ${upgradeQuote.fromName} plan${
+ upgradeQuote.lateFeePaise > 0
+ ? `. Includes ${formatInrFromPaise(upgradeQuote.lateFeePaise)} because the 48 hour upgrade window has ended`
+ : ''
+ }.`}
+ </p>
+ ) : null}
  <button
  type="button"
  style={{ ...dig(styles.payBtn, 'payBtn'), ...(storefrontCheckout ? styles.payBtnFit : null) }}
- disabled={loading}
+ disabled={loading || (email.trim().includes('@') && heldPlans === null && !upgradeCheckFailed)}
  onClick={() => {
  const missing: string[] = [];
  if (!name.trim()) missing.push('Full name');
@@ -1170,7 +1296,15 @@ function CheckoutForm() {
  void handleSubmit({ preventDefault() {} } as FormEvent);
  }}
  >
- {loading ? 'Starting checkout...' : `Pay ${formatInrFromPaise(planPayablePaise)}`}
+ {loading
+ ? 'Starting checkout...'
+ : email.trim().includes('@') && heldPlans === null && !upgradeCheckFailed
+ ? 'Checking your plan...'
+ : upgradeQuote?.applies && upgradeQuote.covered
+ ? 'Switch plan'
+ : upgradeQuote?.applies
+ ? `Pay ${formatInrFromPaise(planPayablePaise)} leftover`
+ : `Pay ${formatInrFromPaise(planPayablePaise)}`}
  </button>
  <p style={{ ...dig(styles.secure, 'secure'), ...(storefrontCheckout ? styles.secureFit : null) }}>
  {storefrontCheckout
@@ -1187,7 +1321,7 @@ function CheckoutForm() {
  ? 'Right after you pay: set your password, then a short questionnaire. Your plan arrives within 1–2 hours. If this page closes, we email those steps.'
  : isTrialCheckout
  ? 'Right after you pay: set your password, then a short setup with photos. Your plan arrives within 1–2 hours. If you leave to finish payment in another app, come back here. If this page closes, we email those steps.'
- : 'The onboarding form and progress photos come only after payment. Front, side, and back photos are required unless that form marks them optional.'}
+ : 'Front, side, and back photos come after payment. They are how the plan matches your body, and they stay in your coaching. Refunds are only as written in the Terms.'}
  </>}
  </p>
  </div>
