@@ -29,6 +29,7 @@ import { buildDietHardConstraintsSection } from '@/lib/ai/prompt-builder'
 import { enforceDietPreference, dietScanOptionsFromProfile } from '@/lib/ai/diet-preference-guard'
 import { applyDietPlanRepair } from '@/lib/ai/diet-plan-repair'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
+import { sectionTextMismatch } from '@/lib/plan-body-kind'
 import { applyParsedSectionsToFormData } from '@/lib/plan-section-parser'
 import { formatCalorieGuidanceBlock, clientRequestNeedsExpenditureFocus, requestTouchesCalories, requestTargetsMaintenance, autoDietCoachInstruction, autoDietModifyInstruction, resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
@@ -597,6 +598,18 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
             }
           }
         }
+      }
+
+      if (input.section === 'workout' || input.section === 'nutrition') {
+        const aligned = sectionTextMismatch(input.section, revisedText)
+        if ('error' in aligned) {
+          if (attempt < maxAttempts - 1) {
+            dietRetryHint = aligned.error
+            continue
+          }
+          throw new ClaudeResponseError(aligned.error)
+        }
+        revisedText = aligned.text
       }
 
       const followthrough = coachEditFollowthroughHint(

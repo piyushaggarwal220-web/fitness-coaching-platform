@@ -448,11 +448,20 @@ function parseMeals(diet: string): {
   for (const day of dayBlocks) {
     const dayMeals = parseMealsInDay(day.body, day.key, day.label)
     if (dayMeals.length === 0) continue
-    if (day.key !== 'default' && dietDays.some((d) => d.key === day.key)) continue
-    meals.push(...dayMeals)
     if (day.key !== 'default') {
+      const existing = dietDays.findIndex((d) => d.key === day.key)
+      if (existing >= 0) {
+        const current = meals.filter((meal) => meal.dietDay === day.key)
+        if (dayMeals.length <= current.length) continue
+        const rest = meals.filter((meal) => meal.dietDay !== day.key)
+        meals.length = 0
+        meals.push(...rest, ...dayMeals)
+        dietDays[existing] = { key: day.key, label: day.label, calendarAligned: day.calendarAligned }
+        continue
+      }
       dietDays.push({ key: day.key, label: day.label, calendarAligned: day.calendarAligned })
     }
+    meals.push(...dayMeals)
   }
 
   // Fallback only when the plan has no Day N / weekday blocks. If labeled days

@@ -205,10 +205,220 @@ Main Workout:
 Leg Press: 3 sets x 10 reps
 `)
 assert('drops the pasted second week', (repeated.match(/Day 1/g) ?? []).length === 1)
+
+const outlineThenFull = tidyWorkoutPlanText(`Monday — Push
+
+Day 1 (Monday)
+Warm-up:
+Arm Circles: 2 sets x 15 reps
+Main Workout:
+Bench Press: 4 sets x 8 reps
+Overhead Press: 3 sets x 10 reps
+`)
+assert('a short Monday outline does not hide the full session', outlineThenFull.includes('Bench Press'))
+assert('the full Monday session keeps the later lifts', outlineThenFull.includes('Overhead Press'))
 assert('leg day does not keep a chest press', !/bench/i.test(repeated.split('Day 2')[0] ?? ''))
 assert('leg day keeps the leg work', /leg press/i.test(repeated) && /hamstring curl/i.test(repeated))
 assert('upper day lists bench once', (repeated.split('Day 2')[1] ?? '').match(/bench press/gi)?.length === 1)
 assert('upper day does not keep a leg press', !/leg press/i.test(repeated.split('Day 2')[1] ?? ''))
+
+const dietInWorkout = resolvePlanSections({
+  nutrition_plan: `Calories: 1970
+Protein: 94g
+
+Day 1 (Monday)
+
+Breakfast 11:15
+Have oats with milk.
+
+Lunch 14:00
+Dal and rice.
+
+Dinner 20:00
+Paneer and roti.`,
+  workout_plan: `Diet Plan
+
+Day 1 (Monday)
+
+Breakfast
+Oats: 60 g
+
+Lunch
+Paneer bhurji
+
+Dinner
+Chapati and dal`,
+  supplement_plan: '',
+  cardio_plan: '',
+  coach_notes: '',
+})
+assert('diet field stays the diet', dietInWorkout.diet.includes('Have oats with milk'))
+assert('a diet pasted into workout is not shown as the workout', !dietInWorkout.workout.includes('Paneer bhurji'))
+assert('a diet pasted into workout does not replace the real meals', !dietInWorkout.diet.includes('Paneer bhurji'))
+
+const trainingInDiet = resolvePlanSections({
+  nutrition_plan: `Training Schedule
+
+Day 1 (Monday) – Chest and Back
+
+Warm-up:
+Band Pull Apart: 2 sets x 15 reps
+
+Main Workout:
+Barbell Bench Press: 4 sets x 8 reps
+Lat Pulldown: 3 sets x 10 reps
+
+Day 1 (Monday)
+
+Breakfast 07:00
+Oats and whey.
+
+Lunch 12:00
+Paneer and rice.
+
+Dinner 20:00
+Dal and roti.`,
+  workout_plan: `Day 1 (Monday): Push
+
+Warm-up:
+Arm Circles: 2 sets x 10 reps
+
+Main Workout:
+Dumbbell Bench Press: 3 sets x 8 reps
+Overhead Press: 3 sets x 10 reps`,
+  supplement_plan: '',
+  cardio_plan: '',
+  coach_notes: '',
+})
+assert('meals stay on the diet', trainingInDiet.diet.includes('Oats and whey'))
+assert('training schedule is not shown on the diet', !trainingInDiet.diet.includes('Lat Pulldown'))
+assert('stored workout stays the workout', trainingInDiet.workout.includes('Overhead Press'))
+
+const swapped = resolvePlanSections({
+  nutrition_plan: `Day 1 (Monday): Push
+
+Warm-up:
+Arm Circles: 2 sets x 10 reps
+
+Main Workout:
+Dumbbell Bench Press: 3 sets x 8 reps
+Overhead Press: 3 sets x 10 reps`,
+  workout_plan: `Diet Plan
+
+Breakfast
+Oats and milk
+
+Lunch
+Rice and dal
+
+Dinner
+Paneer and roti`,
+  supplement_plan: '',
+  cardio_plan: '',
+  coach_notes: '',
+})
+assert('swapped fields put meals on the diet', swapped.diet.includes('Rice and dal'))
+assert('swapped fields put lifts on the workout', swapped.workout.includes('Dumbbell Bench Press'))
+assert('swapped diet does not keep the lifts', !swapped.diet.includes('Overhead Press'))
+
+const dietThenWorkout = resolvePlanSections({
+  nutrition_plan: `Calories: 2000
+
+Breakfast
+Idli
+
+Lunch
+Rice
+
+Dinner
+Rasam`,
+  workout_plan: `Diet Plan
+
+Breakfast
+Oats
+
+Lunch
+Dal
+
+Dinner
+Paneer
+
+Day 1 (Monday): Push
+
+Warm-up:
+Arm Circles: 2 sets x 10 reps
+
+Main Workout:
+Barbell Bench Press: 4 sets x 8 reps
+Lat Pulldown: 3 sets x 10 reps`,
+  supplement_plan: '',
+  cardio_plan: '',
+  coach_notes: '',
+})
+assert('mixed workout keeps the sessions', dietThenWorkout.workout.includes('Barbell Bench Press'))
+assert('mixed workout drops the leading diet', !dietThenWorkout.workout.includes('Rasam') && !/^\s*breakfast/im.test(dietThenWorkout.workout))
+assert('real diet stays in the diet section', dietThenWorkout.diet.includes('Idli'))
+
+const foodNoteThenDays = resolvePlanSections({
+  nutrition_plan: `Calories: 2418
+
+Day 1 (Monday)
+Breakfast, 10:00: 2 rotis
+
+Lunch
+Rice and dal
+
+Dinner
+Paneer and roti`,
+  workout_plan: `This home plan uses bodyweight and bands.
+
+Food Plan
+
+Use only in-house meals. Remove all outside foods, including vada pav.
+
+Day 1 (Monday): Push
+
+Warm-up:
+Easy March: 5 min.
+
+Main Workout:
+Push Up: 4 sets x 8 to 12 reps.`,
+  supplement_plan: '',
+  cardio_plan: '',
+  coach_notes: '',
+})
+assert('food note does not hide the training days', foodNoteThenDays.workout.includes('Push Up'))
+assert('food note does not hide the day title', foodNoteThenDays.workout.includes('Day 1 (Monday)'))
+assert('food note stays off the workout', !foodNoteThenDays.workout.includes('vada pav'))
+assert('existing meals stay on the diet', foodNoteThenDays.diet.includes('2 rotis'))
+
+const postWorkoutMeal = resolvePlanSections({
+  nutrition_plan: `Day 1 (Monday)
+
+Breakfast
+Oats and milk
+
+Lunch
+Rice and dal
+
+Post-Workout
+1 banana and buttermilk
+
+Dinner
+Paneer and roti`,
+  workout_plan: `Day 1 (Monday): Push
+
+Warm-up:
+Arm Circles: 2 sets x 10 reps
+
+Main Workout:
+Dumbbell Bench Press: 3 sets x 8 reps`,
+  supplement_plan: '',
+  cardio_plan: '',
+  coach_notes: '',
+})
+assert('post-workout meal stays on the diet', postWorkoutMeal.diet.includes('banana and buttermilk'))
+assert('post-workout meal is not moved onto the workout', !postWorkoutMeal.workout.includes('buttermilk'))
 
 if (failed > 0) {
   console.error(`\n${failed} plan parser checks failed`)

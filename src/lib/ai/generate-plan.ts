@@ -43,6 +43,7 @@ import { formatCalorieGuidanceBlock, resolveClientCalorieTargets } from '@/lib/a
 import { assessDietFollowsRequest } from '@/lib/ai/diet-update-check'
 import { combineCheckinFreeText } from '@/lib/ai/same-week-midweek'
 import { assessWorkoutStructure } from '@/lib/ai/workout-structure'
+import { classifyPlanText } from '@/lib/plan-body-kind'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   DAY_HEADER_PROMPT_RULES,
@@ -915,6 +916,30 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         completenessHint = completeness.error
         continue
       }
+    }
+
+    if (
+      !supportSection &&
+      providerMode !== 'mock' &&
+      (validationMode === 'workout_focus' || validationMode === 'full') &&
+      classifyPlanText(workoutProse(plan)) === 'diet'
+    ) {
+      lastValidationError = 'Workout plan is a diet. Write the training sessions only.'
+      completenessHint =
+        'workout_plan contained meals. Write only the workout: Warm-up, Main Workout, and sets x reps. Do not write breakfast, lunch, dinner, or a diet plan.'
+      continue
+    }
+
+    if (
+      !supportSection &&
+      providerMode !== 'mock' &&
+      (validationMode === 'nutrition_focus' || validationMode === 'full') &&
+      classifyPlanText(collectDietProse(plan.nutrition_plan.meals)) === 'workout'
+    ) {
+      lastValidationError = 'Diet plan is a workout. Write the meals only.'
+      completenessHint =
+        'nutrition_plan contained a training schedule. Write only the diet for Day 1 (Monday) through Day 7 (Sunday). Do not write sets, warm-ups, or exercises.'
+      continue
     }
 
     if (

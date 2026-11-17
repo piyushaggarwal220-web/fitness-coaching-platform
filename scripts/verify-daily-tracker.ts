@@ -1448,6 +1448,30 @@ Leg Press: 4 sets x 5 reps`,
   )
 }
 
+const fullerMondayDiet: Plan = {
+  ...planV1,
+  nutrition_plan: `Monday
+Oats
+
+Day 1 (Monday)
+Breakfast
+Idli and sambar
+
+Lunch
+Rice and dal
+
+Dinner
+Roti and paneer
+`,
+}
+const fullerMondaySnap = buildTrackerSnapshot(fullerMondayDiet)
+const dietFoods = fullerMondaySnap.items
+  .filter((item) => item.type === 'meal')
+  .map((item) => ('foods' in item ? item.foods : ''))
+  .join('\n')
+assert('a short Monday diet does not hide the full day', dietFoods.includes('Rice and dal'))
+assert('the full Monday diet keeps later meals', dietFoods.includes('Roti and paneer'))
+
 if (failed > 0) {
   console.error(`\n${failed} daily tracker checks failed`)
   process.exit(1)

@@ -1,5 +1,6 @@
 import { tidyWorkoutPlanText } from '@/lib/ai/workout-tidy'
 import { clientCoachNotes } from '@/lib/plan-metadata'
+import { classifyPlanText, partitionPlanText, separateSwappedPlanSections } from '@/lib/plan-body-kind'
 import type { Plan, PlanFormData } from '@/types/database'
 
 export type ParsedPlanSections = {
@@ -249,6 +250,18 @@ export function resolvePlanSections(input: {
   ) {
     workoutText = stripEmbeddedSections(workout, ['diet', 'cardio', 'coachNotes', 'supplements'])
   }
+  // "Food Plan" / "Diet Plan" is a diet heading, so every line under it was removed
+  // above — including the training days that follow a short food note. Put those
+  // sessions back on the workout.
+  if (fromWorkout.diet) {
+    const recovered = partitionPlanText(fromWorkout.diet)
+    if (classifyPlanText(recovered.workout) === 'workout') {
+      const sessions = recovered.workout.trim()
+      const kept = workoutText.trim()
+      workoutText =
+        kept && !kept.includes(sessions.slice(0, 48)) ? `${kept}\n\n${sessions}` : sessions || kept
+    }
+  }
   // If the whole workout field is diet-like and we extracted a workout slice, prefer it.
   if (!isMeaningful(workoutText) && isMeaningful(fromWorkout.workout ?? '')) {
     workoutText = (fromWorkout.workout ?? '').trim()
@@ -262,7 +275,8 @@ export function resolvePlanSections(input: {
 
   // If nutrition was empty but workout carried a diet block, surface it as diet.
   if (!isMeaningful(diet) && isMeaningful(fromWorkout.diet ?? '')) {
-    diet = (fromWorkout.diet ?? '').trim()
+    const meals = partitionPlanText(fromWorkout.diet ?? '').diet.trim()
+    diet = meals || (fromWorkout.diet ?? '').trim()
   }
 
   const cardio = pickSection(
@@ -293,9 +307,11 @@ export function resolvePlanSections(input: {
     workoutText = stripInlineSectionBlocks(workout, ['cardio', 'coachNotes', 'supplements'])
   }
 
+  const separated = separateSwappedPlanSections(diet, workoutText)
+
   return {
-    diet: diet.trim(),
-    workout: workoutText.trim(),
+    diet: separated.diet.trim(),
+    workout: tidyWorkoutPlanText(separated.workout).trim(),
     supplements: supplements.trim(),
     cardio: cardio.trim(),
     coachNotes: coachNotes.trim(),

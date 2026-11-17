@@ -2,6 +2,7 @@ import { extractStepCount } from '@/lib/ai/cardio-steps'
 import { assessDietFollowsRequest } from '@/lib/ai/diet-update-check'
 import { extractPlanDayLabels } from '@/lib/ai/plan-completeness'
 import { assessWorkoutStructure } from '@/lib/ai/workout-structure'
+import { classifyPlanText } from '@/lib/plan-body-kind'
 
 /** Working memory for one client's planner chat. */
 export const PLANNER_CONTEXT_TOKENS = 128_000
@@ -274,6 +275,11 @@ export function crosscheckPlannerSections(input: {
 }): string[] {
   const errors: string[] = []
   if (input.changed.includes('nutrition')) {
+    if (classifyPlanText(input.nutrition) === 'workout') {
+      errors.push(
+        'Diet plan came back as a workout. Write the meals only, not sets or a training schedule.'
+      )
+    }
     const got = labeledDayCount(input.nutrition)
     if (got < 7) {
       errors.push(`Diet plan is incomplete: need all 7 days labeled Day 1 (Monday) through Day 7 (Sunday). Found ${got}.`)
@@ -286,6 +292,11 @@ export function crosscheckPlannerSections(input: {
     if (dietMiss) errors.push(dietMiss)
   }
   if (input.changed.includes('workout')) {
+    if (classifyPlanText(input.workout) === 'diet') {
+      errors.push(
+        'Workout plan came back as a diet. Write the training sessions only, not breakfast, lunch, and dinner.'
+      )
+    }
     const need = Math.max(input.previousWorkoutDays, 1)
     const got = labeledDayCount(input.workout)
     if (got < need) {

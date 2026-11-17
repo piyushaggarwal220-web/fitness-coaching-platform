@@ -116,15 +116,28 @@ export function tidyWorkoutPlanText(text: string): string {
     else preamble.push(line)
   }
 
-  const seen = new Set<string>()
-  const days: string[] = []
+  const order: string[] = []
+  const kept = new Map<string, string>()
+  const isStub = (text: string) => {
+    const lines = text.split('\n').filter((line) => line.trim()).length
+    const exercises = text.split('\n').filter((line) => EXERCISE_LINE.test(line)).length
+    return lines <= 3 && exercises <= 1
+  }
   for (const block of blocks) {
     const key = weekdayKey(block[0] ?? '')
-    if (seen.has(key)) continue
-    seen.add(key)
     const tidied = tidyDay(block.join('\n'))
-    if (tidied) days.push(tidied)
+    if (!tidied) continue
+    const previous = kept.get(key)
+    if (!previous) {
+      order.push(key)
+      kept.set(key, tidied)
+      continue
+    }
+    // "Monday — Push" must not hide the full session written under that day later.
+    // A pasted second week that is already a real session still keeps the first copy.
+    if (isStub(previous) && !isStub(tidied)) kept.set(key, tidied)
   }
+  const days = order.map((key) => kept.get(key)).filter((text): text is string => Boolean(text))
 
   return [...preamble, ...days].join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }

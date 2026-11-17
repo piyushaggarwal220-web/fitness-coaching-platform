@@ -25,6 +25,7 @@ import { isAutoDeliveryCoach } from '@/lib/coach-delivery-policy'
 import { usesHumanCoach } from '@/lib/coach-service'
 import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
 import { clientFacingDietPlanText } from '@/lib/ai/nutrition-macro-sync'
+import { classifyPlanText } from '@/lib/plan-body-kind';
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
 import { authenticateClient } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
@@ -193,11 +194,16 @@ export default function ClientPlanPage() {
   const planMeta = parsePlanMeta(plan)
   const weekNumber = planMeta.week ?? extractWeekFromTitle(plan.title)
 
-  // Prefer resolved workout; if parsing wiped a real field, fall back to raw DB text.
+  // Prefer resolved workout. Fall back to the stored field only when it is not a diet
+  // that the parser correctly removed (a meal plan must not reappear under Workout).
   const rawWorkout = (plan.workout_plan ?? '').trim()
+  const rawWorkoutKind = classifyPlanText(rawWorkout)
   const workoutSource =
     sections.workout.trim() ||
-    (rawWorkout && !/^(n\/?a|pending|workout plan pending|unchanged this week|not provided|none specified)$/i.test(rawWorkout)
+    (rawWorkout &&
+    rawWorkoutKind !== 'diet' &&
+    rawWorkoutKind !== 'mixed' &&
+    !/^(n\/?a|pending|workout plan pending|unchanged this week|not provided|none specified)$/i.test(rawWorkout)
       ? rawWorkout
       : '')
 
