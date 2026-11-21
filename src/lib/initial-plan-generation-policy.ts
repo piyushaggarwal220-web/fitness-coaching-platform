@@ -43,3 +43,20 @@ export function validateAuthoritativeOnboarding(profile: OnboardingProfile): str
       Boolean(profile.terms_accepted_at) || Boolean(profile.onboarding_complete),
   })
 }
+
+/**
+ * A draft is deliverable only when every required section is present.
+ * Coaching and digital Complete need diet + workout. Diet-only / workout-only SKUs need that one.
+ * Diet alone must never count as a full coaching core (that shipped empty workouts).
+ */
+export function draftHasRequiredCoreSections(input: {
+  nutritionPlan?: string | null
+  workoutPlan?: string | null
+  digitalSections?: 'diet' | 'workout' | 'both' | null
+}): boolean {
+  const diet = Boolean(input.nutritionPlan?.trim())
+  const workout = Boolean(input.workoutPlan?.trim())
+  if (input.digitalSections === 'diet') return diet
+  if (input.digitalSections === 'workout') return workout
+  return diet && workout
+}

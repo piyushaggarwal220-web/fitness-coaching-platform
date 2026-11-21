@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import {
   canRetryInitialGeneration,
+  draftHasRequiredCoreSections,
   INITIAL_GENERATION_CLAIM_STATUS,
   shouldStartInitialGeneration,
   validateAuthoritativeOnboarding,
@@ -198,8 +199,55 @@ assert.equal(
   'delivery must accept the same authoritative completion flag as the database trigger'
 )
 
+assert.equal(
+  draftHasRequiredCoreSections({
+    nutritionPlan: 'Day 1 meals',
+    workoutPlan: '',
+    digitalSections: null,
+  }),
+  false,
+  'coaching must not treat a diet-only draft as deliverable'
+)
+assert.equal(
+  draftHasRequiredCoreSections({
+    nutritionPlan: 'Day 1 meals',
+    workoutPlan: 'Day 1 Main Workout',
+    digitalSections: null,
+  }),
+  true,
+  'coaching needs both diet and workout'
+)
+assert.equal(
+  draftHasRequiredCoreSections({
+    nutritionPlan: 'Day 1 meals',
+    workoutPlan: '',
+    digitalSections: 'diet',
+  }),
+  true,
+  'digital diet SKU only needs the diet'
+)
+assert.equal(
+  draftHasRequiredCoreSections({
+    nutritionPlan: '',
+    workoutPlan: 'Day 1 Main Workout',
+    digitalSections: 'workout',
+  }),
+  true,
+  'digital workout SKU only needs the workout'
+)
+assert.equal(
+  draftHasRequiredCoreSections({
+    nutritionPlan: 'Day 1 meals',
+    workoutPlan: '',
+    digitalSections: 'both',
+  }),
+  false,
+  'digital complete still needs both sections'
+)
+
 console.log('✓ incomplete onboarding and required photos are gated while female photos remain optional')
 console.log('✓ duplicate workers only claim queued jobs')
 console.log('✓ only failed jobs are retryable')
 console.log('✓ generated plans remain inactive, undelivered drafts')
 console.log('✓ delivery uses the authoritative onboarding completion flag')
+console.log('✓ diet-only coaching drafts are not treated as deliverable')

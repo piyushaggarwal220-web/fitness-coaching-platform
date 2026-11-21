@@ -7,6 +7,7 @@ import {
 } from '@/lib/coach-delivery-policy'
 import { NotificationTemplates, sendNotification } from '@/lib/notifications/dispatcher'
 import { readInstantPlanWindow } from '@/lib/plan-delivery-window-server'
+import { draftHasRequiredCoreSections } from '@/lib/initial-plan-generation-policy'
 import { activatePlan } from '@/lib/plans'
 
 /** Deliver a ready initial draft to an auto-initial client and notify them. */
@@ -30,9 +31,22 @@ export async function deliverPiyushInitialPlan(
 
   const { data: planRow } = await admin
     .from('plans')
-    .select('id, coach_notes')
+    .select('id, coach_notes, nutrition_plan, workout_plan')
     .eq('id', input.planId)
     .maybeSingle()
+
+  if (
+    !draftHasRequiredCoreSections({
+      nutritionPlan: planRow?.nutrition_plan,
+      workoutPlan: planRow?.workout_plan,
+      digitalSections: null,
+    })
+  ) {
+    return {
+      error:
+        'Initial plan is missing diet or workout. Retry generation before delivering to the client.',
+    }
+  }
 
   // Auto-delivery coaches ship even when the model flagged a calorie floor —
   // the floor is already applied in the draft. Manual coaches still hold for review.

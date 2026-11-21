@@ -43,6 +43,14 @@ const GUIDANCE: Record<string, Omit<GenerationFailureGuidance, 'code'>> = {
       'Message the client only if delivery will be delayed beyond the usual window.',
     ],
   },
+  core_incomplete: {
+    summary: 'Diet or workout is missing, so the plan was not delivered to the client.',
+    nextSteps: [
+      'Tap “Retry background generation” so the missing section can finish.',
+      'Or generate the missing diet/workout from the action cards, then deliver only when both are present.',
+      'Do not deliver a diet-only or workout-only coaching draft.',
+    ],
+  },
   configuration: {
     summary: 'AI generation is not configured in this environment.',
     nextSteps: [

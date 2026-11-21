@@ -8,6 +8,7 @@ import { buildActionCoachInstructions, mergePlanForms } from '@/lib/coach/ai-act
 import { profileBlocksAiPlanWork } from '@/lib/complexity/input-guards'
 import {
   canRetryInitialGeneration,
+  draftHasRequiredCoreSections,
   INITIAL_GENERATION_CLAIM_STATUS,
   shouldStartInitialGeneration,
   STALE_GENERATION_MS,
@@ -38,6 +39,7 @@ import type { OnboardingProfile, PlanFormData } from '@/types/database'
 
 export {
   canRetryInitialGeneration,
+  draftHasRequiredCoreSections,
   INITIAL_GENERATION_CLAIM_STATUS,
   shouldStartInitialGeneration,
   STALE_GENERATION_MS,
@@ -552,7 +554,8 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
     const safe = safeFailure(error)
     const failedAt = new Date().toISOString()
 
-    // If a core diet+workout draft was already linked, treat the job as ready.
+    // If a complete required core was already linked, treat the job as ready.
+    // Diet-only (or workout-only) drafts must not auto-deliver for coaching / Complete.
     // Support-section / notification failures must not erase successful generation.
     const { data: latestJob } = await admin
       .from('initial_plan_generation_jobs')
@@ -561,13 +564,19 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       .maybeSingle()
     const draftPlanId = latestJob?.draft_plan_id as string | null | undefined
     if (draftPlanId) {
-      const { data: draft } = await admin
-        .from('plans')
-        .select('id, nutrition_plan, workout_plan')
-        .eq('id', draftPlanId)
-        .maybeSingle()
-      const hasCore =
-        Boolean(draft?.nutrition_plan?.trim()) || Boolean(draft?.workout_plan?.trim())
+      const [{ data: draft }, digitalSections] = await Promise.all([
+        admin
+          .from('plans')
+          .select('id, nutrition_plan, workout_plan')
+          .eq('id', draftPlanId)
+          .maybeSingle(),
+        clientLatestDigitalSections(admin, job.client_id),
+      ])
+      const hasCore = draftHasRequiredCoreSections({
+        nutritionPlan: draft?.nutrition_plan,
+        workoutPlan: draft?.workout_plan,
+        digitalSections,
+      })
       if (hasCore) {
         await admin
           .from('initial_plan_generation_jobs')
@@ -583,7 +592,6 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
           .eq('id', job.id)
           .eq('status', 'generating')
 
-        const digitalSections = await clientLatestDigitalSections(admin, job.client_id)
         if (digitalSections) {
           const planSlug = await latestPurchasePlanSlug(admin, job.client_id)
           const delivered = await autoDeliverDigitalPlan(admin, {
@@ -628,6 +636,49 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
         }
         return
       }
+
+      // Incomplete core (e.g. diet saved, workout failed): keep the draft, do not deliver.
+      await admin
+        .from('initial_plan_generation_jobs')
+        .update({
+          status: 'failed',
+          draft_plan_id: draftPlanId,
+          error_code: 'core_incomplete',
+          error_message:
+            'Required diet or workout is missing. The partial draft was kept — retry generation before delivering.',
+          failed_at: failedAt,
+          updated_at: failedAt,
+        })
+        .eq('id', job.id)
+        .eq('status', 'generating')
+
+      const { data: coachForIncomplete } = await admin
+        .from('coaches')
+        .select('user_id')
+        .eq('id', job.coach_id)
+        .single()
+      if (coachForIncomplete?.user_id) {
+        const guidance = getGenerationFailureGuidance(
+          'core_incomplete',
+          'Required diet or workout is missing from the draft.'
+        )
+        await sendNotification({
+          userId: coachForIncomplete.user_id,
+          type: 'initial_plan_generation_failed',
+          title: 'AI plan draft needs a retry',
+          body: `${guidance.summary} Next: ${guidance.nextSteps[0] ?? 'Open the client generate-plan page.'}`,
+          actionUrl: `/coach/client/${job.client_id}/generate-plan`,
+          metadata: {
+            jobId: job.id,
+            planId: draftPlanId,
+            clientId: job.client_id,
+            errorCode: 'core_incomplete',
+            nextSteps: guidance.nextSteps,
+            recoveredFrom: safe.code,
+          },
+        })
+      }
+      return
     }
 
     await admin

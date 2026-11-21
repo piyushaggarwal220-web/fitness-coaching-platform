@@ -3,7 +3,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { resolveAppBaseUrl } from '@/lib/admin/portal-urls'
 import { sendDirectEmail } from '@/lib/notifications/email-provider'
 import { NotificationTemplates, sendNotification } from '@/lib/notifications/dispatcher'
+import { draftHasRequiredCoreSections } from '@/lib/initial-plan-generation-policy'
 import { digitalProductDisplayName } from '@/lib/payments/digital-purchase'
+import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
 import { readInstantPlanWindow } from '@/lib/plan-delivery-window-server'
 import { activatePlan } from '@/lib/plans'
 
@@ -20,6 +22,27 @@ export async function autoDeliverDigitalPlan(
   const window = await readInstantPlanWindow(admin, input.clientId)
   if (!window.open) {
     return { error: null, heldForWindow: true, deliverAt: window.deliverAt }
+  }
+
+  const { data: planRow } = await admin
+    .from('plans')
+    .select('nutrition_plan, workout_plan')
+    .eq('id', input.planId)
+    .maybeSingle()
+  const sections =
+    input.planSlug && isDigitalPlanSlug(input.planSlug)
+      ? digitalPlanSections(input.planSlug)
+      : 'both'
+  if (
+    !draftHasRequiredCoreSections({
+      nutritionPlan: planRow?.nutrition_plan,
+      workoutPlan: planRow?.workout_plan,
+      digitalSections: sections,
+    })
+  ) {
+    return {
+      error: 'Digital plan is missing a required diet or workout section. Retry generation before publishing.',
+    }
   }
 
   const activated = await activatePlan(
