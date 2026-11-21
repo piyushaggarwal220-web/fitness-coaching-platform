@@ -1334,7 +1334,7 @@ Day 7 (Sunday): Active Recovery`,
 }
 
 {
-  assert('parser version rebuilds stored tracker days', TRACKER_PARSER_VERSION === 22)
+  assert('parser version rebuilds stored tracker days', TRACKER_PARSER_VERSION === 23)
   const liveDiet = `Day 3 (Wednesday)
 Breakfast, 10:00
 Have 60g oats.
@@ -1361,6 +1361,37 @@ Quadriceps Stretch: 2 sets x 30 seconds each side`
   assert(
     'comma and clock meal headers stay separate',
     wedMeals.map((item) => item.title).join('|') === 'Breakfast|Lunch|Snack|Dinner'
+  )
+  const portionDiet = `Day 1 (Monday)
+Breakfast, 22:35
+4 eggs cooked as bhurji with oil.
+Lunch, 13:45
+Outside meal: 250g cooked rice and chicken curry.
+Snack
+2 cups chai.
+Dinner, 22:30
+4 medium rotis, 2 katoris varan, and 100g chicken curry from the family meal.
+(P: 43g | C: 90g | F: 20g | ~709 kcal)
+Daily Total: P: 150g | C: 365g | F: 80g | ~2781 kcal`
+  const portionSnap = buildTrackerSnapshot({
+    id: 'plan-portion-family-meal',
+    version: 1,
+    nutrition_plan: portionDiet,
+    workout_plan: '',
+  } as Plan)
+  const monMeals = portionSnap.items.filter((item) => item.type === 'meal' && item.dietDay === 'monday')
+  const monDinner = monMeals.find((item) => item.title === 'Dinner')
+  assert(
+    'portion lines with family meal keep Dinner (not Meal)',
+    monMeals.map((item) => item.title).join('|') === 'Breakfast|Lunch|Snack|Dinner'
+  )
+  assert(
+    'Dinner keeps roti foods and clock time',
+    Boolean(monDinner && /roti/i.test(monDinner.foods) && monDinner.mealTime === '22:30')
+  )
+  assert(
+    'Outside meal stays lunch food, not a Meal header',
+    Boolean(monMeals.find((item) => item.title === 'Lunch' && /Outside meal:/i.test(item.foods)))
   )
   const wedWorkout = liveSnap.items.find((item) => item.type === 'workout' && item.workoutDay === 'wednesday')
   const names =

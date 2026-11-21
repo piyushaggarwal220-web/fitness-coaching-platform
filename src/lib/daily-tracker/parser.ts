@@ -23,7 +23,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 22
+export const TRACKER_PARSER_VERSION = 23
 
 const CARDIO_MOVEMENT =
   /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
@@ -138,9 +138,10 @@ function enrichMeal(meal: TrackerMealItem, foods: string): TrackerMealItem {
     foods: cleaned || foods,
     foodItems: foodItems.length > 0 ? foodItems : undefined,
     macros: hasMacros ? macros : undefined,
-    mealTime,
-    mealTimer,
-    notes,
+    // Keep header clock (e.g. "Dinner, 22:30") when foods have no Time: line.
+    mealTime: mealTime || meal.mealTime,
+    mealTimer: mealTimer || meal.mealTimer,
+    notes: notes || meal.notes,
   }
 }
 
@@ -161,6 +162,9 @@ const MEAL_NAME_PATTERN =
 
 const CLOCK_TIME = String.raw`\d{1,2}(?::\d{2})?\s*(?:am|pm)?`
 const CLOCK_RANGE = String.raw`${CLOCK_TIME}(?:\s*[–—-]\s*${CLOCK_TIME})?`
+/** Time-first headers need a real clock — bare "4 eggs..." must not look like 4:00. */
+const CLOCK_TIME_STRICT = String.raw`(?:\d{1,2}:\d{2}\s*(?:am|pm)?|\d{1,2}\s*(?:am|pm))`
+const CLOCK_RANGE_STRICT = String.raw`${CLOCK_TIME_STRICT}(?:\s*[–—-]\s*${CLOCK_TIME_STRICT})?`
 
 const DAY_BLOCK_SPLIT =
   /\n(?=(?:\*{0,2}|#{1,3}\s*)?(?:meal:\s*)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\b)/i
@@ -184,11 +188,12 @@ const MEAL_NUMBERED_LINE = new RegExp(
 )
 
 const MEAL_TIME_FIRST_LINE = new RegExp(
-  `^(${CLOCK_RANGE})(?:\\s*[–—:\\-]\\s+|\\s+)(.+?)\\s*$`,
+  `^(${CLOCK_RANGE_STRICT})(?:\\s*[–—:\\-]\\s+|\\s+)(.+?)\\s*$`,
   'i'
 )
 
 const MEAL_NAME_MATCH = new RegExp(MEAL_NAME_PATTERN, 'i')
+const MEAL_NAME_AT_START = new RegExp(`^(${MEAL_NAME_PATTERN})\\b`, 'i')
 
 const NON_MEAL_HEADER =
   /^(option|choose|daily\s+total|daily\s+target|macros?|calories|protein|carbs|fat|note|how to|diet tips|calorie-fill)\b/i
@@ -196,6 +201,21 @@ const NON_MEAL_HEADER =
 function extractNamedMeal(text: string): string | null {
   const match = text.match(MEAL_NAME_MATCH)
   return match?.[0]?.trim() ?? null
+}
+
+function extractLeadingMealName(text: string): string | null {
+  const match = text.match(MEAL_NAME_AT_START)
+  return match?.[1]?.trim() ?? null
+}
+
+/**
+ * Food copy like "Outside meal: rice…" or "from the family meal" must not
+ * become a tracker Meal header. Real headers like "Late shift meal around 5am"
+ * stay valid.
+ */
+function isAmbiguousMealLabel(name: string, trimmedLine: string): boolean {
+  if (!/^meal$/i.test(name.trim())) return false
+  return /^(?:outside|family|from\s+the\s+family)\s+meal\b/i.test(trimmedLine)
 }
 
 function isWorkoutOnlyLabel(text: string): boolean {
@@ -238,9 +258,13 @@ function matchMealHeader(raw: string): { name: string; mealTime?: string } | nul
   const timeFirst = trimmed.match(MEAL_TIME_FIRST_LINE)
   if (timeFirst) {
     const rest = timeFirst[2]!.trim()
-    if (isWorkoutOnlyLabel(rest) || (!extractNamedMeal(rest) && !/^meal\b/i.test(rest))) return null
+    // Require the meal name at the start of the remainder — never pull "meal"
+    // out of "…from the family meal."
+    const leadingName = extractLeadingMealName(rest)
+    if (isWorkoutOnlyLabel(rest) || !leadingName) return null
+    if (isAmbiguousMealLabel(leadingName, rest)) return null
     return {
-      name: extractNamedMeal(rest) ?? rest,
+      name: leadingName,
       mealTime: timeFirst[1]!.replace(/\s+/g, ' ').trim(),
     }
   }
@@ -248,6 +272,7 @@ function matchMealHeader(raw: string): { name: string; mealTime?: string } | nul
   const match = trimmed.match(MEAL_HEADER_LINE)
   if (!match) return null
   if (isWorkoutOnlyLabel(trimmed)) return null
+  if (isAmbiguousMealLabel(match[1]!, trimmed)) return null
   const dashTime = match[3]?.trim()
   if (dashTime && !looksLikeMealTime(dashTime)) return null
   const mealTime = (match[2] ?? dashTime ?? match[4])?.trim()
@@ -382,7 +407,7 @@ function parseMealsInDay(
       continue
     }
     const inline = trimmed.match(MEAL_INLINE_LINE)
-    if (inline) {
+    if (inline && !isAmbiguousMealLabel(inline[1]!, trimmed)) {
       flush()
       const foods = (inline[4] ?? '').trim()
       meals.push(
