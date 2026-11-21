@@ -3,9 +3,13 @@
  *
  * Athletic Body (12 months): weekly, only if they paid more than ₹3,000.
  * 6 months: one call every 14 days.
- * 3 months and cheap offers: no calls.
+ * Fat loss (3 months) bought on or after 21 Sep 2026, 00:00 IST: one call every 14 days.
+ * Earlier 3-month buyers, and cheap offers, do not get a call.
  */
 export const WEEKLY_CALL_NEW_CLIENTS_FROM_ISO = '2026-09-20T18:30:00.000Z'
+
+/** Current Fat loss calls begin 21 Sep 2026, 00:00 IST. Future purchases are included. */
+export const FAT_LOSS_CALLS_FROM_ISO = WEEKLY_CALL_NEW_CLIENTS_FROM_ISO
 
 /** Strictly more than ₹3,000 captured (net of refunds). */
 export const ATHLETIC_BODY_CALL_MIN_PAISE = 300_000
@@ -36,14 +40,24 @@ export function netPaidPaise(
   return Math.max(0, (amountPaise ?? 0) - (refundedPaise ?? 0))
 }
 
+/** True for a Fat loss purchase on or after 21 Sep 2026. Missing dates stay out. */
+export function isRecentFatLossPurchase(joinedAt: string | null | undefined): boolean {
+  if (!joinedAt) return false
+  const at = Date.parse(joinedAt)
+  if (Number.isNaN(at)) return false
+  return at >= Date.parse(FAT_LOSS_CALLS_FROM_ISO)
+}
+
 export function callCadenceForPlan(
   planSlug: string | null | undefined,
-  paidPaise: number | null | undefined
+  paidPaise: number | null | undefined,
+  joinedAt?: string | null
 ): CallCadence {
   if (planSlug === '12_months' && (paidPaise ?? 0) > ATHLETIC_BODY_CALL_MIN_PAISE) {
     return 'weekly'
   }
   if (planSlug === '6_months') return 'biweekly'
+  if (planSlug === '3_months' && isRecentFatLossPurchase(joinedAt)) return 'biweekly'
   return 'none'
 }
 
@@ -74,7 +88,11 @@ export function evaluateCallBookingPolicy(input: {
 }): CallBookingPolicy {
   const now = input.now ?? new Date()
   const planDelivered = input.planDelivered ?? false
-  const cadence = callCadenceForPlan(input.planSlug, input.paidAmountPaise ?? 0)
+  const cadence = callCadenceForPlan(
+    input.planSlug,
+    input.paidAmountPaise ?? 0,
+    input.joinedAt
+  )
   const intervalDays = intervalDaysForCadence(cadence)
   const isTwelveMonth = input.planSlug === '12_months'
   const isCallEligiblePlan = cadence !== 'none'

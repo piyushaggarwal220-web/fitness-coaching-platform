@@ -22,6 +22,18 @@ assert('exactly 3k is not weekly', callCadenceForPlan('12_months', ATHLETIC_BODY
 assert('2299 athletic body has no calls', callCadenceForPlan('12_months', paid2299) === 'none')
 assert('6 months is biweekly', callCadenceForPlan('6_months', 99_900) === 'biweekly')
 assert('3 months is none', callCadenceForPlan('3_months', paid6k) === 'none')
+assert(
+  'fat loss before 21 Sep 2026 has no calls',
+  callCadenceForPlan('3_months', 59_900, '2026-09-20T18:29:59.000Z') === 'none'
+)
+assert(
+  'fat loss from 21 Sep 2026 is biweekly',
+  callCadenceForPlan('3_months', 59_900, '2026-09-20T18:30:00.000Z') === 'biweekly'
+)
+assert(
+  'a future fat loss purchase is biweekly',
+  callCadenceForPlan('3_months', 59_900, '2027-06-01T00:00:00.000Z') === 'biweekly'
+)
 assert('net paid subtracts refunds', netPaidPaise(599_900, 300_000) === 299_900)
 
 const threeMonth = evaluateCallBookingPolicy({
@@ -32,6 +44,28 @@ const threeMonth = evaluateCallBookingPolicy({
   now: day7,
 })
 assert('3-month cannot book', !threeMonth.canRequestManualCall && !threeMonth.showHomeButton)
+
+const recentFatLoss = evaluateCallBookingPolicy({
+  planSlug: '3_months',
+  paidAmountPaise: 59_900,
+  checkinScheduleStartedAt: started.toISOString(),
+  planDelivered: true,
+  joinedAt: '2026-11-18T14:43:08.000Z',
+  now: day7,
+})
+assert('recent fat loss can book after the first week', recentFatLoss.canRequestManualCall)
+assert('recent fat loss is every 2 weeks', recentFatLoss.callCadence === 'biweekly' && recentFatLoss.intervalDays === 14)
+
+const recentFatLossFirstWeek = evaluateCallBookingPolicy({
+  planSlug: '3_months',
+  paidAmountPaise: 59_900,
+  checkinScheduleStartedAt: '2026-11-18T18:30:00.000Z',
+  planDelivered: true,
+  joinedAt: '2026-11-18T14:43:08.000Z',
+  now: new Date('2026-11-21T07:15:00.000Z'),
+})
+assert('recent fat loss sees the call during the first week', recentFatLossFirstWeek.showHomeButton)
+assert('recent fat loss cannot book during the first week', !recentFatLossFirstWeek.canRequestManualCall)
 
 const cheapAthletic = evaluateCallBookingPolicy({
   planSlug: '12_months',
